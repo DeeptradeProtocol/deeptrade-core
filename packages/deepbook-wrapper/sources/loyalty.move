@@ -203,37 +203,6 @@ public fun remove_loyalty_level(
     event::emit(LoyaltyLevelRemoved { level });
 }
 
-/// Update an existing loyalty level
-public fun update_loyalty_level(
-    loyalty_program: &mut LoyaltyProgram,
-    _admin: &AdminCap,
-    level: u8,
-    new_fee_discount_rate: u64,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
-    ctx: &mut TxContext,
-) {
-    // Validate multisig
-    assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
-    );
-
-    // Validate level exists
-    assert!(loyalty_program.levels.contains(level), ELoyaltyLevelNotFound);
-
-    // Validate fee discount rate
-    assert!(new_fee_discount_rate <= MAX_FEE_DISCOUNT_RATE, EInvalidFeeDiscountRate);
-
-    let level_info = loyalty_program.levels.borrow_mut(level);
-    let old_fee_discount_rate = level_info.fee_discount_rate;
-    level_info.fee_discount_rate = new_fee_discount_rate;
-
-    // Emit event
-    event::emit(LoyaltyLevelUpdated { level, old_fee_discount_rate, new_fee_discount_rate });
-}
-
 // === Public-View Functions ===
 /// Get user's loyalty level, returns None if user has no level
 public fun get_user_loyalty_level(loyalty_program: &LoyaltyProgram, user: address): Option<u8> {
