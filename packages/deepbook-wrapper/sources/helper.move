@@ -109,8 +109,8 @@ public(package) fun apply_discount(value: u64, discount_rate: u64): u64 {
 /// Calculates discount rate based on how much of the DEEP fees the user pays themselves
 /// The more user covers DeepBook fees on their own, the higher the discount rate
 /// If no DEEP fees are required, user gets maximum discount
-public(package) fun calculate_discount_rate(
-    max_discount_rate: u64,
+public(package) fun calculate_deep_fee_coverage_discount_rate(
+    max_deep_fee_coverage_discount_rate: u64,
     deep_from_reserves: u64,
     deep_required: u64,
 ): u64 {
@@ -120,14 +120,14 @@ public(package) fun calculate_discount_rate(
     assert!(deep_from_reserves <= deep_required, EInvalidDeepFromReserves);
 
     // If deep_required is 0, give maximum discount
-    if (deep_required == 0) return max_discount_rate;
+    if (deep_required == 0) return max_deep_fee_coverage_discount_rate;
 
     let deep_covered_by_user = deep_required - deep_from_reserves;
 
     // If user covers 0 DEEP, they get 0 discount
     if (deep_covered_by_user == 0) return 0;
 
-    math::div(math::mul(max_discount_rate, deep_covered_by_user), deep_required)
+    math::div(math::mul(max_deep_fee_coverage_discount_rate, deep_covered_by_user), deep_required)
 }
 
 /// Calculate the taker and maker ratios for an order based on execution status.
