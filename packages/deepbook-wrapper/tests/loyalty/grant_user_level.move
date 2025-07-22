@@ -298,15 +298,14 @@ fun non_multisig_sender_fails() {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
         let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
 
-        // Use invalid multisig parameters to trigger failure
         loyalty::grant_user_level(
             &mut loyalty_program,
             &admin_cap,
             ALICE,
             LEVEL_SILVER,
-            vector[vector[1u8, 2u8, 3u8]], // Invalid public key
-            vector[1u8], // Invalid weight
-            1u16, // Invalid threshold
+            get_test_multisig_pks(),
+            get_test_multisig_weights(),
+            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
