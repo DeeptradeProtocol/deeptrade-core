@@ -5,12 +5,13 @@ use deepbook::pool::Pool;
 use deepbook_wrapper::helper::{
     calculate_deep_required,
     calculate_order_amount,
-    calculate_discount_rate,
+    calculate_deep_fee_coverage_discount_rate,
     get_sui_per_deep,
     calculate_market_order_params,
     hundred_percent,
     apply_discount
 };
+use deepbook_wrapper::loyalty::LoyaltyProgram;
 use deepbook_wrapper::math;
 use deepbook_wrapper::ticket::{
     AdminTicket,
@@ -20,6 +21,7 @@ use deepbook_wrapper::ticket::{
     update_pool_specific_fees_ticket_type
 };
 use pyth::price_info::PriceInfoObject;
+use std::u64;
 use sui::balance::Balance;
 use sui::clock::Clock;
 use sui::coin::Coin;
@@ -54,7 +56,7 @@ const DEFAULT_DEEP_TAKER_FEE_BPS: u64 = 600_000; // 6 bps
 const DEFAULT_DEEP_MAKER_FEE_BPS: u64 = 300_000; // 3 bps
 const DEFAULT_INPUT_COIN_TAKER_FEE_BPS: u64 = 500_000; // 5 bps
 const DEFAULT_INPUT_COIN_MAKER_FEE_BPS: u64 = 200_000; // 2 bps
-const DEFAULT_DEEP_FEE_DISCOUNT_RATE: u64 = 250_000_000; // 2500 bps (25%)
+const DEFAULT_DEEP_FEE_COVERAGE_DISCOUNT_RATE: u64 = 250_000_000; // 2500 bps (25%)
 
 // === Structs ===
 /// Configuration object containing trading fee rates
@@ -70,7 +72,7 @@ public struct PoolFeeConfig has copy, drop, store {
     deep_fee_type_maker_rate: u64,
     input_coin_fee_type_taker_rate: u64,
     input_coin_fee_type_maker_rate: u64,
-    max_deep_fee_discount_rate: u64,
+    max_deep_fee_coverage_discount_rate: u64,
 }
 
 // === Events ===
@@ -94,7 +96,7 @@ fun init(ctx: &mut TxContext) {
             deep_fee_type_maker_rate: DEFAULT_DEEP_MAKER_FEE_BPS,
             input_coin_fee_type_taker_rate: DEFAULT_INPUT_COIN_TAKER_FEE_BPS,
             input_coin_fee_type_maker_rate: DEFAULT_INPUT_COIN_MAKER_FEE_BPS,
-            max_deep_fee_discount_rate: DEFAULT_DEEP_FEE_DISCOUNT_RATE,
+            max_deep_fee_coverage_discount_rate: DEFAULT_DEEP_FEE_COVERAGE_DISCOUNT_RATE,
         },
         pool_specific_fees: table::new(ctx),
     };
@@ -156,14 +158,14 @@ public fun new_pool_fee_config(
     deep_fee_type_maker_rate: u64,
     input_coin_fee_type_taker_rate: u64,
     input_coin_fee_type_maker_rate: u64,
-    max_deep_fee_discount_rate: u64,
+    max_deep_fee_coverage_discount_rate: u64,
 ): PoolFeeConfig {
     let config = PoolFeeConfig {
         deep_fee_type_taker_rate,
         deep_fee_type_maker_rate,
         input_coin_fee_type_taker_rate,
         input_coin_fee_type_maker_rate,
-        max_deep_fee_discount_rate,
+        max_deep_fee_coverage_discount_rate,
     };
 
     config
@@ -196,8 +198,8 @@ public fun input_coin_fee_type_rates(config: PoolFeeConfig): (u64, u64) {
     (config.input_coin_fee_type_taker_rate, config.input_coin_fee_type_maker_rate)
 }
 
-public fun max_deep_fee_discount_rate(config: PoolFeeConfig): u64 {
-    config.max_deep_fee_discount_rate
+public fun max_deep_fee_coverage_discount_rate(config: PoolFeeConfig): u64 {
+    config.max_deep_fee_coverage_discount_rate
 }
 
 /// Estimate the total fee for a limit order using DEEP fee type
@@ -211,12 +213,14 @@ public fun max_deep_fee_discount_rate(config: PoolFeeConfig): u64 {
 /// - deep_usd_price_info: Pyth price info object for DEEP/USD price
 /// - sui_usd_price_info: Pyth price info object for SUI/USD price
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
 /// - deep_in_balance_manager: Amount of DEEP available in user's balance manager
 /// - deep_in_wallet: Amount of DEEP in user's wallet
 /// - quantity: Order quantity in base tokens
 /// - price: Order price in quote tokens per base token
 /// - is_bid: True for buy orders, false for sell orders
 /// - clock: System clock for timestamp verification
+/// - ctx: Transaction context
 ///
 /// Returns:
 /// - deep_reserves_coverage_fee: SUI cost of borrowed DEEP from reserves
@@ -229,12 +233,14 @@ public fun estimate_full_fee_limit<BaseToken, QuoteToken, ReferenceBaseAsset, Re
     deep_usd_price_info: &PriceInfoObject,
     sui_usd_price_info: &PriceInfoObject,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     deep_in_balance_manager: u64,
     deep_in_wallet: u64,
     quantity: u64,
     price: u64,
     is_bid: bool,
     clock: &Clock,
+    ctx: &mut TxContext,
 ): (u64, u64, u64, u64) {
     // Get the best DEEP/SUI price
     let sui_per_deep = get_sui_per_deep(
@@ -244,13 +250,14 @@ public fun estimate_full_fee_limit<BaseToken, QuoteToken, ReferenceBaseAsset, Re
         clock,
     );
 
-    // Get the protocol fee rates for the pool and max discount rate
+    // Get the protocol fee rates for the pool and max deep fee coverage discount rate
     let pool_fee_config = trading_fee_config.get_pool_fee_config(pool);
     let (protocol_taker_fee_rate, _) = pool_fee_config.deep_fee_type_rates();
-    let max_discount_rate = pool_fee_config.max_deep_fee_discount_rate();
+    let max_deep_fee_coverage_discount_rate = pool_fee_config.max_deep_fee_coverage_discount_rate();
 
     let deep_required = calculate_deep_required(pool, quantity, price);
     let order_amount = calculate_order_amount(quantity, price, is_bid);
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
     let (deep_reserves_coverage_fee, protocol_fee, discount_rate) = estimate_full_order_fee_core(
         deep_in_balance_manager,
@@ -259,7 +266,8 @@ public fun estimate_full_fee_limit<BaseToken, QuoteToken, ReferenceBaseAsset, Re
         sui_per_deep,
         protocol_taker_fee_rate,
         order_amount,
-        max_discount_rate,
+        max_deep_fee_coverage_discount_rate,
+        loyalty_discount_rate,
     );
 
     (deep_reserves_coverage_fee, protocol_fee, deep_required, discount_rate)
@@ -276,11 +284,13 @@ public fun estimate_full_fee_limit<BaseToken, QuoteToken, ReferenceBaseAsset, Re
 /// - deep_usd_price_info: Pyth price info object for DEEP/USD price
 /// - sui_usd_price_info: Pyth price info object for SUI/USD price
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
 /// - deep_in_balance_manager: Amount of DEEP available in user's balance manager
 /// - deep_in_wallet: Amount of DEEP in user's wallet
 /// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
 /// - is_bid: True for buy orders, false for sell orders
 /// - clock: System clock for timestamp verification
+/// - ctx: Transaction context
 ///
 /// Returns:
 /// - deep_reserves_coverage_fee: SUI cost of borrowed DEEP from reserves
@@ -293,11 +303,13 @@ public fun estimate_full_fee_market<BaseToken, QuoteToken, ReferenceBaseAsset, R
     deep_usd_price_info: &PriceInfoObject,
     sui_usd_price_info: &PriceInfoObject,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     deep_in_balance_manager: u64,
     deep_in_wallet: u64,
     order_amount: u64,
     is_bid: bool,
     clock: &Clock,
+    ctx: &mut TxContext,
 ): (u64, u64, u64, u64) {
     // Get the best DEEP/SUI price
     let sui_per_deep = get_sui_per_deep(
@@ -307,10 +319,10 @@ public fun estimate_full_fee_market<BaseToken, QuoteToken, ReferenceBaseAsset, R
         clock,
     );
 
-    // Get the protocol fee rates for the pool and max discount rate
+    // Get the protocol fee rates for the pool and max deep fee coverage discount rate
     let pool_fee_config = trading_fee_config.get_pool_fee_config(pool);
     let (protocol_taker_fee_rate, _) = pool_fee_config.deep_fee_type_rates();
-    let max_discount_rate = pool_fee_config.max_deep_fee_discount_rate();
+    let max_deep_fee_coverage_discount_rate = pool_fee_config.max_deep_fee_coverage_discount_rate();
 
     let (_, deep_required) = calculate_market_order_params<BaseToken, QuoteToken>(
         pool,
@@ -318,6 +330,7 @@ public fun estimate_full_fee_market<BaseToken, QuoteToken, ReferenceBaseAsset, R
         is_bid,
         clock,
     );
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
     let (deep_reserves_coverage_fee, protocol_fee, discount_rate) = estimate_full_order_fee_core(
         deep_in_balance_manager,
@@ -326,7 +339,8 @@ public fun estimate_full_fee_market<BaseToken, QuoteToken, ReferenceBaseAsset, R
         sui_per_deep,
         protocol_taker_fee_rate,
         order_amount,
-        max_discount_rate,
+        max_deep_fee_coverage_discount_rate,
+        loyalty_discount_rate,
     );
 
     (deep_reserves_coverage_fee, protocol_fee, deep_required, discount_rate)
@@ -345,12 +359,14 @@ public fun estimate_full_fee_market<BaseToken, QuoteToken, ReferenceBaseAsset, R
 /// - sui_per_deep: Current DEEP/SUI price for coverage fee calculation
 /// - protocol_taker_fee_rate: Protocol fee rate for taker portion (in billionths)
 /// - order_amount: Total order amount to calculate protocol fees on
-/// - max_discount_rate: Maximum discount rate available (in billionths)
+/// - max_deep_fee_coverage_discount_rate: Maximum discount rate that can be applied from
+///   DEEP fee coverage (in billionths)
+/// - loyalty_discount_rate: Loyalty discount rate (in billionths)
 ///
 /// Returns:
 /// - deep_reserves_coverage_fee: SUI cost of borrowed DEEP from reserves
 /// - protocol_fee: Protocol fee after discount applied
-/// - discount_rate: Actual discount rate applied to protocol fee
+/// - total_discount_rate: Actual discount rate applied to protocol fee
 public(package) fun estimate_full_order_fee_core(
     balance_manager_deep: u64,
     deep_in_wallet: u64,
@@ -358,7 +374,8 @@ public(package) fun estimate_full_order_fee_core(
     sui_per_deep: u64,
     protocol_taker_fee_rate: u64,
     order_amount: u64,
-    max_discount_rate: u64,
+    max_deep_fee_coverage_discount_rate: u64,
+    loyalty_discount_rate: u64,
 ): (u64, u64, u64) {
     // Calculate the amount of DEEP to be taken from wrapper's reserves.
     // If the user doesn't have enough DEEP, reserves will cover the difference between
@@ -371,10 +388,16 @@ public(package) fun estimate_full_order_fee_core(
         deep_from_reserves,
     );
 
-    let discount_rate = calculate_discount_rate(
-        max_discount_rate,
+    let deep_fee_coverage_discount_rate = calculate_deep_fee_coverage_discount_rate(
+        max_deep_fee_coverage_discount_rate,
         deep_from_reserves,
         deep_required,
+    );
+
+    // Ensure the total discount rate doesn't exceed 100%
+    let total_discount_rate = u64::min(
+        deep_fee_coverage_discount_rate + loyalty_discount_rate,
+        hundred_percent(),
     );
 
     // Calculate protocol fee assuming order is fully taker to show fee upper limit.
@@ -386,10 +409,10 @@ public(package) fun estimate_full_order_fee_core(
         protocol_taker_fee_rate,
         0, // no need to specify maker fee rate for 0% maker ratio
         order_amount,
-        discount_rate,
+        total_discount_rate,
     );
 
-    (deep_reserves_coverage_fee, protocol_fee, discount_rate)
+    (deep_reserves_coverage_fee, protocol_fee, total_discount_rate)
 }
 
 /// Calculates the fee for using DEEP from wrapper reserves
@@ -511,7 +534,7 @@ fun validate_pool_fee_config(fees: &PoolFeeConfig) {
         fees.input_coin_fee_type_taker_rate,
         fees.input_coin_fee_type_maker_rate,
     );
-    validate_discount_rate(fees.max_deep_fee_discount_rate);
+    validate_discount_rate(fees.max_deep_fee_coverage_discount_rate);
 }
 
 /// Validates a single taker/maker fee pair against precision, range, and consistency rules.

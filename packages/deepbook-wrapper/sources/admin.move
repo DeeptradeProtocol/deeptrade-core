@@ -16,3 +16,10 @@ fun init(ctx: &mut TxContext) {
         ctx.sender(),
     )
 }
+
+// === Test Functions ===
+/// Get an AdminCap for testing purposes
+#[test_only]
+public fun get_admin_cap_for_testing(ctx: &mut TxContext): AdminCap {
+    AdminCap { id: object::new(ctx) }
+}

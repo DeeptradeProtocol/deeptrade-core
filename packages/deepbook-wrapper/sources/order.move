@@ -19,8 +19,10 @@ use deepbook_wrapper::helper::{
     calculate_order_taker_maker_ratio,
     validate_slippage,
     apply_slippage,
-    calculate_discount_rate
+    calculate_deep_fee_coverage_discount_rate,
+    hundred_percent
 };
+use deepbook_wrapper::loyalty::LoyaltyProgram;
 use deepbook_wrapper::unsettled_fees::{add_unsettled_fee, settle_user_fees};
 use deepbook_wrapper::wrapper::{
     Wrapper,
@@ -30,6 +32,7 @@ use deepbook_wrapper::wrapper::{
     split_deep_reserves
 };
 use pyth::price_info::PriceInfoObject;
+use std::u64;
 use sui::balance;
 use sui::clock::Clock;
 use sui::coin::Coin;
@@ -130,6 +133,7 @@ public struct InputCoinDepositPlan has copy, drop {
 /// Parameters:
 /// - wrapper: The DeepBook wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
 /// - reference_pool: Reference pool for price calculation
 /// - deep_usd_price_info: Pyth price info object for DEEP/USD price
@@ -154,6 +158,7 @@ public struct InputCoinDepositPlan has copy, drop {
 public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     wrapper: &mut Wrapper,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
     deep_usd_price_info: &PriceInfoObject,
@@ -195,6 +200,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
     let (proof, protocol_fee_discount_rate) = prepare_order_execution(
         wrapper,
         trading_fee_config,
+        loyalty_program,
         pool,
         reference_pool,
         deep_usd_price_info,
@@ -240,7 +246,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
         &order_info,
         order_amount,
         protocol_fee_discount_rate,
-        true, // is DEEP fee type
+        true, // DEEP fee type
         ctx,
     );
 
@@ -263,6 +269,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 /// Parameters:
 /// - wrapper: The DeepBook wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
 /// - reference_pool: Reference pool for price calculation
 /// - deep_usd_price_info: Pyth price info object for DEEP/USD price
@@ -285,6 +292,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     wrapper: &mut Wrapper,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
     deep_usd_price_info: &PriceInfoObject,
@@ -323,6 +331,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
     let (proof, protocol_fee_discount_rate) = prepare_order_execution(
         wrapper,
         trading_fee_config,
+        loyalty_program,
         pool,
         reference_pool,
         deep_usd_price_info,
@@ -365,7 +374,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
         &order_info,
         order_amount,
         protocol_fee_discount_rate,
-        true, // is DEEP fee type
+        true, // DEEP fee type
         ctx,
     );
 
@@ -386,6 +395,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// Parameters:
 /// - wrapper: The DeepBook wrapper instance to add protocol fees to
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
 /// - balance_manager: User's balance manager for managing coin deposits
 /// - base_coin: Base token coins from user's wallet
@@ -401,6 +411,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     wrapper: &mut Wrapper,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
     mut base_coin: Coin<BaseToken>,
@@ -428,11 +439,11 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     );
 
     let order_amount = calculate_order_amount(quantity, price, is_bid);
-    let max_discount_rate = trading_fee_config
-        .get_pool_fee_config(pool)
-        .max_deep_fee_discount_rate();
 
-    let proof = prepare_whitelisted_order_execution(
+    let (proof, total_discount_rate) = prepare_whitelisted_order_execution(
+        trading_fee_config,
+        loyalty_program,
+        pool,
         balance_manager,
         &mut base_coin,
         &mut quote_coin,
@@ -465,8 +476,8 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        max_discount_rate, // intentional: whitelisted pools get maximum protocol fee discount by design
-        true, // is DEEP fee type
+        total_discount_rate,
+        true, // DEEP fee type
         ctx,
     );
 
@@ -487,6 +498,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// Parameters:
 /// - wrapper: The DeepBook wrapper instance to add protocol fees to
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
 /// - balance_manager: User's balance manager for managing coin deposits
 /// - base_coin: Base token coins from user's wallet
@@ -499,6 +511,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
     wrapper: &mut Wrapper,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
     mut base_coin: Coin<BaseToken>,
@@ -525,11 +538,10 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
         clock,
     );
 
-    let max_discount_rate = trading_fee_config
-        .get_pool_fee_config(pool)
-        .max_deep_fee_discount_rate();
-
-    let proof = prepare_whitelisted_order_execution(
+    let (proof, total_discount_rate) = prepare_whitelisted_order_execution(
+        trading_fee_config,
+        loyalty_program,
+        pool,
         balance_manager,
         &mut base_coin,
         &mut quote_coin,
@@ -559,8 +571,8 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        max_discount_rate, // intentional: whitelisted pools get maximum protocol fee discount by design
-        true, // is DEEP fee type
+        total_discount_rate,
+        true, // DEEP fee type
         ctx,
     );
 
@@ -576,23 +588,25 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// * `wrapper` - The DeepBook wrapper instance managing the order process
-/// * `trading_fee_config` - Trading fee configuration object
-/// * `pool` - The trading pool where the order will be placed
-/// * `balance_manager` - User's balance manager for managing coin deposits
-/// * `base_coin` - Base token coins from user's wallet
-/// * `quote_coin` - Quote token coins from user's wallet
-/// * `price` - Order price in quote tokens per base token
-/// * `quantity` - Order quantity in base tokens
-/// * `is_bid` - True for buy orders, false for sell orders
-/// * `expire_timestamp` - Order expiration timestamp
-/// * `order_type` - Type of order (e.g., GTC, IOC, FOK)
-/// * `self_matching_option` - Self-matching behavior configuration
-/// * `client_order_id` - Client-provided order identifier
-/// * `clock` - System clock for timestamp verification
+/// - wrapper: The DeepBook wrapper instance managing the order process
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - pool: The trading pool where the order will be placed
+/// - balance_manager: User's balance manager for managing coin deposits
+/// - base_coin: Base token coins from user's wallet
+/// - quote_coin: Quote token coins from user's wallet
+/// - price: Order price in quote tokens per base token
+/// - quantity: Order quantity in base tokens
+/// - is_bid: True for buy orders, false for sell orders
+/// - expire_timestamp: Order expiration timestamp
+/// - order_type: Type of order (e.g., GTC, IOC, FOK)
+/// - self_matching_option: Self-matching behavior configuration
+/// - client_order_id: Client-provided order identifier
+/// - clock: System clock for timestamp verification
 public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     wrapper: &mut Wrapper,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
     mut base_coin: Coin<BaseToken>,
@@ -620,6 +634,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     );
 
     let order_amount = calculate_order_amount(quantity, price, is_bid);
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
     let proof = prepare_input_fee_order_execution(
         pool,
@@ -655,8 +670,8 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        0, // No discount rate for input fee orders
-        false, // is Input coin fee type
+        loyalty_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
+        false, // Input coin fee type
         ctx,
     );
 
@@ -672,20 +687,22 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// * `wrapper` - The DeepBook wrapper instance managing the order process
-/// * `trading_fee_config` - Trading fee configuration object
-/// * `pool` - The trading pool where the order will be placed
-/// * `balance_manager` - User's balance manager for managing coin deposits
-/// * `base_coin` - Base token coins from user's wallet
-/// * `quote_coin` - Quote token coins from user's wallet
-/// * `order_amount` - Order amount in quote tokens (for bids) or base tokens (for asks)
-/// * `is_bid` - True for buy orders, false for sell orders
-/// * `self_matching_option` - Self-matching behavior configuration
-/// * `client_order_id` - Client-provided order identifier
-/// * `clock` - System clock for timestamp verification
+/// - wrapper: The DeepBook wrapper instance managing the order process
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - pool: The trading pool where the order will be placed
+/// - balance_manager: User's balance manager for managing coin deposits
+/// - base_coin: Base token coins from user's wallet
+/// - quote_coin: Quote token coins from user's wallet
+/// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
+/// - is_bid: True for buy orders, false for sell orders
+/// - self_matching_option: Self-matching behavior configuration
+/// - client_order_id: Client-provided order identifier
+/// - clock: System clock for timestamp verification
 public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     wrapper: &mut Wrapper,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
     mut base_coin: Coin<BaseToken>,
@@ -714,6 +731,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
         is_bid,
         clock,
     );
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
     let proof = prepare_input_fee_order_execution(
         pool,
@@ -746,8 +764,8 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        0, // No discount rate for input fee orders
-        false, // is Input coin fee type
+        loyalty_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
+        false, // Input coin fee type
         ctx,
     );
 
@@ -1301,6 +1319,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
 /// Parameters:
 /// - wrapper: The DeepBook wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
 /// - reference_pool: Reference pool used for fallback DEEP/SUI price calculation
 /// - deep_usd_price_info: Pyth price info object for DEEP/USD price
@@ -1321,6 +1340,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
 fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     wrapper: &mut Wrapper,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &Pool<BaseToken, QuoteToken>,
     reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
     deep_usd_price_info: &PriceInfoObject,
@@ -1373,9 +1393,9 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
     let wallet_input_coin = if (is_bid) quote_in_wallet else base_in_wallet;
 
     let wrapper_deep_reserves = deep_reserves(wrapper);
-    let max_discount_rate = trading_fee_config
+    let max_deep_fee_coverage_discount_rate = trading_fee_config
         .get_pool_fee_config(pool)
-        .max_deep_fee_discount_rate();
+        .max_deep_fee_coverage_discount_rate();
 
     let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
@@ -1401,11 +1421,18 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
         estimated_sui_fee_slippage,
     );
 
-    // Calculate protocol fees discount rate
-    let discount_rate = calculate_discount_rate(
-        max_discount_rate,
+    // Calculate total protocol fees discount rate
+    let coverage_discount_rate = calculate_deep_fee_coverage_discount_rate(
+        max_deep_fee_coverage_discount_rate,
         deep_plan.from_deep_reserves,
         deep_required,
+    );
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+
+    // Ensure the total discount rate doesn't exceed 100%
+    let total_discount_rate = u64::min(
+        coverage_discount_rate + loyalty_discount_rate,
+        hundred_percent(),
     );
 
     execute_deep_plan(wrapper, balance_manager, &mut deep_coin, &deep_plan, ctx);
@@ -1432,7 +1459,7 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
     transfer_if_nonzero(sui_coin, ctx.sender());
 
     // Generate and return proof and protocol fee discount rate
-    (balance_manager.generate_proof_as_owner(ctx), discount_rate)
+    (balance_manager.generate_proof_as_owner(ctx), total_discount_rate)
 }
 
 /// Prepares order execution for whitelisted pools by handling coin deposits
@@ -1446,19 +1473,25 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
 /// 4. Returns the balance manager proof needed for order placement
 ///
 /// Parameters:
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - pool: The trading pool where the order will be placed
 /// - balance_manager: User's balance manager for managing coin deposits
 /// - base_coin: Base token coins from user's wallet
 /// - quote_coin: Quote token coins from user's wallet
 /// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
 /// - is_bid: True for buy orders, false for sell orders
 fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
+    trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
+    pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
     base_coin: &mut Coin<BaseToken>,
     quote_coin: &mut Coin<QuoteToken>,
     order_amount: u64,
     is_bid: bool,
     ctx: &mut TxContext,
-): TradeProof {
+): (TradeProof, u64) {
     // Verify the caller owns the balance manager
     assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
 
@@ -1471,6 +1504,19 @@ fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
     let base_in_wallet = base_coin.value();
     let quote_in_wallet = quote_coin.value();
     let wallet_input_coin = if (is_bid) quote_in_wallet else base_in_wallet;
+
+    // Calculate the total discount rate for the protocol fees
+    let max_deep_fee_coverage_discount_rate = trading_fee_config
+        .get_pool_fee_config(pool)
+        .max_deep_fee_coverage_discount_rate();
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+
+    // Ensure the total discount rate doesn't exceed 100%
+    // Intentional: whitelisted pools get maximum DEEP fee coverage discount by design
+    let total_discount_rate = u64::min(
+        max_deep_fee_coverage_discount_rate + loyalty_discount_rate,
+        hundred_percent(),
+    );
 
     let input_coin_deposit_plan = get_input_coin_deposit_plan(
         order_amount,
@@ -1487,7 +1533,8 @@ fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
         ctx,
     );
 
-    balance_manager.generate_proof_as_owner(ctx)
+    // Generate and return proof and protocol fee discount rate
+    (balance_manager.generate_proof_as_owner(ctx), total_discount_rate)
 }
 
 /// Prepares order execution by handling input coin fee and deposit logic

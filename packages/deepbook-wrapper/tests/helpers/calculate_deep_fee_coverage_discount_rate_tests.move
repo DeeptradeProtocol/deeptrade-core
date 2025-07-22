@@ -1,7 +1,7 @@
 #[test_only]
 module deepbook_wrapper::calculate_discount_rate_tests;
 
-use deepbook_wrapper::helper::{calculate_discount_rate, EInvalidDeepFromReserves};
+use deepbook_wrapper::helper::{calculate_deep_fee_coverage_discount_rate, EInvalidDeepFromReserves};
 use std::unit_test::assert_eq;
 
 // Common discount rates for testing
@@ -18,10 +18,10 @@ const DEEP_MASSIVE: u64 = 1_000_000_000; // 1,000 DEEP
 // ===== Edge Cases =====
 
 #[test]
-/// Test when deep_required is zero - should return max_discount_rate
+/// Test when deep_required is zero - should return max_deep_fee_coverage_discount_rate
 fun deep_required_zero() {
     // When deep_required is 0, user gets maximum discount regardless of deep_from_reserves
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         0, // deep_from_reserves
         0, // deep_required
@@ -29,7 +29,7 @@ fun deep_required_zero() {
     assert_eq!(result, MAX_DISCOUNT_50_PERCENT);
 
     // Test with different max discount rates
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         0, // deep_from_reserves
         0, // deep_required
@@ -37,7 +37,7 @@ fun deep_required_zero() {
     assert_eq!(result, MAX_DISCOUNT_100_PERCENT);
 
     // Test with different max discount rates
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_30_PERCENT,
         0, // deep_from_reserves
         0, // deep_required
@@ -49,7 +49,7 @@ fun deep_required_zero() {
 /// Test when deep_from_reserves equals deep_required - should return 0 discount
 fun deep_from_reserves_equals_required() {
     // When user pays nothing themselves, they get no discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         DEEP_SMALL, // deep_from_reserves
         DEEP_SMALL, // deep_required (equal)
@@ -57,7 +57,7 @@ fun deep_from_reserves_equals_required() {
     assert_eq!(result, 0);
 
     // Test with different amounts
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         DEEP_MASSIVE, // deep_from_reserves
         DEEP_MASSIVE, // deep_required (equal)
@@ -66,10 +66,10 @@ fun deep_from_reserves_equals_required() {
 }
 
 #[test]
-/// Test when deep_from_reserves is zero - should return max_discount_rate
+/// Test when deep_from_reserves is zero - should return max_deep_fee_coverage_discount_rate
 fun deep_from_reserves_zero() {
     // When user pays all fees themselves, they get maximum discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         0, // deep_from_reserves
         DEEP_SMALL, // deep_required
@@ -77,7 +77,7 @@ fun deep_from_reserves_zero() {
     assert_eq!(result, MAX_DISCOUNT_50_PERCENT);
 
     // Test with different amounts
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         0, // deep_from_reserves
         DEEP_MASSIVE, // deep_required
@@ -86,19 +86,19 @@ fun deep_from_reserves_zero() {
 }
 
 #[test]
-/// Test when max_discount_rate is zero - should always return 0
+/// Test when max_deep_fee_coverage_discount_rate is zero - should always return 0
 fun max_discount_rate_zero() {
     // When max discount is 0, result should always be 0
-    let result = calculate_discount_rate(
-        0, // max_discount_rate
+    let result = calculate_deep_fee_coverage_discount_rate(
+        0, // max_deep_fee_coverage_discount_rate
         0, // deep_from_reserves
         DEEP_SMALL, // deep_required
     );
     assert_eq!(result, 0);
 
     // Test with different coverage ratios
-    let result = calculate_discount_rate(
-        0, // max_discount_rate
+    let result = calculate_deep_fee_coverage_discount_rate(
+        0, // max_deep_fee_coverage_discount_rate
         DEEP_SMALL / 2, // deep_from_reserves (50% coverage)
         DEEP_SMALL, // deep_required
     );
@@ -110,7 +110,7 @@ fun max_discount_rate_zero() {
 #[test, expected_failure(abort_code = EInvalidDeepFromReserves)]
 /// Test when deep_from_reserves exceeds deep_required - should abort
 fun deep_from_reserves_exceeds_required() {
-    calculate_discount_rate(
+    calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         DEEP_SMALL + 1, // deep_from_reserves (exceeds required)
         DEEP_SMALL, // deep_required
@@ -120,7 +120,7 @@ fun deep_from_reserves_exceeds_required() {
 #[test, expected_failure(abort_code = EInvalidDeepFromReserves)]
 /// Test when deep_from_reserves is non-zero but deep_required is zero - should abort
 fun deep_from_reserves_nonzero_with_zero_required() {
-    calculate_discount_rate(
+    calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         DEEP_SMALL, // deep_from_reserves (non-zero)
         0, // deep_required (zero)
@@ -131,7 +131,7 @@ fun deep_from_reserves_nonzero_with_zero_required() {
 /// Test with maximum discount rate (100%)
 fun max_discount_rate_100_percent() {
     // Test 50% coverage with 100% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         DEEP_SMALL / 2, // deep_from_reserves (50% coverage)
         DEEP_SMALL, // deep_required
@@ -140,7 +140,7 @@ fun max_discount_rate_100_percent() {
     assert_eq!(result, 500_000_000); // 50% in billionths
 
     // Test 25% coverage with 100% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         DEEP_SMALL * 3 / 4, // deep_from_reserves (75% coverage)
         DEEP_SMALL, // deep_required
@@ -159,7 +159,7 @@ fun fifty_percent_coverage() {
     // User pays 50% of fees themselves, gets 50% of max discount
 
     // Test with 10% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_10_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -168,7 +168,7 @@ fun fifty_percent_coverage() {
     assert_eq!(result, 50_000_000); // 5% in billionths
 
     // Test with 30% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_30_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -177,7 +177,7 @@ fun fifty_percent_coverage() {
     assert_eq!(result, 150_000_000); // 15% in billionths
 
     // Test with 50% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -194,7 +194,7 @@ fun twenty_five_percent_coverage() {
     // User pays 25% of fees themselves, gets 25% of max discount
 
     // Test with 50% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -203,7 +203,7 @@ fun twenty_five_percent_coverage() {
     assert_eq!(result, 125_000_000); // 12.5% in billionths
 
     // Test with 100% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -220,7 +220,7 @@ fun seventy_five_percent_coverage() {
     // User pays 75% of fees themselves, gets 75% of max discount
 
     // Test with 50% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -229,7 +229,7 @@ fun seventy_five_percent_coverage() {
     assert_eq!(result, 375_000_000); // 37.5% in billionths
 
     // Test with 100% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -246,7 +246,7 @@ fun ninety_percent_coverage() {
     // User pays 90% of fees themselves, gets 90% of max discount
 
     // Test with 50% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_50_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -255,7 +255,7 @@ fun ninety_percent_coverage() {
     assert_eq!(result, 450_000_000); // 45% in billionths
 
     // Test with 100% max discount
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         deep_from_reserves,
         deep_required,
@@ -270,7 +270,7 @@ fun ninety_percent_coverage() {
 /// Test with small amounts to verify integer division precision
 fun small_amounts_precision() {
     // Test with amounts that could cause precision issues
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         1, // deep_from_reserves
         3, // deep_required
@@ -280,7 +280,7 @@ fun small_amounts_precision() {
     assert_eq!(result, 666_666_666); // Rounded down from 666.666...%
 
     // Test with very small values
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         2, // deep_from_reserves
         3, // deep_required
@@ -294,7 +294,7 @@ fun small_amounts_precision() {
 fun large_values() {
     // Test with large values close to u64 limits
     let large_deep = 18_000_000_000_000_000_000; // Close to max u64
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT,
         large_deep / 2, // deep_from_reserves (50% coverage)
         large_deep, // deep_required
@@ -302,8 +302,8 @@ fun large_values() {
     // Expected: 100% * 50% = 50%
     assert_eq!(result, 500_000_000); // 50% in billionths
 
-    // Test with maximum possible max_discount_rate
-    let result = calculate_discount_rate(
+    // Test with maximum possible max_deep_fee_coverage_discount_rate
+    let result = calculate_deep_fee_coverage_discount_rate(
         MAX_DISCOUNT_100_PERCENT, // 100% max discount
         large_deep / 4, // deep_from_reserves (25% coverage)
         large_deep, // deep_required
@@ -328,7 +328,7 @@ fun linear_scaling() {
         let deep_from_reserves = deep_required * coverage_percent / 100;
         let expected_discount = max_discount * (100 - coverage_percent) / 100;
 
-        let result = calculate_discount_rate(
+        let result = calculate_deep_fee_coverage_discount_rate(
             max_discount,
             deep_from_reserves,
             deep_required,
@@ -361,7 +361,7 @@ fun various_max_discounts() {
         let max_discount = *vector::borrow(&max_discounts, i);
         let expected_discount = max_discount / 2; // 50% of max discount
 
-        let result = calculate_discount_rate(
+        let result = calculate_deep_fee_coverage_discount_rate(
             max_discount,
             deep_from_reserves,
             deep_required,
@@ -381,7 +381,7 @@ fun threshold_transitions() {
     let deep_required = 1000;
 
     // Test just above 0% coverage
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         max_discount,
         deep_required - 1, // 99.9% coverage
         deep_required,
@@ -390,7 +390,7 @@ fun threshold_transitions() {
     assert_eq!(result, 1_000_000); // 0.1% in billionths
 
     // Test just below 100% coverage
-    let result = calculate_discount_rate(
+    let result = calculate_deep_fee_coverage_discount_rate(
         max_discount,
         1, // 0.1% coverage
         deep_required,

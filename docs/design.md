@@ -13,11 +13,15 @@ The wrapper uses a unified protocol fee calculation system with configurable rat
 
 ### Protocol Fee Discounts
 
-The system incentivizes DEEP holders by offering protocol fee discounts based on how much DeepBook fees users cover with their own DEEP tokens. Whitelisted pools automatically receive the maximum discount rate.
+The system offers two types of protocol fee discounts:
+
+1. **DEEP Fee Coverage Discounts**: Incentivizes DEEP holders by offering discounts based on how much DeepBook fees users cover with their own DEEP tokens. Whitelisted pools automatically receive the maximum discount rate.
+
+2. **Loyalty Program Discounts**: Rewards active users with additional discounts based on their loyalty level. For detailed information about the loyalty program, see the [loyalty.md](./loyalty.md) documentation.
 
 ### Dynamic Fee Calculation and Fee Estimation Strategy
 
-When estimating fees for users, the wrapper calculates the protocol fee assuming the order will be fully executed as a taker order, then applies the user's discount rate to this estimated amount. This approach provides users with a fee upper limit, preventing scenarios where they would have to pay more than the displayed amount. The actual fee charged is then adjusted based on the actual execution status of their order.
+When estimating fees for users, the wrapper calculates the protocol fee assuming the order will be fully executed as a taker order, then applies the user's total discount rate (combining DEEP coverage discounts and loyalty discounts) to this estimated amount. This approach provides users with a fee upper limit, preventing scenarios where they would have to pay more than the displayed amount. The actual fee charged is then adjusted based on the actual execution status of their order.
 
 For detailed information about dynamic fee calculation based on order execution status and the unsettled fees mechanism, see the [unsettled-fees.md](./unsettled-fees.md) documentation.
 
