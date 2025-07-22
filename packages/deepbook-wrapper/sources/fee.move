@@ -394,6 +394,7 @@ public(package) fun estimate_full_order_fee_core(
         deep_required,
     );
 
+    // Ensure the total discount rate doesn't exceed 100%
     let total_discount_rate = u64::min(
         deep_fee_coverage_discount_rate + loyalty_discount_rate,
         hundred_percent(),

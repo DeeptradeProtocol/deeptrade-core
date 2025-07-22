@@ -1429,6 +1429,7 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
     );
     let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
+    // Ensure the total discount rate doesn't exceed 100%
     let total_discount_rate = u64::min(
         coverage_discount_rate + loyalty_discount_rate,
         hundred_percent(),
@@ -1510,6 +1511,7 @@ fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
         .max_deep_fee_coverage_discount_rate();
     let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
+    // Ensure the total discount rate doesn't exceed 100%
     // Intentional: whitelisted pools get maximum DEEP fee coverage discount by design
     let total_discount_rate = u64::min(
         max_deep_fee_coverage_discount_rate + loyalty_discount_rate,
