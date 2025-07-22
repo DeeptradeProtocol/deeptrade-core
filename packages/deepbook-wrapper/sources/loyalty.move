@@ -1,3 +1,10 @@
+/// Loyalty Program Module
+///
+/// This module implements a loyalty reward system that provides protocol fee discounts to users
+/// based on their assigned loyalty levels. The system is designed to provide benefits to active traders.
+///
+/// User loyalty levels are fully determined by the protocol governance (admin).
+/// For detailed information about the loyalty program, see the docs/loyalty.md documentation.
 module deepbook_wrapper::loyalty;
 
 use deepbook_wrapper::admin::AdminCap;
