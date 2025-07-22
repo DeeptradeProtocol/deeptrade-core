@@ -21,3 +21,6 @@ node_modules
 
 # test traces
 packages/deepbook-wrapper/traces/
+
+# Sample audit reports
+audit-reports/
