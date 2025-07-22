@@ -55,12 +55,6 @@ public struct LoyaltyLevelRemoved has copy, drop {
     level: u8,
 }
 
-public struct LoyaltyLevelUpdated has copy, drop {
-    level: u8,
-    old_fee_discount_rate: u64,
-    new_fee_discount_rate: u64,
-}
-
 fun init(ctx: &mut TxContext) {
     let loyalty_program = LoyaltyProgram {
         id: object::new(ctx),
