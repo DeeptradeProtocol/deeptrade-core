@@ -272,3 +272,8 @@ public fun get_level_member_count(loyalty_program: &LoyaltyProgram, level: u8): 
 public fun total_loyalty_program_members(loyalty_program: &LoyaltyProgram): u64 {
     loyalty_program.user_levels.length()
 }
+
+// === Test Functions ===
+/// Initialize the loyalty program for testing
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) { init(ctx); }
