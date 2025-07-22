@@ -10,6 +10,7 @@ class MoveCodeAnalyzer {
       skipComments: true,
       showDetails: false,
       skipDeprecated: true, // Skip deprecated by default
+      skipTestFunctions: true, // Skip test functions by default
       ...options,
     };
 
@@ -30,6 +31,8 @@ class MoveCodeAnalyzer {
       // Generic patterns
       todoRemove: /\/\/.*TODO.*REMOVE/i,
       legacyCode: /\/\/.*LEGACY/i,
+      // Test function patterns
+      testSectionHeader: /^\s*\/\/.*===.*test.*===/i,
     };
   }
 
@@ -43,6 +46,10 @@ class MoveCodeAnalyzer {
       this.patterns.todoRemove.test(line) ||
       this.patterns.legacyCode.test(line)
     );
+  }
+
+  isTestFunctionLine(line) {
+    return this.patterns.testSectionHeader.test(line);
   }
 
   isDeprecatedAttribute(line) {
@@ -91,10 +98,12 @@ class MoveCodeAnalyzer {
       comments: 0,
       blank: 0,
       deprecated: 0,
+      testFunctions: 0,
     };
 
     let inMultiLineComment = false;
     let inDeprecatedSection = false;
+    let inTestSection = false;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -111,6 +120,13 @@ class MoveCodeAnalyzer {
         if (this.patterns.multiLineCommentEnd.test(line)) {
           inMultiLineComment = false;
         }
+        continue;
+      }
+
+      // Test section detection - start counting after the marker
+      if (this.patterns.testSectionHeader.test(line)) {
+        inTestSection = true;
+        stats.comments++; // Count the marker itself as a comment
         continue;
       }
 
@@ -133,6 +149,9 @@ class MoveCodeAnalyzer {
       } else if (inDeprecatedSection) {
         // Inside deprecated section - count as deprecated code (including attributes, function signatures, bodies)
         stats.deprecated++;
+      } else if (inTestSection) {
+        // Inside test section - count as test functions
+        stats.testFunctions++;
       } else {
         stats.code++;
       }
@@ -153,6 +172,7 @@ class MoveCodeAnalyzer {
       comments: 0,
       blank: 0,
       deprecated: 0,
+      testFunctions: 0,
     };
 
     moveFiles.forEach((file) => {
@@ -177,7 +197,8 @@ class MoveCodeAnalyzer {
       code: 0,
       comments: 0,
       blank: 0,
-      deprecated: 0, // Should be 0 for tests but keeping for consistency
+      deprecated: 0,
+      testFunctions: 0, // Should be 0 for tests but keeping for consistency
     };
 
     // Recursively analyze test subdirectories
@@ -226,6 +247,10 @@ class MoveCodeAnalyzer {
       effective -= stats.deprecated;
     }
 
+    if (this.options.skipTestFunctions) {
+      effective -= stats.testFunctions;
+    }
+
     return Math.max(0, effective);
   }
 
@@ -258,11 +283,24 @@ class MoveCodeAnalyzer {
       );
     }
 
+    if (sourcesAnalysis.totals.testFunctions > 0) {
+      if (this.options.skipTestFunctions) {
+        console.log(
+          `🧪 Note: ${sourcesAnalysis.totals.testFunctions} test function lines detected and excluded from effective count`,
+        );
+      } else {
+        console.log(
+          `🧪 Note: ${sourcesAnalysis.totals.testFunctions} test function lines detected and included in effective count`,
+        );
+      }
+    }
+
     if (this.options.showDetails) {
       console.log("\n📋 Configuration:");
       console.log(`• Skip blank lines: ${this.options.skipBlankLines}`);
       console.log(`• Skip comments: ${this.options.skipComments}`);
       console.log(`• Skip deprecated: ${this.options.skipDeprecated}`);
+      console.log(`• Skip test functions: ${this.options.skipTestFunctions}`);
     }
   }
 
@@ -272,14 +310,16 @@ class MoveCodeAnalyzer {
     // Determine if we need wider columns for test files
     const isTestSection = title.includes("Tests");
     const moduleWidth = isTestSection ? 35 : 20;
-    const totalWidth = isTestSection ? 85 : 67;
+    // Calculate total width based on columns: Module + Total + Code + Comments + Blank + (Deprecated + Test if showDeprecated)
+    const baseWidth = moduleWidth + 8 + 8 + 10 + 8; // Module + Total + Code + Comments + Blank
+    const totalWidth = showDeprecated ? baseWidth + 12 + 8 : baseWidth; // Add Deprecated + Test columns
 
     console.log("-".repeat(totalWidth));
 
     const headers =
       "Module".padEnd(moduleWidth) + "Total".padEnd(8) + "Code".padEnd(8) + "Comments".padEnd(10) + "Blank".padEnd(8);
     if (showDeprecated) {
-      console.log(headers + "Deprecated".padEnd(12));
+      console.log(headers + "Deprecated".padEnd(12) + "Test".padEnd(8));
     } else {
       console.log(headers);
     }
@@ -304,7 +344,7 @@ class MoveCodeAnalyzer {
         stats.blank.toString().padEnd(8);
 
       if (showDeprecated) {
-        row += stats.deprecated.toString().padEnd(12);
+        row += stats.deprecated.toString().padEnd(12) + stats.testFunctions.toString().padEnd(8);
       }
       console.log(row);
     });
@@ -319,7 +359,7 @@ class MoveCodeAnalyzer {
       analysis.totals.blank.toString().padEnd(8);
 
     if (showDeprecated) {
-      totalRow += analysis.totals.deprecated.toString().padEnd(12);
+      totalRow += analysis.totals.deprecated.toString().padEnd(12) + analysis.totals.testFunctions.toString().padEnd(8);
     }
     console.log(totalRow);
 
@@ -340,6 +380,12 @@ class MoveCodeAnalyzer {
         `• Deprecated lines: ${analysis.totals.deprecated} (${((analysis.totals.deprecated / analysis.totals.total) * 100).toFixed(1)}%)`,
       );
     }
+
+    if (showDeprecated && analysis.totals.testFunctions > 0) {
+      console.log(
+        `• Test function lines: ${analysis.totals.testFunctions} (${((analysis.totals.testFunctions / analysis.totals.total) * 100).toFixed(1)}%)`,
+      );
+    }
   }
 }
 
@@ -352,6 +398,7 @@ function main() {
   if (args.includes("--include-comments")) options.skipComments = false;
   if (args.includes("--include-blank")) options.skipBlankLines = false;
   if (args.includes("--include-deprecated")) options.skipDeprecated = false;
+  if (args.includes("--include-test-functions")) options.skipTestFunctions = false;
   if (args.includes("--details")) options.showDetails = true;
   if (args.includes("--help")) {
     console.log(`
@@ -361,6 +408,7 @@ Options:
   --include-comments      Include comment lines in effective count
   --include-blank         Include blank lines in effective count  
   --include-deprecated    Include deprecated lines in effective count
+  --include-test-functions  Include test function lines in effective count
   --details               Show configuration details
   --help                  Show this help message
 
