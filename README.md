@@ -16,6 +16,7 @@ The wrapper acts as an intermediary, managing all DEEP-related fee operations.
 For detailed technical specifications and implementation details, please refer to:
 
 - [DeepBook Wrapper Design](docs/design.md)
+- [Loyalty Program](docs/loyalty.md)
 - [Oracle Price Calculation](docs/oracle-price-calculation.md)
 - [Oracle Pricing Security](docs/oracle-pricing-security.md)
 - [Unsettled Fees](docs/unsettled-fees.md)
@@ -60,7 +61,7 @@ The Deepbook Wrapper handles these fees through a unified system:
 
 **DEEP Reserve Coverage Fee**: Only charged when the user needs to borrow DEEP from Wrapper reserves to cover DeepBook fees. This fee equals the required DEEP amount converted to SUI value and is paid in SUI coins.
 
-**Protocol Fee Discounts**: When using DEEP fee type, users can receive discounts on protocol fees based on how much DeepBook fees they cover with their own DEEP tokens. The more DEEP the user provides, the higher their discount on protocol fees.
+**Protocol Fee Discounts**: When using DEEP fee type, users can receive discounts on protocol fees based on how much DeepBook fees they cover with their own DEEP tokens. The more DEEP the user provides, the higher their discount on protocol fees. Additionally, the system includes a **Loyalty Program** that provides additional protocol fee discounts based on user loyalty levels. For detailed information about the loyalty program, see the [Loyalty Program](docs/loyalty.md) documentation.
 
 This structure incentivizes users to hold DEEP coins while ensuring trading accessibility for everyone.
 For whitelisted pools, there are no DEEP fees, so no coverage fees are required. However, protocol fees are still charged, with whitelisted pools receiving the maximum protocol fee discount rate for each order. Maximum discount rates for pools are specified in `TradingFeeConfig`, with a default rate of 25% used if not specified.

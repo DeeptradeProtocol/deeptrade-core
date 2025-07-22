@@ -18,10 +18,12 @@ When a user places an order, we follow this process:
 
 The system offers protocol fee discounts when using the DEEP fee type, designed to incentivize DEEP holders:
 
-- **Discount calculation**: The more DeepBook fees the user covers with their own DEEP tokens, the higher their discount
+- **DEEP Fee Coverage Discounts**: The more DeepBook fees the user covers with their own DEEP tokens, the higher their discount
 - **Maximum discount**: Achieved when the user fully covers the DeepBook fees themselves
 - **Whitelisted pools**: Automatically receive the maximum protocol fee discount rate for each order
 - **Configuration**: Maximum discount rates are specified for each pool in the `TradingFeeConfig`, alongside the standard fee rates
+
+Additionally, the system includes a **Loyalty Program** that provides additional protocol fee discounts based on user loyalty levels. For detailed information about the loyalty program, see the [loyalty.md](./loyalty.md) documentation.
 
 ## Fee Settlement Mechanisms
 
