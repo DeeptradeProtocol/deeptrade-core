@@ -91,7 +91,7 @@ public fun grant_user_level(
     // Validate level exists
     assert!(loyalty_program.levels.contains(level), ELoyaltyLevelNotFound);
 
-    // Check a level is not already granted to the user
+    // Check that user doesn't have any other level granted to prevent multiple levels
     assert!(!loyalty_program.user_levels.contains(user), EUserAlreadyHasLoyaltyLevel);
 
     // Add user to user_levels table
