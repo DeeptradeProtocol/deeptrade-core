@@ -155,7 +155,10 @@ public fun add_loyalty_level(
     );
 
     // Validate fee discount rate
-    assert!(fee_discount_rate <= MAX_FEE_DISCOUNT_RATE, EInvalidFeeDiscountRate);
+    assert!(
+        fee_discount_rate > 0 && fee_discount_rate <= MAX_FEE_DISCOUNT_RATE,
+        EInvalidFeeDiscountRate,
+    );
 
     // Check level doesn't already exist
     assert!(!loyalty_program.levels.contains(level), ELoyaltyLevelAlreadyExists);
