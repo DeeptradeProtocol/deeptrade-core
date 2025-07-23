@@ -42,6 +42,7 @@ public struct PoolCreationConfig has key, store {
 // === Events ===
 /// Pool created event emitted when a pool is created with help of the wrapper
 public struct PoolCreated<phantom BaseAsset, phantom QuoteAsset> has copy, drop {
+    config_id: ID,
     pool_id: ID,
     tick_size: u64,
     lot_size: u64,
@@ -50,6 +51,7 @@ public struct PoolCreated<phantom BaseAsset, phantom QuoteAsset> has copy, drop 
 
 /// Event emitted when the protocol fee for creating a pool is updated
 public struct PoolCreationProtocolFeeUpdated has copy, drop {
+    config_id: ID,
     old_fee: u64,
     new_fee: u64,
 }
@@ -130,6 +132,7 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
 
     // Emit event for the newly created pool
     event::emit(PoolCreated<BaseAsset, QuoteAsset> {
+        config_id: config.id.to_inner(),
         pool_id,
         tick_size,
         lot_size,
@@ -170,6 +173,7 @@ public fun update_pool_creation_protocol_fee(
     config.protocol_fee = new_fee;
 
     event::emit(PoolCreationProtocolFeeUpdated {
+        config_id: config.id.to_inner(),
         old_fee,
         new_fee,
     });
