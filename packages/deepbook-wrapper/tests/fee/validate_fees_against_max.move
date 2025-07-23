@@ -6,7 +6,7 @@ use deepbook_wrapper::helper::apply_slippage;
 use deepbook_wrapper::order::{
     validate_fees_against_max,
     EDeepRequiredExceedsMax,
-    ESuiFeeExceedsMax
+    ECoverageFeeExceedsMax
 };
 use std::unit_test::assert_eq;
 
@@ -85,7 +85,7 @@ fun deep_fee_exceeds_limit() {
     );
 }
 
-#[test, expected_failure(abort_code = ESuiFeeExceedsMax)]
+#[test, expected_failure(abort_code = ECoverageFeeExceedsMax)]
 fun sui_fee_exceeds_limit() {
     // Test case: SUI fee exceeds maximum allowed limit
 
