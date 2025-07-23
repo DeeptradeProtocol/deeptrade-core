@@ -1094,7 +1094,7 @@ public(package) fun get_protocol_fee_plan(
     }
 }
 
-/// Creates an input coin deposit plan for order execution - core logic
+/// Creates an input coin deposit plan for order execution
 /// Specifies the allocation of required input coins between the user's wallet and balance manager.
 /// For bid orders, calculates quote coins needed; for ask orders, calculates base coins needed
 ///
