@@ -1790,7 +1790,7 @@ fun create_empty_coverage_fee_plan(user_covers_fee: bool): CoverageFeePlan {
     CoverageFeePlan {
         from_wallet: 0,
         from_balance_manager: 0,
-        user_covers_fee: user_covers_fee,
+        user_covers_fee,
     }
 }
 
