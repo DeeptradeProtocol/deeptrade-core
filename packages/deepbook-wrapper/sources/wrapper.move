@@ -358,8 +358,8 @@ public(package) fun join_protocol_fee<CoinType>(wrapper: &mut Wrapper, fee: Bala
 
     let key = ChargedFeeKey<CoinType> {};
     if (wrapper.protocol_fees.contains(key)) {
-        let balance = wrapper.protocol_fees.borrow_mut(key);
-        balance::join(balance, fee);
+        let balance: &mut Balance<CoinType> = wrapper.protocol_fees.borrow_mut(key);
+        balance.join(fee);
     } else {
         wrapper.protocol_fees.add(key, fee);
     };
