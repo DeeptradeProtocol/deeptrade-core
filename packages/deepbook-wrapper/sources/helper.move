@@ -336,9 +336,22 @@ public(package) fun get_sui_per_deep_from_oracle(
     sui_per_deep
 }
 
-/// Calculates base quantity and DEEP requirements for a market order based on order type
-/// For bids, converts quote quantity into base quantity and floors to lot size
-/// For asks, uses base quantity directly
+/// Calculates base quantity and DEEP requirements for a market order based on order type.
+/// For bids, converts quote quantity into base quantity and floors to lot size.
+/// For asks, uses base quantity directly.
+///
+/// Important Limitation: This function relies on `get_quantity_out` to calculate `deep_required`,
+/// which may fail for pools with no DEEP price points added. This is particularly problematic
+/// for newly created permissionless pools where users try to create market orders with input
+/// coin fee type.
+///
+/// We cannot use `get_quantity_out_input_fee` as an alternative because it applies DeepBook's
+/// input coin fees in a swap-like manner (reducing the input amount with fees applied during
+/// calculation), while for orders the input coin fees are applied on top of the order amount
+/// without reducing it.
+///
+/// Requirement: At least one DEEP price point must be added to a pool during its creation
+/// to enable market order creation (regardless of fee type).
 ///
 /// Parameters:
 /// - pool: The trading pool where the order will be placed

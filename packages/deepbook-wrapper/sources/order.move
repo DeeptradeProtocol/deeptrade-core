@@ -730,7 +730,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     );
 
     // We use calculate_market_order_params to get base quantity, which uses `get_quantity_out` under the hood,
-    // since `get_quantity_out` returns `base_quantity` without applying fees to it.
+    // since `get_quantity_out` returns `base_quantity` without applying DeepBook fees to it.
     // We do need that, since we have to apply our protocol fee & deepbook fee on top of the order amount.
     let (base_quantity, _) = calculate_market_order_params<BaseToken, QuoteToken>(
         pool,
