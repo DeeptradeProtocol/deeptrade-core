@@ -15,25 +15,23 @@ use token::deep::DEEP;
 // === Errors ===
 /// Error when the reference pool is not eligible for the order
 const EIneligibleReferencePool: u64 = 1;
-/// Error when the slippage is invalid (greater than 100% in billionths)
-const EInvalidSlippage: u64 = 2;
 /// Error when the provided price feed identifier doesn't match the expected one
-const EInvalidPriceFeedIdentifier: u64 = 3;
+const EInvalidPriceFeedIdentifier: u64 = 2;
 /// Error when there are no ask prices available in the order book
-const ENoAskPrice: u64 = 4;
+const ENoAskPrice: u64 = 3;
 /// Error when the price feed returned positive exponent, indicating significant Pyth format change requiring manual review
-const EUnexpectedPositiveExponent: u64 = 5;
+const EUnexpectedPositiveExponent: u64 = 4;
 /// Error when the decimal adjustment exceeds maximum safe power of 10 for u64
-const EDecimalAdjustmentTooLarge: u64 = 6;
+const EDecimalAdjustmentTooLarge: u64 = 5;
 /// Error when the discount rate is greater than 100%
-const EInvalidDiscountRate: u64 = 7;
+const EInvalidDiscountRate: u64 = 6;
 /// Error when the deep from reserves is greater than the total deep required
-const EInvalidDeepFromReserves: u64 = 8;
+const EInvalidDeepFromReserves: u64 = 7;
 /// Error when the original quantity is zero
-const EZeroOriginalQuantity: u64 = 9;
+const EZeroOriginalQuantity: u64 = 8;
 /// Error when the executed quantity exceeds the original quantity
-const EExecutedQuantityExceedsOriginal: u64 = 10;
-const EInvalidSuiPerDeep: u64 = 11;
+const EExecutedQuantityExceedsOriginal: u64 = 9;
+const EInvalidSuiPerDeep: u64 = 10;
 
 // === Constants ===
 /// Current version of the package. Update during upgrades
@@ -65,13 +63,10 @@ public(package) fun calculate_deep_required<BaseToken, QuoteToken>(
     quantity: u64,
     price: u64,
 ): u64 {
-    if (pool.whitelisted()) {
-        0
-    } else {
-        let (deep_req, _) = pool.get_order_deep_required(quantity, price);
+    if (pool.whitelisted()) return 0;
+    let (deep_required, _) = pool.get_order_deep_required(quantity, price);
 
-        deep_req
-    }
+    deep_required
 }
 
 /// Applies slippage to a value and returns the result
@@ -79,9 +74,7 @@ public(package) fun calculate_deep_required<BaseToken, QuoteToken>(
 /// For small values, the slippage might be rounded down to zero due to integer division
 public(package) fun apply_slippage(value: u64, slippage: u64): u64 {
     // Handle special case: if value is 0, no slippage is needed
-    if (value == 0) {
-        return 0
-    };
+    if (value == 0) return 0;
 
     // Calculate slippage amount
     let slippage_amount = math::mul(value, slippage);
@@ -157,14 +150,6 @@ public(package) fun calculate_order_amount(quantity: u64, price: u64, is_bid: bo
     }
 }
 
-/// Gets the order deep price parameters for given pool
-public(package) fun get_order_deep_price_params<BaseToken, QuoteToken>(
-    pool: &Pool<BaseToken, QuoteToken>,
-): (bool, u64) {
-    let order_deep_price = pool.get_order_deep_price();
-    (order_deep_price.asset_is_base(), order_deep_price.deep_per_asset())
-}
-
 /// Gets the DEEP/SUI price by comparing oracle and reference pool prices and selecting the best rate for the wrapper
 ///
 /// This function implements a dual-price strategy to prevent arbitrage:
@@ -203,11 +188,7 @@ public(package) fun get_sui_per_deep<ReferenceBaseAsset, ReferenceQuoteAsset>(
     let reference_sui_per_deep = get_sui_per_deep_from_reference_pool(reference_pool, clock);
 
     // Choose maximum (best for wrapper - users pay more SUI for DEEP)
-    let sui_per_deep = if (oracle_sui_per_deep > reference_sui_per_deep) {
-        oracle_sui_per_deep
-    } else {
-        reference_sui_per_deep
-    };
+    let sui_per_deep = u64::max(oracle_sui_per_deep, reference_sui_per_deep);
 
     assert!(sui_per_deep > 0, EInvalidSuiPerDeep);
 
@@ -389,17 +370,6 @@ public(package) fun calculate_market_order_params<BaseToken, QuoteToken>(
         let (_, _, deep_req) = pool.get_quantity_out(order_amount, 0, clock);
         (order_amount, deep_req)
     }
-}
-
-/// Validates that the provided slippage value is within acceptable bounds
-///
-/// Parameters:
-/// - slippage: The slippage value in billionths format (e.g., 10_000_000 = 1%)
-///
-/// Aborts with EInvalidSlippage if:
-/// - Slippage value is greater than 100%
-public(package) fun validate_slippage(slippage: u64) {
-    assert!(slippage <= HUNDRED_PERCENT, EInvalidSlippage);
 }
 
 /// Gets the first (best) ask price from the order book
