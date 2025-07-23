@@ -82,11 +82,10 @@ public fun create_ticket(
         ESenderIsNotMultisig,
     );
 
-    let ticket_id = object::new(ctx);
     let created_at = clock.timestamp_ms() / 1000;
 
     let ticket = AdminTicket {
-        id: ticket_id,
+        id: object::new(ctx),
         owner: ctx.sender(),
         created_at,
         ticket_type,
