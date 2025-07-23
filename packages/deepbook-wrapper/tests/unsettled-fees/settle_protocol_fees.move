@@ -94,7 +94,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         assert_eq!(pool.account_open_orders(&balance_manager).contains(&order_id), false);
-        assert_eq!(has_unsettled_fee<SUI>(&wrapper, pool_id, balance_manager_id, order_id), true);
+        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), true);
 
         return_shared(wrapper);
         return_shared(pool);
@@ -122,7 +122,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
         assert_eq!(total_settled, 1000);
 
         // Verify the unsettled fee is now gone
-        assert_eq!(has_unsettled_fee<SUI>(&wrapper, pool_id, balance_manager_id, order_id), false);
+        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), false);
 
         // Verify protocol fees have been collected
         assert_eq!(wrapper.get_protocol_fee_balance<SUI>(), 1000);
@@ -259,7 +259,7 @@ fun protocol_ignores_live_unfilled_order() {
         assert_eq!(total_settled, 0);
 
         // Verify the unsettled fee is still there.
-        assert_eq!(has_unsettled_fee<SUI>(&wrapper, pool_id, balance_manager_id, order_id), true);
+        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), true);
 
         return_shared(wrapper);
         return_shared(pool);
@@ -458,7 +458,7 @@ fun protocol_settles_remaining_fee_after_user_cancellation() {
         assert_eq!(total_settled, 300);
 
         // The unsettled fee should now be completely gone.
-        assert_eq!(has_unsettled_fee<SUI>(&wrapper, pool_id, balance_manager_id, order_id), false);
+        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), false);
 
         return_shared(wrapper);
         return_shared(pool);
@@ -626,7 +626,7 @@ fun protocol_settles_batch_of_fees_correctly() {
         assert_eq!(total_settled, 1500); // 1000 from A + 500 from B
 
         // Verify unsettled fee for live order C is untouched.
-        assert_eq!(has_unsettled_fee<SUI>(&wrapper, pool_id, balance_manager_id, order_c_id), true);
+        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_c_id), true);
         assert_eq!(
             get_unsettled_fee_balance<SUI>(&wrapper, pool_id, balance_manager_id, order_c_id),
             2000,
@@ -703,7 +703,7 @@ fun protocol_ignores_order_with_no_unsettled_fees() {
         assert_eq!(total_settled, 0);
 
         // Verify no unsettled fee exists for this order.
-        assert_eq!(has_unsettled_fee<SUI>(&wrapper, pool_id, balance_manager_id, order_id), false);
+        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), false);
 
         // Verify no protocol fees were collected.
         assert_eq!(wrapper.get_protocol_fee_balance<SUI>(), 0);
