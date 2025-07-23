@@ -1184,7 +1184,7 @@ public(package) fun plan_fee_collection(
 /// Parameters:
 /// - deep_required: Actual amount of DEEP required for the order
 /// - deep_from_reserves: Amount of DEEP to be taken from wrapper reserves
-/// - sui_per_deep: Current DEEP/SUI price from reference pool
+/// - sui_per_deep: Current DEEP/SUI price from either oracle or reference pool
 /// - estimated_deep_required: Estimated DEEP requirement used to calculate maximum allowed one
 /// - estimated_deep_required_slippage: Slippage in billionths applied to estimated DEEP requirement for maximum calculation
 /// - estimated_sui_fee: Estimated coverage fee used to calculate maximum allowed coverage fee
@@ -1198,6 +1198,10 @@ public(package) fun validate_fees_against_max(
     estimated_sui_fee: u64,
     estimated_sui_fee_slippage: u64,
 ) {
+    // Validate slippage values
+    assert!(estimated_deep_required_slippage <= hundred_percent(), EInvalidSlippage);
+    assert!(estimated_sui_fee_slippage <= hundred_percent(), EInvalidSlippage);
+
     // Calculate maximum allowed fees
     let max_deep_required = apply_slippage(
         estimated_deep_required,
@@ -1369,10 +1373,6 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
 
     // Verify the caller owns the balance manager
     assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
-
-    // Validate slippage values
-    assert!(estimated_deep_required_slippage <= hundred_percent(), EInvalidSlippage);
-    assert!(estimated_sui_fee_slippage <= hundred_percent(), EInvalidSlippage);
 
     // Get the best DEEP/SUI price
     let sui_per_deep = get_sui_per_deep(
