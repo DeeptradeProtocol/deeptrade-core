@@ -27,7 +27,7 @@ For detailed information about dynamic fee calculation based on order execution 
 
 ## Fee Structure
 
-The wrapper supports two fee types for order creation, with a unified protocol fee calculation system for both:
+The wrapper supports two fee types for order creation (mirroring DeepBook's fee types), with a unified protocol fee calculation system for both:
 
 ### DEEP-based Fees
 
