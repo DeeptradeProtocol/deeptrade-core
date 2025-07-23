@@ -145,8 +145,8 @@ public fun withdraw_deep_reserves_coverage_fee<CoinType>(
     let key = ChargedFeeKey<CoinType> {};
 
     if (wrapper.deep_reserves_coverage_fees.contains(key)) {
-        let balance = wrapper.deep_reserves_coverage_fees.borrow_mut(key);
-        let coin = balance::withdraw_all(balance).into_coin(ctx);
+        let balance: Balance<CoinType> = wrapper.deep_reserves_coverage_fees.remove(key);
+        let coin = balance.into_coin(ctx);
 
         event::emit(CoverageFeeWithdrawn<CoinType> {
             wrapper_id: wrapper.id.to_inner(),
