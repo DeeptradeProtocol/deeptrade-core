@@ -56,7 +56,7 @@ const DEFAULT_DEEP_TAKER_FEE_BPS: u64 = 600_000; // 6 bps
 const DEFAULT_DEEP_MAKER_FEE_BPS: u64 = 300_000; // 3 bps
 const DEFAULT_INPUT_COIN_TAKER_FEE_BPS: u64 = 500_000; // 5 bps
 const DEFAULT_INPUT_COIN_MAKER_FEE_BPS: u64 = 200_000; // 2 bps
-const DEFAULT_DEEP_FEE_COVERAGE_DISCOUNT_RATE: u64 = 250_000_000; // 2500 bps (25%)
+const DEFAULT_MAX_DEEP_FEE_COVERAGE_DISCOUNT_RATE: u64 = 250_000_000; // 2500 bps (25%)
 
 // === Structs ===
 /// Configuration object containing trading fee rates
@@ -96,7 +96,7 @@ fun init(ctx: &mut TxContext) {
             deep_fee_type_maker_rate: DEFAULT_DEEP_MAKER_FEE_BPS,
             input_coin_fee_type_taker_rate: DEFAULT_INPUT_COIN_TAKER_FEE_BPS,
             input_coin_fee_type_maker_rate: DEFAULT_INPUT_COIN_MAKER_FEE_BPS,
-            max_deep_fee_coverage_discount_rate: DEFAULT_DEEP_FEE_COVERAGE_DISCOUNT_RATE,
+            max_deep_fee_coverage_discount_rate: DEFAULT_MAX_DEEP_FEE_COVERAGE_DISCOUNT_RATE,
         },
         pool_specific_fees: table::new(ctx),
     };
