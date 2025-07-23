@@ -1138,33 +1138,31 @@ public(package) fun get_input_coin_deposit_plan(
 /// Plans optimal fee collection strategy from available sources, prioritizing balance manager usage.
 /// Returns early with zero amounts if no fee to collect.
 ///
-/// # Arguments
-/// * `fee_amount` - Amount of fee to be collected
-/// * `available_in_wallet` - Amount of coins available in user's wallet
-/// * `available_in_bm` - Amount of coins available in user's balance manager
+/// Parameters:
+/// - fee_amount: Amount of fee to be collected
+/// - available_in_wallet: Amount of coins available in user's wallet
+/// - available_in_bm: Amount of coins available in user's balance manager
 ///
-/// # Returns
-/// * `(u64, u64)` - Tuple containing:
-///   - Amount to collect from wallet
-///   - Amount to collect from balance manager
+/// Returns:
+/// - (u64, u64): Tuple containing:
+///   - amount_to_collect_from_wallet: Amount to collect from wallet
+///   - amount_to_collect_from_balance_manager: Amount to collect from balance manager
 ///
-/// # Flow
+/// Flow:
 /// 1. Returns (0, 0) if fee amount is zero
 /// 2. Verifies total available funds are sufficient
 /// 3. Takes entire amount from balance manager if possible
 /// 4. Otherwise, takes maximum from balance manager and remainder from wallet
 ///
-/// # Aborts
-/// * `EInsufficientFee` - If total available funds are less than required fee
+/// Aborts:
+/// - EInsufficientFee: If total available funds are less than required fee
 public(package) fun plan_fee_collection(
     fee_amount: u64,
     available_in_wallet: u64,
     available_in_bm: u64,
 ): (u64, u64) {
     // If no fee to collect, return zeros
-    if (fee_amount == 0) {
-        return (0, 0)
-    };
+    if (fee_amount == 0) return (0, 0);
 
     // Verify user has enough total funds before proceeding
     assert!(available_in_wallet + available_in_bm >= fee_amount, EInsufficientFee);
