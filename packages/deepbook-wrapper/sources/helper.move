@@ -49,12 +49,6 @@ public fun current_version(): u16 { CURRENT_VERSION }
 public fun hundred_percent(): u64 { HUNDRED_PERCENT }
 
 // === Public-Package Functions ===
-/// Get fee basis points from pool parameters
-public(package) fun get_fee_bps<BaseToken, QuoteToken>(pool: &Pool<BaseToken, QuoteToken>): u64 {
-    let (fee_bps, _, _) = pool.pool_trade_params();
-    fee_bps
-}
-
 /// Helper function to transfer non-zero coins or destroy zero coins
 public(package) fun transfer_if_nonzero<CoinType>(coins: Coin<CoinType>, recipient: address) {
     if (coins.value() > 0) {
