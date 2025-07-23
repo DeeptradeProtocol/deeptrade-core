@@ -186,8 +186,8 @@ public fun withdraw_protocol_fee<CoinType>(
     let key = ChargedFeeKey<CoinType> {};
 
     if (wrapper.protocol_fees.contains(key)) {
-        let balance = wrapper.protocol_fees.borrow_mut(key);
-        let coin = balance::withdraw_all(balance).into_coin(ctx);
+        let balance: Balance<CoinType> = wrapper.protocol_fees.remove(key);
+        let coin = balance.into_coin(ctx);
 
         event::emit(ProtocolFeeWithdrawn<CoinType> {
             wrapper_id: wrapper.id.to_inner(),
