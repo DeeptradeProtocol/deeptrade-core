@@ -21,6 +21,7 @@ For detailed technical specifications and implementation details, please refer t
 - [Unsettled Fees](docs/unsettled-fees.md)
 - [Versioning](docs/versioning.md)
 - [Multisig](docs/multisig.md)
+- [Admin Capabilities](docs/admin.md)
 
 ### Orders
 
