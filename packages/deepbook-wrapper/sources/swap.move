@@ -31,7 +31,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_in: The base tokens being provided for the swap
 /// - min_quote_out: Minimum amount of quote tokens to receive (slippage protection)
-/// - client_id: Client-provided order identifier
+/// - client_id: Client-provided identifier
 /// - clock: Clock object for timestamp information
 /// - ctx: Transaction context
 ///
@@ -99,7 +99,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - quote_in: The quote tokens being provided for the swap
 /// - min_base_out: Minimum amount of base tokens to receive (slippage protection)
-/// - client_id: Client-provided order identifier
+/// - client_id: Client-provided identifier
 /// - clock: Clock object for timestamp information
 /// - ctx: Transaction context
 ///
