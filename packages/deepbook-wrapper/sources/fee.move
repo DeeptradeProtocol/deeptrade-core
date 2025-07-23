@@ -36,6 +36,7 @@ const EInvalidDiscountPrecision: u64 = 4;
 const EDiscountOutOfRange: u64 = 5;
 const EInvalidRatioSum: u64 = 6;
 const EZeroOrderAmount: u64 = 7;
+const EInsufficientCoinBalance: u64 = 8;
 
 // === Constants ===
 /// The multiple that fee rates must adhere to, aligned with DeepBook (0.01 bps = 0.0001%)
@@ -523,8 +524,12 @@ public(package) fun charge_swap_fee<CoinType>(
     fee_bps: u64,
 ): Balance<CoinType> {
     let coin_balance = coin.balance_mut();
-    let value = coin_balance.value();
-    coin_balance.split(calculate_fee_by_rate(value, fee_bps))
+    let coin_value = coin_balance.value();
+    let fee = calculate_fee_by_rate(coin_value, fee_bps);
+
+    assert!(coin_value >= fee, EInsufficientCoinBalance);
+
+    coin_balance.split(fee)
 }
 
 // === Private Functions ===
