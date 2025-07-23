@@ -640,7 +640,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     );
 
     let order_amount = calculate_order_amount(quantity, price, is_bid);
-    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+    let loyalty_fee_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
     let proof = prepare_input_fee_order_execution(
         pool,
@@ -676,7 +676,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        loyalty_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
+        loyalty_fee_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
         false, // Input coin fee type
         ctx,
     );
@@ -738,7 +738,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
         is_bid,
         clock,
     );
-    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+    let loyalty_fee_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
     let proof = prepare_input_fee_order_execution(
         pool,
@@ -771,7 +771,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        loyalty_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
+        loyalty_fee_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
         false, // Input coin fee type
         ctx,
     );
