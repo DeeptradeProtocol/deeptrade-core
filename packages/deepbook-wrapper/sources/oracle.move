@@ -76,10 +76,6 @@ public fun get_pyth_price(
     (price, price_identifier)
 }
 
-public fun deep_price_feed_id(): vector<u8> {
-    DEEP_PRICE_FEED_ID
-}
+public fun deep_price_feed_id(): vector<u8> { DEEP_PRICE_FEED_ID }
 
-public fun sui_price_feed_id(): vector<u8> {
-    SUI_PRICE_FEED_ID
-}
+public fun sui_price_feed_id(): vector<u8> { SUI_PRICE_FEED_ID }
