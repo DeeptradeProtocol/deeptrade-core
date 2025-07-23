@@ -14,7 +14,7 @@ Key scenarios where versioning is crucial include:
 
 ## Scope of Versioning
 
-The `deepbook-wrapper` package contains two shared objects: `Wrapper` and `CreatePoolConfig`. The versioning mechanism described in this document applies **only** to the `Wrapper` object.
+The `deepbook-wrapper` package contains following shared objects: `Wrapper`, `CreatePoolConfig`, `TradingFeeConfig` and `LoyaltyProgram`. The versioning mechanism described in this document applies **only** to the `Wrapper` object.
 
 The `CreatePoolConfig`, `TradingFeeConfig` and `LoyaltyProgram` objects are not versioned. This is because they can only be modified by an administrator, and there are no functions available for users to create new `CreatePoolConfig` or `TradingFeeConfig` object.
 
