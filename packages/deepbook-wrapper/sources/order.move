@@ -1312,15 +1312,14 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
 // === Private Functions ===
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
-/// 2. Validates estimated fee slippage parameters
-/// 3. Creates plans for DEEP sourcing, coverage fee collection, and input coin deposit
-/// 4. Verifies that actual DEEP required and coverage fee don't exceed maximums with slippage
-/// 5. Executes the plans in sequence:
+/// 2. Creates plans for DEEP sourcing, coverage fee collection, and input coin deposit
+/// 3. Verifies that actual DEEP required and coverage fee don't exceed maximums with slippage
+/// 4. Executes the plans in sequence:
 ///    - Sources DEEP coins from user wallet and wrapper reserves according to DeepPlan
 ///    - Collects coverage fees in SUI coins according to CoverageFeePlan
 ///    - Deposits required input coins according to InputCoinDepositPlan
-/// 6. Returns unused DEEP and SUI coins to the caller
-/// 7. Returns the balance manager proof needed for order placement and protocol fee discount rate
+/// 5. Returns unused DEEP and SUI coins to the caller
+/// 6. Returns the balance manager proof needed for order placement and protocol fee discount rate
 ///
 /// This function contains the shared execution logic between limit and market orders,
 /// processing the plans created by create_order_core.
