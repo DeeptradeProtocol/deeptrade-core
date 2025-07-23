@@ -340,8 +340,8 @@ public(package) fun join_deep_reserves_coverage_fee<CoinType>(
 
     let key = ChargedFeeKey<CoinType> {};
     if (wrapper.deep_reserves_coverage_fees.contains(key)) {
-        let balance = wrapper.deep_reserves_coverage_fees.borrow_mut(key);
-        balance::join(balance, fee);
+        let balance: &mut Balance<CoinType> = wrapper.deep_reserves_coverage_fees.borrow_mut(key);
+        balance.join(fee);
     } else {
         wrapper.deep_reserves_coverage_fees.add(key, fee);
     };
