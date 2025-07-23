@@ -444,7 +444,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (proof, total_discount_rate) = prepare_whitelisted_order_execution(
+    let (proof, protocol_fee_discount_rate) = prepare_whitelisted_order_execution(
         trading_fee_config,
         loyalty_program,
         pool,
@@ -480,7 +480,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        total_discount_rate,
+        protocol_fee_discount_rate,
         true, // DEEP fee type
         ctx,
     );
@@ -543,7 +543,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
         clock,
     );
 
-    let (proof, total_discount_rate) = prepare_whitelisted_order_execution(
+    let (proof, protocol_fee_discount_rate) = prepare_whitelisted_order_execution(
         trading_fee_config,
         loyalty_program,
         pool,
@@ -576,7 +576,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
         quote_coin,
         &order_info,
         order_amount,
-        total_discount_rate,
+        protocol_fee_discount_rate,
         true, // DEEP fee type
         ctx,
     );
