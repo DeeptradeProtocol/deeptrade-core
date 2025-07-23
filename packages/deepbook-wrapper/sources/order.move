@@ -49,8 +49,8 @@ const EInsufficientInput: u64 = 3;
 const EInvalidOwner: u64 = 4;
 /// Error when actual deep required exceeds the max deep required
 const EDeepRequiredExceedsMax: u64 = 5;
-/// Error when actual sui fee exceeds the max sui fee
-const ESuiFeeExceedsMax: u64 = 6;
+/// Error when actual coverage fee exceeds the max coverage fee
+const ECoverageFeeExceedsMax: u64 = 6;
 
 /// Not supported parameters errors
 const ENotSupportedExpireTimestamp: u64 = 7;
@@ -1207,18 +1207,18 @@ public(package) fun validate_fees_against_max(
         estimated_deep_required,
         estimated_deep_required_slippage,
     );
-    let max_sui_fee = apply_slippage(estimated_sui_fee, estimated_sui_fee_slippage);
+    let max_coverage_fee = apply_slippage(estimated_sui_fee, estimated_sui_fee_slippage);
 
     // Validate DEEP fee
     assert!(deep_required <= max_deep_required, EDeepRequiredExceedsMax);
 
     // Validate coverage fee (only applies when using wrapper DEEP reserves)
     if (deep_from_reserves > 0) {
-        let actual_sui_fee = calculate_deep_reserves_coverage_order_fee(
+        let actual_coverage_fee = calculate_deep_reserves_coverage_order_fee(
             sui_per_deep,
             deep_from_reserves,
         );
-        assert!(actual_sui_fee <= max_sui_fee, ESuiFeeExceedsMax);
+        assert!(actual_coverage_fee <= max_coverage_fee, ECoverageFeeExceedsMax);
     };
 }
 
