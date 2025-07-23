@@ -1474,8 +1474,7 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
 /// Steps:
 /// 1. Verifies the caller owns the balance manager
 /// 2. Creates and executes input coin deposit plan
-/// 3. Returns unused coins to the caller
-/// 4. Returns the balance manager proof needed for order placement
+/// 3. Returns the balance manager proof needed for order placement and protocol fee discount rate
 ///
 /// Parameters:
 /// - trading_fee_config: Trading fee configuration object
