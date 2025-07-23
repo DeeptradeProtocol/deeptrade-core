@@ -42,7 +42,7 @@ public struct TicketCreated has copy, drop {
     ticket_type: u8,
 }
 
-/// Event emitted when a ticket is destroyed (consumed)
+/// Event emitted when a ticket is destroyed (consumed or expired)
 public struct TicketDestroyed has copy, drop {
     ticket_id: ID,
     ticket_type: u8,
@@ -82,11 +82,10 @@ public fun create_ticket(
         ESenderIsNotMultisig,
     );
 
-    let ticket_id = object::new(ctx);
     let created_at = clock.timestamp_ms() / 1000;
 
     let ticket = AdminTicket {
-        id: ticket_id,
+        id: object::new(ctx),
         owner: ctx.sender(),
         created_at,
         ticket_type,

@@ -17,7 +17,6 @@ use deepbook_wrapper::helper::{
     get_sui_per_deep,
     calculate_market_order_params,
     calculate_order_taker_maker_ratio,
-    validate_slippage,
     apply_slippage,
     calculate_deep_fee_coverage_discount_rate,
     hundred_percent
@@ -58,6 +57,8 @@ const ENotSupportedExpireTimestamp: u64 = 7;
 const ENotSupportedSelfMatchingOption: u64 = 8;
 
 const EInvalidSuiPerDeep: u64 = 9;
+/// Error when the slippage is invalid (greater than 100% in billionths)
+const EInvalidSlippage: u64 = 10;
 
 // === Structs ===
 /// A plan for allocating DEEP tokens for an order's DeepBook fees.
@@ -1365,8 +1366,9 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
     // Verify the caller owns the balance manager
     assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
 
-    validate_slippage(estimated_deep_required_slippage);
-    validate_slippage(estimated_sui_fee_slippage);
+    // Validate slippage values
+    assert!(estimated_deep_required_slippage <= hundred_percent(), EInvalidSlippage);
+    assert!(estimated_sui_fee_slippage <= hundred_percent(), EInvalidSlippage);
 
     // Get the best DEEP/SUI price
     let sui_per_deep = get_sui_per_deep(

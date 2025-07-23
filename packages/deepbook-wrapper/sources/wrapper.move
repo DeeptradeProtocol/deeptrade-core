@@ -105,6 +105,11 @@ fun init(ctx: &mut TxContext) {
 public fun deposit_into_reserves(wrapper: &mut Wrapper, deep_coin: Coin<DEEP>) {
     wrapper.verify_version();
 
+    if (deep_coin.value() == 0) {
+        deep_coin.destroy_zero();
+        return
+    };
+
     event::emit(DeepReservesDeposited {
         wrapper_id: wrapper.id.to_inner(),
         amount: deep_coin.value(),

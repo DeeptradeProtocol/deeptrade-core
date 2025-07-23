@@ -50,7 +50,6 @@ public struct PoolCreated<phantom BaseAsset, phantom QuoteAsset> has copy, drop 
 
 /// Event emitted when the protocol fee for creating a pool is updated
 public struct PoolCreationProtocolFeeUpdated has copy, drop {
-    config_id: ID,
     old_fee: u64,
     new_fee: u64,
 }
@@ -69,17 +68,17 @@ fun init(ctx: &mut TxContext) {
 /// Creates a new permissionless pool for trading between BaseAsset and QuoteAsset
 /// Collects both DeepBook creation fee and protocol fee in DEEP coins
 ///
-/// # Arguments
-/// * `wrapper` - Main wrapper object that will receive the protocol fee
-/// * `config` - Configuration object containing protocol fee information
-/// * `registry` - DeepBook registry to create the pool in
-/// * `tick_size` - Minimum price increment in the pool
-/// * `lot_size` - Minimum quantity increment in the pool
-/// * `min_size` - Minimum quantity of base asset required to create an order
-/// * `creation_fee` - DEEP coins to pay for pool creation (both DeepBook and protocol fees)
-/// * `ctx` - Transaction context
+/// Parameters:
+/// - wrapper: Main wrapper object that will receive the protocol fee
+/// - config: Configuration object containing protocol fee information
+/// - registry: DeepBook registry to create the pool in
+/// - tick_size: Minimum price increment in the pool
+/// - lot_size: Minimum quantity increment in the pool
+/// - min_size: Minimum quantity of base asset required to create an order
+/// - creation_fee: DEEP coins to pay for pool creation (both DeepBook and protocol fees)
+/// - ctx: Transaction context
 ///
-/// # Flow
+/// Flow:
 /// 1. Calculates required fees (DeepBook fee + protocol fee)
 /// 2. Verifies user has enough DEEP to cover all fees
 /// 3. Splits the payment into DeepBook fee and protocol fee
@@ -87,11 +86,11 @@ fun init(ctx: &mut TxContext) {
 /// 5. Returns any unused DEEP coins to caller
 /// 6. Creates the permissionless pool in DeepBook
 ///
-/// # Returns
-/// * ID of the newly created pool
+/// Returns:
+/// - ID of the newly created pool
 ///
-/// # Aborts
-/// * `ENotEnoughFee` - If user doesn't provide enough DEEP to cover all fees
+/// Aborts:
+/// - ENotEnoughFee: If user doesn't provide enough DEEP to cover all fees
 public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
     wrapper: &mut Wrapper,
     config: &PoolCreationConfig,
@@ -171,7 +170,6 @@ public fun update_pool_creation_protocol_fee(
     config.protocol_fee = new_fee;
 
     event::emit(PoolCreationProtocolFeeUpdated {
-        config_id: config.id.to_inner(),
         old_fee,
         new_fee,
     });
@@ -179,6 +177,4 @@ public fun update_pool_creation_protocol_fee(
 
 // === Public-View Functions ===
 /// Get the current protocol fee for creating a pool
-public fun pool_creation_protocol_fee(config: &PoolCreationConfig): u64 {
-    config.protocol_fee
-}
+public fun pool_creation_protocol_fee(config: &PoolCreationConfig): u64 { config.protocol_fee }
