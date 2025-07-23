@@ -185,6 +185,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 ): (OrderInfo) {
     wrapper.verify_version();
 
+    // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
     // Verify the order expire timestamp is the max possible expire timestamp
     let max_expire_timestamp = constants::max_u64();
     assert!(expire_timestamp == max_expire_timestamp, ENotSupportedExpireTimestamp);
@@ -316,7 +317,8 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 ): (OrderInfo) {
     wrapper.verify_version();
 
-    // Verify the self matching option is self matching allowed
+    // Verify the self matching option is self matching allowed. Read more about self matching option
+    // limitations in docs/unsettled-fees.md
     assert!(
         self_matching_option == constants::self_matching_allowed(),
         ENotSupportedSelfMatchingOption,
@@ -429,6 +431,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 ): (OrderInfo) {
     wrapper.verify_version();
 
+    // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
     // Verify the order expire timestamp is the max possible expire timestamp
     let max_expire_timestamp = constants::max_u64();
     assert!(expire_timestamp == max_expire_timestamp, ENotSupportedExpireTimestamp);
@@ -526,7 +529,8 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 ): (OrderInfo) {
     wrapper.verify_version();
 
-    // Verify the self matching option is self matching allowed
+    // Verify the self matching option is self matching allowed. Read more about self matching option
+    // limitations in docs/unsettled-fees.md
     assert!(
         self_matching_option == constants::self_matching_allowed(),
         ENotSupportedSelfMatchingOption,
@@ -624,6 +628,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 ): (OrderInfo) {
     wrapper.verify_version();
 
+    // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
     // Verify the order expire timestamp is the max possible expire timestamp
     let max_expire_timestamp = constants::max_u64();
     assert!(expire_timestamp == max_expire_timestamp, ENotSupportedExpireTimestamp);
@@ -717,7 +722,8 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 ): (OrderInfo) {
     wrapper.verify_version();
 
-    // Verify the self matching option is self matching allowed
+    // Verify the self matching option is self matching allowed. Read more about self matching option
+    // limitations in docs/unsettled-fees.md
     assert!(
         self_matching_option == constants::self_matching_allowed(),
         ENotSupportedSelfMatchingOption,
