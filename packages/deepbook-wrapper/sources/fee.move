@@ -76,14 +76,16 @@ public struct PoolFeeConfig has copy, drop, store {
 }
 
 // === Events ===
-/// Event for when default fees are updated
+/// Event emitted when default fees are updated
 public struct DefaultFeesUpdated has copy, drop {
+    old_fees: PoolFeeConfig,
     new_fees: PoolFeeConfig,
 }
 
-/// Event for when a pool-specific fee config is updated
+/// Event emitted when a pool-specific fee config is updated
 public struct PoolFeesUpdated has copy, drop {
     pool_id: ID,
+    old_fees: PoolFeeConfig,
     new_fees: PoolFeeConfig,
 }
 
@@ -119,9 +121,10 @@ public fun update_default_fees(
     validate_ticket(&ticket, update_default_fees_ticket_type(), clock, ctx);
     destroy_ticket(ticket, clock);
 
+    let old_fees = config.default_fees;
     config.default_fees = new_fees;
 
-    event::emit(DefaultFeesUpdated { new_fees });
+    event::emit(DefaultFeesUpdated { old_fees, new_fees });
 }
 
 /// Updates or creates a pool-specific fee configuration.
@@ -139,13 +142,14 @@ public fun update_pool_specific_fees<BaseToken, QuoteToken>(
     destroy_ticket(ticket, clock);
 
     let pool_id = object::id(pool);
+    let mut old_fees = config.default_fees;
 
     if (config.pool_specific_fees.contains(pool_id)) {
-        config.pool_specific_fees.remove(pool_id);
+        old_fees = config.pool_specific_fees.remove(pool_id);
     };
     config.pool_specific_fees.add(pool_id, new_fees);
 
-    event::emit(PoolFeesUpdated { pool_id, new_fees });
+    event::emit(PoolFeesUpdated { pool_id, old_fees, new_fees });
 }
 
 /// Creates a new PoolFeeConfig
