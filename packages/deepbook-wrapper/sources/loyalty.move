@@ -44,21 +44,25 @@ public struct LoyaltyLevel has copy, drop, store {
 
 // === Events ===
 public struct UserLevelGranted has copy, drop {
+    loyalty_program_id: ID,
     user: address,
     level: u8,
 }
 
 public struct UserLevelRevoked has copy, drop {
+    loyalty_program_id: ID,
     user: address,
     level: u8,
 }
 
 public struct LoyaltyLevelAdded has copy, drop {
+    loyalty_program_id: ID,
     level: u8,
     fee_discount_rate: u64,
 }
 
 public struct LoyaltyLevelRemoved has copy, drop {
+    loyalty_program_id: ID,
     level: u8,
 }
 
@@ -103,7 +107,11 @@ public fun grant_user_level(
     level_info.member_count = level_info.member_count + 1;
 
     // Emit event
-    event::emit(UserLevelGranted { user, level });
+    event::emit(UserLevelGranted {
+        loyalty_program_id: loyalty_program.id.to_inner(),
+        user,
+        level,
+    });
 }
 
 /// Revoke a user's loyalty level
@@ -141,7 +149,11 @@ public fun revoke_user_level(
     level_info.member_count = level_info.member_count - 1;
 
     // Emit event
-    event::emit(UserLevelRevoked { user, level });
+    event::emit(UserLevelRevoked {
+        loyalty_program_id: loyalty_program.id.to_inner(),
+        user,
+        level,
+    });
 }
 
 /// Add a new loyalty level with fee discount rate
@@ -174,7 +186,11 @@ public fun add_loyalty_level(
     loyalty_program.levels.add(level, LoyaltyLevel { fee_discount_rate, member_count: 0 });
 
     // Emit event
-    event::emit(LoyaltyLevelAdded { level, fee_discount_rate });
+    event::emit(LoyaltyLevelAdded {
+        loyalty_program_id: loyalty_program.id.to_inner(),
+        level,
+        fee_discount_rate,
+    });
 }
 
 /// Remove a loyalty level (only if no users have this level)
@@ -204,7 +220,10 @@ public fun remove_loyalty_level(
     loyalty_program.levels.remove(level);
 
     // Emit event
-    event::emit(LoyaltyLevelRemoved { level });
+    event::emit(LoyaltyLevelRemoved {
+        loyalty_program_id: loyalty_program.id.to_inner(),
+        level,
+    });
 }
 
 // === Public-View Functions ===
