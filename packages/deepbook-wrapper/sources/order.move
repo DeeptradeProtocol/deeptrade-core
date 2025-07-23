@@ -1608,7 +1608,7 @@ fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
 /// Deposits all acquired DEEP coins to the user's balance manager for order placement
 ///
 /// Steps performed:
-/// 1. Verifies the wrapper has enough DEEP reserves if they will be used
+/// 1. Verifies the wrapper has enough DEEP reserves
 /// 2. Takes DEEP coins from user wallet when specified in the plan
 /// 3. Takes DEEP coins from wrapper reserves when needed
 /// 4. Deposits all acquired DEEP coins to the balance manager
@@ -1622,9 +1622,7 @@ fun execute_deep_plan(
     wrapper.verify_version();
 
     // Check if there is enough DEEP in the wrapper reserves
-    if (deep_plan.use_wrapper_deep_reserves) {
-        assert!(deep_plan.deep_reserves_cover_order, EInsufficientDeepReserves);
-    };
+    assert!(deep_plan.deep_reserves_cover_order, EInsufficientDeepReserves);
 
     // Take DEEP from wallet if needed
     if (deep_plan.from_user_wallet > 0) {
@@ -1635,7 +1633,6 @@ fun execute_deep_plan(
     // Take DEEP from wrapper reserves if needed
     if (deep_plan.from_deep_reserves > 0) {
         let reserve_payment = split_deep_reserves(wrapper, deep_plan.from_deep_reserves, ctx);
-
         balance_manager.deposit(reserve_payment, ctx);
     };
 }
