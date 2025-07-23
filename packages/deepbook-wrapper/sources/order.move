@@ -952,25 +952,25 @@ public(package) fun get_deep_plan(
 /// in SUI coins.
 /// Returns early with zero fees for whitelisted pools or when not using wrapper DEEP.
 ///
-/// # Arguments
-/// * `use_wrapper_deep_reserves` - Whether the order requires DEEP from wrapper reserves
-/// * `deep_from_reserves` - Amount of DEEP to be taken from wrapper reserves
-/// * `is_pool_whitelisted` - Whether the pool is whitelisted by DeepBook
-/// * `sui_per_deep` - Current DEEP/SUI price from reference pool
-/// * `sui_in_wallet` - Amount of SUI available in user's wallet
-/// * `balance_manager_sui` - Amount of SUI available in user's balance manager
+/// Parameters:
+/// - use_wrapper_deep_reserves: Whether the order requires DEEP from wrapper reserves
+/// - deep_from_reserves: Amount of DEEP to be taken from wrapper reserves
+/// - is_pool_whitelisted: Whether the pool is whitelisted by DeepBook
+/// - sui_per_deep: Current DEEP/SUI price from reference pool
+/// - sui_in_wallet: Amount of SUI available in user's wallet
+/// - balance_manager_sui: Amount of SUI available in user's balance manager
 ///
-/// # Returns
-/// * `CoverageFeePlan` - Struct containing:
-///   - Coverage fee amounts from wallet and balance manager
-///   - Whether user has sufficient funds to cover fees
+/// Returns:
+/// - CoverageFeePlan: Struct containing:
+///   - from_wallet: Coverage fee amount from user's wallet
+///   - from_balance_manager: Coverage fee amount from user's balance manager
+///   - user_covers_fee: Whether user has sufficient funds to cover fees
 ///
-/// # Flow
-/// 1. Returns zero fee plan if pool is whitelisted or not using wrapper DEEP
+/// Flow:
+/// 1. Returns zero fee plan if pool is whitelisted, or not using wrapper DEEP, or wrapper has not enough DEEP
 /// 2. Calculates coverage fee
-/// 3. Returns zero fee plan if coverage fee is zero
-/// 4. Returns insufficient fee plan if user lacks total funds
-/// 5. Plans coverage fee collection from available sources
+/// 3. Returns insufficient fee plan if user lacks total funds
+/// 4. Plans coverage fee collection from available sources
 public(package) fun get_coverage_fee_plan(
     use_wrapper_deep_reserves: bool,
     deep_from_reserves: u64,
@@ -990,7 +990,7 @@ public(package) fun get_coverage_fee_plan(
     // Sanity check: SUI per DEEP must be greater than zero. Otherwise, the price retrieving process is flawed.
     assert!(sui_per_deep > 0, EInvalidSuiPerDeep);
 
-    // Calculate coverage fee based on order amount
+    // Calculate coverage fee amount
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
         deep_from_reserves,
