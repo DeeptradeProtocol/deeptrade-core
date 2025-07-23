@@ -41,7 +41,6 @@ public fun assert_order_plans_eq(
     expected_coverage_fee_from_balance_manager: u64,
     expected_user_covers_fee: bool,
     // Expected values for InputCoinDepositPlan
-    expected_order_amount: u64,
     expected_deposit_from_wallet: u64,
     expected_deposit_sufficient: bool,
 ) {
@@ -65,7 +64,6 @@ public fun assert_order_plans_eq(
     // Assert InputCoinDepositPlan
     assert_input_coin_deposit_plan_eq(
         input_coin_deposit_plan,
-        expected_order_amount,
         expected_deposit_from_wallet,
         expected_deposit_sufficient,
     );
@@ -130,7 +128,6 @@ public fun bid_order_sufficient_resources() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -210,7 +207,6 @@ public fun bid_order_with_wrapper_deep() {
         coverage_from_bm, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         deposit_from_wallet, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -273,7 +269,6 @@ public fun bid_order_whitelisted_pool() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -348,7 +343,6 @@ public fun bid_order_coverage_fee_from_both_sources() {
         coverage_from_bm, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -406,7 +400,6 @@ public fun bid_order_insufficient_deep_no_wrapper() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -464,7 +457,6 @@ public fun bid_order_quote_only_in_balance_manager() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -530,7 +522,6 @@ public fun bid_order_large_values() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         order_amount, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -588,7 +579,6 @@ public fun bid_order_exact_resources() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         order_amount, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -655,7 +645,6 @@ public fun ask_order_sufficient_resources() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet (balance manager has enough)
         true, // expected_deposit_sufficient
     );
@@ -718,7 +707,6 @@ public fun ask_order_whitelisted_pool() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -776,7 +764,6 @@ public fun ask_order_insufficient_deep_and_base() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         false, // expected_deposit_sufficient
     );
@@ -842,7 +829,6 @@ public fun ask_order_base_only_in_balance_manager() {
         coverage_fee, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -909,7 +895,6 @@ public fun ask_order_large_values() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         quantity, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -967,7 +952,6 @@ public fun ask_order_exact_resources() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         quantity, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -1025,7 +1009,6 @@ public fun ask_order_complex_distribution() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -1091,7 +1074,6 @@ public fun ask_order_insufficient_base() {
         coverage_fee, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         false, // expected_deposit_sufficient (not enough base coins)
     );
@@ -1157,7 +1139,6 @@ public fun ask_order_with_wrapper_deep() {
         coverage_fee, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -1238,7 +1219,6 @@ public fun ask_order_coverage_fee_from_both_sources() {
         coverage_from_bm, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet (all from balance manager)
         true, // expected_deposit_sufficient
     );
@@ -1299,7 +1279,6 @@ public fun zero_quantity_order() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        0, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -1361,7 +1340,6 @@ public fun zero_price_order() {
         0, // expected_coverage_fee_from_balance_manager
         true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        0, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );

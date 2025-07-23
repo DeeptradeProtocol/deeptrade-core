@@ -109,8 +109,6 @@ public struct ProtocolFeePlan has copy, drop {
 /// available in the user's balance manager. This plan calculates how many coins
 /// to transfer from the user's wallet to the balance manager to cover the order.
 public struct InputCoinDepositPlan has copy, drop {
-    /// Total amount of input coins needed for the order
-    order_amount: u64,
     /// Amount of input coins to take from user's wallet
     from_user_wallet: u64,
     /// Whether user has enough input coins for the order
@@ -1099,7 +1097,6 @@ public(package) fun get_protocol_fee_plan(
 /// For bid orders, calculates quote coins needed; for ask orders, calculates base coins needed
 ///
 /// Returns an InputCoinDepositPlan structure with the following information:
-/// - order_amount: Total amount of input coins needed for the order
 /// - from_user_wallet: Amount of input coins to take from user's wallet
 /// - user_has_enough_input_coin: Whether user has enough input coins for the order
 public(package) fun get_input_coin_deposit_plan(
@@ -1110,7 +1107,6 @@ public(package) fun get_input_coin_deposit_plan(
     // Check if we already have enough in the balance manager
     if (balance_manager_balance >= required_amount) {
         return InputCoinDepositPlan {
-            order_amount: required_amount,
             from_user_wallet: 0,
             user_has_enough_input_coin: true,
         }
@@ -1122,14 +1118,12 @@ public(package) fun get_input_coin_deposit_plan(
 
     if (!has_enough) {
         return InputCoinDepositPlan {
-            order_amount: required_amount,
             from_user_wallet: 0,
             user_has_enough_input_coin: false,
         }
     };
 
     InputCoinDepositPlan {
-        order_amount: required_amount,
         from_user_wallet: additional_needed,
         user_has_enough_input_coin: true,
     }
@@ -1758,9 +1752,7 @@ fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
     ctx: &mut TxContext,
 ) {
     // Verify there are enough coins to satisfy the deposit requirements
-    if (deposit_plan.order_amount > 0) {
-        assert!(deposit_plan.user_has_enough_input_coin, EInsufficientInput);
-    };
+    assert!(deposit_plan.user_has_enough_input_coin, EInsufficientInput);
 
     // Deposit coins from wallet if needed
     if (deposit_plan.from_user_wallet > 0) {
@@ -1879,12 +1871,10 @@ public fun assert_protocol_fee_plan_eq(
 #[test_only]
 public fun assert_input_coin_deposit_plan_eq(
     actual: InputCoinDepositPlan,
-    expected_order_amount: u64,
     expected_from_user_wallet: u64,
     expected_sufficient: bool,
 ) {
     use std::unit_test::assert_eq;
-    assert_eq!(actual.order_amount, expected_order_amount);
     assert_eq!(actual.from_user_wallet, expected_from_user_wallet);
     assert_eq!(actual.user_has_enough_input_coin, expected_sufficient);
 }
