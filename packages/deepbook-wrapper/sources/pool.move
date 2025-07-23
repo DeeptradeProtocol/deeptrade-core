@@ -50,7 +50,6 @@ public struct PoolCreated<phantom BaseAsset, phantom QuoteAsset> has copy, drop 
 
 /// Event emitted when the protocol fee for creating a pool is updated
 public struct PoolCreationProtocolFeeUpdated has copy, drop {
-    config_id: ID,
     old_fee: u64,
     new_fee: u64,
 }
@@ -171,7 +170,6 @@ public fun update_pool_creation_protocol_fee(
     config.protocol_fee = new_fee;
 
     event::emit(PoolCreationProtocolFeeUpdated {
-        config_id: config.id.to_inner(),
         old_fee,
         new_fee,
     });
