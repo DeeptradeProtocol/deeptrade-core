@@ -36,7 +36,8 @@ The `order::create_limit_order` function creates a limit order using DEEP tokens
 1. Target pool - where the order will be placed
 2. Reference pool (DEEP/SUI or SUI/DEEP) - used to get the DEEP/SUI price
 
-The reference pool helps calculate how much SUI equals the DEEP a user borrows from our wrapper's DEEP reserves. We take the DEEP/SUI price from the reference pool and calculate the SUI equivalent of the borrowed DEEP.
+The reference pool helps calculate how much SUI equals the DEEP a user borrows from our wrapper's DEEP reserves.
+We take the DEEP/SUI price from the reference pool, oracle prices, and calculate the SUI equivalent of the borrowed DEEP.
 
 The process works like this:
 
