@@ -92,7 +92,7 @@ public struct CoverageFeePlan has copy, drop {
 ///
 /// The protocol fee is an additional fee charged by the wrapper for its services,
 /// paid in the order's input coin (base or quote). This plan calculates the
-/// maker and taker portions of the fee and specify allocation of the payment between
+/// maker and taker portions of the fee and specifies an allocation of the payment between
 /// the user's wallet and balance manager.
 public struct ProtocolFeePlan has copy, drop {
     taker_fee_from_wallet: u64,
