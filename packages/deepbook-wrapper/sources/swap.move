@@ -2,7 +2,6 @@ module deepbook_wrapper::swap;
 
 use deepbook::pool::Pool;
 use deepbook_wrapper::fee::{calculate_fee_by_rate, charge_swap_fee};
-use deepbook_wrapper::helper::get_fee_bps;
 use deepbook_wrapper::wrapper::{Wrapper, join_protocol_fee, deposit_into_reserves};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
@@ -74,8 +73,8 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     // The `deep_remainder` is just an empty coin, so it could be either destroyed or joined to the wrapper reserves
     deposit_into_reserves(wrapper, deep_remainder);
 
-    let fee_bps = get_fee_bps(pool);
-    let fee_balance = charge_swap_fee(&mut result_quote, fee_bps);
+    let (taker_fee_rate, _, _) = pool.pool_trade_params();
+    let fee_balance = charge_swap_fee(&mut result_quote, taker_fee_rate);
     let fee_amount = fee_balance.value();
     join_protocol_fee(wrapper, fee_balance);
 
@@ -145,8 +144,8 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     // The `deep_remainder` is just an empty coin, so it could be either destroyed or joined to the wrapper reserves
     deposit_into_reserves(wrapper, deep_remainder);
 
-    let fee_bps = get_fee_bps(pool);
-    let fee_balance = charge_swap_fee(&mut result_base, fee_bps);
+    let (taker_fee_rate, _, _) = pool.pool_trade_params();
+    let fee_balance = charge_swap_fee(&mut result_base, taker_fee_rate);
     let fee_amount = fee_balance.value();
     join_protocol_fee(wrapper, fee_balance);
 
@@ -247,7 +246,7 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// # Fee Application Logic
 /// * For base-to-quote swaps (base_quantity > 0): Fees are deducted from quote_out
 /// * For quote-to-base swaps (quote_quantity > 0): Fees are deducted from base_out
-/// * Fee amount is calculated using the pool's fee basis points
+/// * Fee amount is calculated using the pool's taker fee rate
 fun apply_wrapper_fees<BaseToken, QuoteToken>(
     pool: &Pool<BaseToken, QuoteToken>,
     mut base_out: u64,
@@ -255,19 +254,19 @@ fun apply_wrapper_fees<BaseToken, QuoteToken>(
     base_quantity: u64,
     quote_quantity: u64,
 ): (u64, u64) {
-    // Get the fee basis points from the pool
-    let fee_bps = get_fee_bps(pool);
+    // Get the taker fee rate from the pool
+    let (taker_fee_rate, _, _) = pool.pool_trade_params();
 
     // Apply our fee to the output quantities
     // If base_quantity > 0, we're swapping base for quote, so apply fee to quote_out
     // If quote_quantity > 0, we're swapping quote for base, so apply fee to base_out
     if (base_quantity > 0) {
         // Swapping base for quote, apply fee to quote_out
-        let fee_amount = calculate_fee_by_rate(quote_out, fee_bps);
+        let fee_amount = calculate_fee_by_rate(quote_out, taker_fee_rate);
         quote_out = quote_out - fee_amount;
     } else if (quote_quantity > 0) {
         // Swapping quote for base, apply fee to base_out
-        let fee_amount = calculate_fee_by_rate(base_out, fee_bps);
+        let fee_amount = calculate_fee_by_rate(base_out, taker_fee_rate);
         base_out = base_out - fee_amount;
     };
 

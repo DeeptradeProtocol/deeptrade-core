@@ -36,6 +36,7 @@ const EInvalidDiscountPrecision: u64 = 4;
 const EDiscountOutOfRange: u64 = 5;
 const EInvalidRatioSum: u64 = 6;
 const EZeroOrderAmount: u64 = 7;
+const EInsufficientCoinBalance: u64 = 8;
 
 // === Constants ===
 /// The multiple that fee rates must adhere to, aligned with DeepBook (0.01 bps = 0.0001%)
@@ -523,8 +524,12 @@ public(package) fun charge_swap_fee<CoinType>(
     fee_bps: u64,
 ): Balance<CoinType> {
     let coin_balance = coin.balance_mut();
-    let value = coin_balance.value();
-    coin_balance.split(calculate_fee_by_rate(value, fee_bps))
+    let coin_value = coin_balance.value();
+    let fee = calculate_fee_by_rate(coin_value, fee_bps);
+
+    assert!(coin_value >= fee, EInsufficientCoinBalance);
+
+    coin_balance.split(fee)
 }
 
 // === Private Functions ===
@@ -543,23 +548,23 @@ fun validate_pool_fee_config(fees: &PoolFeeConfig) {
 
 /// Validates a single taker/maker fee pair against precision, range, and consistency rules.
 fun validate_fee_pair(taker_rate: u64, maker_rate: u64) {
-    // --- Precision Checks ---
+    // Precision Checks
     assert!(taker_rate % FEE_PRECISION_MULTIPLE == 0, EInvalidFeePrecision);
     assert!(maker_rate % FEE_PRECISION_MULTIPLE == 0, EInvalidFeePrecision);
 
-    // --- Range Checks ---
+    // Range Checks
     assert!(taker_rate >= MIN_FEE_RATE && taker_rate <= MAX_TAKER_FEE_RATE, EFeeOutOfRange);
     assert!(maker_rate >= MIN_FEE_RATE && maker_rate <= MAX_MAKER_FEE_RATE, EFeeOutOfRange);
 
-    // --- Hierarchy Check ---
+    // Hierarchy Check
     assert!(maker_rate <= taker_rate, EInvalidFeeHierarchy);
 }
 
 /// Validates the discount rate against precision and range rules.
 fun validate_discount_rate(discount_rate: u64) {
-    // --- Precision Check ---
+    // Precision Check
     assert!(discount_rate % FEE_PRECISION_MULTIPLE == 0, EInvalidDiscountPrecision);
-    // --- Range Check ---
+    // Range Check
     assert!(
         discount_rate >= MIN_DISCOUNT_RATE && discount_rate <= MAX_DISCOUNT_RATE,
         EDiscountOutOfRange,
