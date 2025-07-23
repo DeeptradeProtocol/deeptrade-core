@@ -177,6 +177,4 @@ public fun update_pool_creation_protocol_fee(
 
 // === Public-View Functions ===
 /// Get the current protocol fee for creating a pool
-public fun pool_creation_protocol_fee(config: &PoolCreationConfig): u64 {
-    config.protocol_fee
-}
+public fun pool_creation_protocol_fee(config: &PoolCreationConfig): u64 { config.protocol_fee }
