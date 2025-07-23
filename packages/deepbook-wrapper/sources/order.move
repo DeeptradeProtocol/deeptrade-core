@@ -1735,8 +1735,8 @@ fun execute_protocol_fee_plan<CoinType>(
             order_info,
         );
     } else {
-        // Maker fee can be zero for IOC/FOK orders (which don't act as makers), when maker fee rate is zero or
-        // the order is filled on creation
+        // Maker fee can be zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
+        // or when the order is filled on creation
         maker_fee.destroy_zero();
     }
 }
