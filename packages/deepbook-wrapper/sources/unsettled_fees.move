@@ -297,7 +297,7 @@ fun destroy_empty<CoinType>(unsettled_fee: UnsettledFee<CoinType>) {
 // === Test Functions ===
 /// Check if an unsettled fee exists for a specific order
 #[test_only]
-public fun has_unsettled_fee<CoinType>(
+public fun has_unsettled_fee(
     wrapper: &Wrapper,
     pool_id: ID,
     balance_manager_id: ID,
@@ -305,7 +305,7 @@ public fun has_unsettled_fee<CoinType>(
 ): bool {
     let unsettled_fees = wrapper.unsettled_fees();
     let key = UnsettledFeeKey { pool_id, balance_manager_id, order_id };
-    unsettled_fees.contains_with_type<UnsettledFeeKey, UnsettledFee<CoinType>>(key)
+    unsettled_fees.contains(key)
 }
 
 /// Get the unsettled fee balance for a specific order

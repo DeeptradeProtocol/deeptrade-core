@@ -62,7 +62,7 @@ fun unfilled_order_returns_all_fees() {
 
         // Verify the fee was added
         assert_eq!(
-            has_unsettled_fee<SUI>(
+            has_unsettled_fee(
                 &wrapper,
                 order_info.pool_id(),
                 order_info.balance_manager_id(),
@@ -272,7 +272,7 @@ fun fully_filled_order_keeps_unsettled_fees() {
 
         // Verify the unsettled fee still exists
         assert_eq!(
-            has_unsettled_fee<SUI>(
+            has_unsettled_fee(
                 &wrapper,
                 object::id(&pool),
                 object::id(&balance_manager),
