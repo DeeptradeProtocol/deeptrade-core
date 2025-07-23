@@ -2,7 +2,7 @@ module deepbook_wrapper::swap;
 
 use deepbook::pool::Pool;
 use deepbook_wrapper::fee::{calculate_fee_by_rate, charge_swap_fee};
-use deepbook_wrapper::wrapper::{Wrapper, join_protocol_fee, deposit_into_reserves};
+use deepbook_wrapper::wrapper::{Wrapper, join_protocol_fee};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event;
@@ -20,8 +20,6 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
     output_amount: u64,
     input_remainder: u64,
     fee_amount: u64,
-    deep_fee_type: bool,
-    deep_paid: u64,
     client_id: u64,
 }
 
@@ -67,12 +65,11 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
         clock,
         ctx,
     );
+    // `deep_remainder` is empty since no DEEP was provided for this input-fee swap
+    deep_remainder.destroy_zero();
 
     // Apply wrapper protocol fees to the output
     let mut result_quote = quote_out;
-    // The `deep_remainder` is just an empty coin, so it could be either destroyed or joined to the wrapper reserves
-    deposit_into_reserves(wrapper, deep_remainder);
-
     let (taker_fee_rate, _, _) = pool.pool_trade_params();
     let fee_balance = charge_swap_fee(&mut result_quote, taker_fee_rate);
     let fee_amount = fee_balance.value();
@@ -89,8 +86,6 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
         output_amount: result_quote.value(),
         input_remainder: base_remainder.value(),
         fee_amount,
-        deep_fee_type: false,
-        deep_paid: 0,
         client_id,
     });
 
@@ -138,12 +133,11 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
         clock,
         ctx,
     );
+    // `deep_remainder` is empty since no DEEP was provided for this input-fee swap
+    deep_remainder.destroy_zero();
 
     // Apply wrapper protocol fees to the output
     let mut result_base = base_out;
-    // The `deep_remainder` is just an empty coin, so it could be either destroyed or joined to the wrapper reserves
-    deposit_into_reserves(wrapper, deep_remainder);
-
     let (taker_fee_rate, _, _) = pool.pool_trade_params();
     let fee_balance = charge_swap_fee(&mut result_base, taker_fee_rate);
     let fee_amount = fee_balance.value();
@@ -160,8 +154,6 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
         output_amount: result_base.value(),
         input_remainder: quote_remainder.value(),
         fee_amount,
-        deep_fee_type: false,
-        deep_paid: 0,
         client_id,
     });
 
@@ -172,19 +164,19 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
 /// Calculate the expected output quantity accounting for both DeepBook fees and wrapper fees
 /// Uses input coin fee model instead of DEEP
 ///
-/// # Arguments
-/// * `pool` - The DeepBook liquidity pool for this trading pair
-/// * `base_quantity` - Amount of base tokens to swap (set to 0 if swapping quote)
-/// * `quote_quantity` - Amount of quote tokens to swap (set to 0 if swapping base)
-/// * `clock` - Clock object for timestamp information
+/// Parameters:
+/// - pool: The DeepBook liquidity pool for this trading pair
+/// - base_quantity: Amount of base tokens to swap (set to 0 if swapping quote)
+/// - quote_quantity: Amount of quote tokens to swap (set to 0 if swapping base)
+/// - clock: Clock object for timestamp information
 ///
-/// # Returns
-/// * `(u64, u64, u64)` - Tuple containing:
+/// Returns:
+/// - (u64, u64, u64): Tuple containing:
 ///   - Expected base token output
 ///   - Expected quote token output
-///   - Required DEEP amount for transaction
+///   - Required DEEP amount for transaction (always 0 for input-fee model)
 ///
-/// # Flow
+/// Flow:
 /// 1. Gets raw output quantities from DeepBook using input fee model
 /// 2. Applies wrapper protocol fees to the appropriate output amount based on swap direction
 /// 3. Returns final expected output quantities
@@ -217,9 +209,9 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
 /// Validates that a coin's value meets the minimum required amount
 /// Aborts with EInsufficientOutputAmount if the check fails
 ///
-/// # Arguments
-/// * `coin` - The coin to validate
-/// * `minimum` - The minimum required value
+/// Parameters:
+/// - coin: The coin to validate
+/// - minimum: The minimum required value
 fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
     assert!(coin.value() >= minimum, EInsufficientOutputAmount);
 }
@@ -227,26 +219,22 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// Applies wrapper protocol fees to the output quantities from a DeepBook swap operation.
 /// This function handles fee calculations for both base-to-quote and quote-to-base swaps.
 ///
-/// # Type Parameters
-/// * `BaseToken` - The type of the base token in the trading pair
-/// * `QuoteToken` - The type of the quote token in the trading pair
+/// Parameters:
+/// - pool: The DeepBook liquidity pool for this trading pair
+/// - base_out: Mutable base token output quantity before fees
+/// - quote_out: Mutable quote token output quantity before fees
+/// - base_quantity: Input quantity of base tokens (0 if swapping quote)
+/// - quote_quantity: Input quantity of quote tokens (0 if swapping base)
 ///
-/// # Arguments
-/// * `pool` - Reference to the DeepBook liquidity pool for the trading pair
-/// * `base_out` - Mutable base token output quantity before fees
-/// * `quote_out` - Mutable quote token output quantity before fees
-/// * `base_quantity` - Input quantity of base tokens (0 if swapping quote)
-/// * `quote_quantity` - Input quantity of quote tokens (0 if swapping base)
-///
-/// # Returns
-/// * `(u64, u64)` - Tuple containing:
+/// Returns:
+/// - (u64, u64): Tuple containing:
 ///   - Final base token output after fees
 ///   - Final quote token output after fees
 ///
-/// # Fee Application Logic
-/// * For base-to-quote swaps (base_quantity > 0): Fees are deducted from quote_out
-/// * For quote-to-base swaps (quote_quantity > 0): Fees are deducted from base_out
-/// * Fee amount is calculated using the pool's taker fee rate
+/// Flow:
+/// 1. Gets the taker fee rate from the pool
+/// 2. Applies wrapper fee to the output quantities
+/// 3. Returns the final output quantities
 fun apply_wrapper_fees<BaseToken, QuoteToken>(
     pool: &Pool<BaseToken, QuoteToken>,
     mut base_out: u64,
