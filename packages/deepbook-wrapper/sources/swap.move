@@ -23,23 +23,25 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
     fee_amount: u64,
     deep_fee_type: bool,
     deep_paid: u64,
+    client_id: u64,
 }
 
 // === Public-Mutative Functions ===
 /// Swaps a specific amount of base tokens for quote tokens using input fee model.
 ///
-/// # Arguments
-/// * `wrapper` - The Wrapper object holding protocol state and DEEP reserves
-/// * `pool` - The DeepBook liquidity pool for this trading pair
-/// * `base_in` - The base tokens being provided for the swap
-/// * `min_quote_out` - Minimum amount of quote tokens to receive (slippage protection)
-/// * `clock` - Clock object for timestamp information
-/// * `ctx` - Transaction context
+/// Parameters:
+/// - wrapper: The Wrapper object holding protocol state and DEEP reserves
+/// - pool: The DeepBook liquidity pool for this trading pair
+/// - base_in: The base tokens being provided for the swap
+/// - min_quote_out: Minimum amount of quote tokens to receive (slippage protection)
+/// - client_id: Client-provided order identifier
+/// - clock: Clock object for timestamp information
+/// - ctx: Transaction context
 ///
-/// # Returns
-/// * `(Coin<BaseToken>, Coin<QuoteToken>)` - Any unused base tokens and the received quote tokens
+/// Returns:
+/// - (Coin<BaseToken>, Coin<QuoteToken>): Any unused base tokens and the received quote tokens
 ///
-/// # Flow
+/// Flow:
 /// 1. Executes swap through DeepBook
 /// 2. Processes wrapper fees
 /// 3. Validates minimum output amount meets user requirements
@@ -49,6 +51,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     pool: &mut Pool<BaseToken, QuoteToken>,
     base_in: Coin<BaseToken>,
     min_quote_out: u64,
+    client_id: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ): (Coin<BaseToken>, Coin<QuoteToken>) {
@@ -89,6 +92,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
         fee_amount,
         deep_fee_type: false,
         deep_paid: 0,
+        client_id,
     });
 
     (base_remainder, result_quote)
@@ -96,18 +100,19 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 
 /// Swaps a specific amount of quote tokens for base tokens using input fee model.
 ///
-/// # Arguments
-/// * `wrapper` - The Wrapper object holding protocol state and DEEP reserves
-/// * `pool` - The DeepBook liquidity pool for this trading pair
-/// * `quote_in` - The quote tokens being provided for the swap
-/// * `min_base_out` - Minimum amount of base tokens to receive (slippage protection)
-/// * `clock` - Clock object for timestamp information
-/// * `ctx` - Transaction context
+/// Parameters:
+/// - wrapper: The Wrapper object holding protocol state and DEEP reserves
+/// - pool: The DeepBook liquidity pool for this trading pair
+/// - quote_in: The quote tokens being provided for the swap
+/// - min_base_out: Minimum amount of base tokens to receive (slippage protection)
+/// - client_id: Client-provided order identifier
+/// - clock: Clock object for timestamp information
+/// - ctx: Transaction context
 ///
-/// # Returns
-/// * `(Coin<BaseToken>, Coin<QuoteToken>)` - The received base tokens and any unused quote tokens
+/// Returns:
+/// - (Coin<BaseToken>, Coin<QuoteToken>): The received base tokens and any unused quote tokens
 ///
-/// # Flow
+/// Flow:
 /// 1. Executes swap through DeepBook
 /// 2. Processes wrapper fees
 /// 3. Validates minimum output amount meets user requirements
@@ -117,6 +122,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     pool: &mut Pool<BaseToken, QuoteToken>,
     quote_in: Coin<QuoteToken>,
     min_base_out: u64,
+    client_id: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ): (Coin<BaseToken>, Coin<QuoteToken>) {
@@ -157,6 +163,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
         fee_amount,
         deep_fee_type: false,
         deep_paid: 0,
+        client_id,
     });
 
     (result_base, quote_remainder)
