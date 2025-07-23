@@ -31,7 +31,7 @@ Also, if user has enough DEEP in their wallet or balance manager, the wrapper do
 
 ### Swap Fees
 
-The Deepbook Wrapper charges a fee on each swap in the output coin of the swap. The fee structure directly mirrors DeepBook's `taker_fee` parameter, which is set and controlled by DeepBook governance (currently 0.01% for stablecoin pools and 0.1% for other pools). The Wrapper simply adopts these rates without modification.
+The Deepbook Wrapper charges a fee on each swap in the output coin of the swap. The fee structure directly mirrors DeepBook's `taker_fee` parameter, which is set and controlled by DeepBook governance. The Wrapper simply adopts these rates without modification.
 
 Initially (before 3.1 version of DeepBook) swaps require DEEP coin as a fee that was charged by DeepBook protocol.
 
@@ -39,14 +39,13 @@ As of DeepBook version 3.1, it introduce ability to charge fee in input coin for
 Since that, the existing fee charging model could be described as following:
 DeepBook charge fee in `input coin`, `taker fee` \* `fee penalty multiplier`, where `fee penalty multiplier` is `1.25`.
 
-Deepbook Wrapper charge fee in `output coin`, so it remains the same as it was before and equal to the `taker_fee`.
+Deepbook Wrapper charge fee on top of this in `output coin`, equal to the `taker_fee` parameter from DeepBook's `pool.pool_trade_params()`.
 
 ### Order Fees
 
-DeepBook protocol requires DEEP coins as fees for order placement, with fees calculated based on order price and size.
-The Deepbook Wrapper handles these fees through a unified system:
+DeepBook protocol requires paying fees for order placement in either DEEP coins or the order's input asset (DEEP-based fee or Input Coin fee types), with fees calculated based on order price and size. The wrapper extends this flexibility by allowing users to pay these fees using various sources: their wallet, their `BalanceManager`, or even the wrapper's own DEEP reserves if the user's DEEP balance is insufficient.
 
-**Protocol Fee**: Always charged, calculated dynamically based on order execution status and fee rates specified in `TradingFeeConfig`.
+- **Protocol Fees**: In addition to DeepBook's fees, the wrapper charges its own protocol fees. These fees can be configured with different rates for taker and maker orders, and can be set globally or on a per-pool basis.
 
 **DEEP Reserve Coverage Fee**: Only charged when the user needs to borrow DEEP from Wrapper reserves to cover DeepBook fees. This fee equals the required DEEP amount converted to SUI value and is paid in SUI coins.
 
@@ -55,15 +54,19 @@ The Deepbook Wrapper handles these fees through a unified system:
 This structure incentivizes users to hold DEEP coins while ensuring trading accessibility for everyone.
 For whitelisted pools, there are no DEEP fees, so no coverage fees are required. However, protocol fees are still charged, with whitelisted pools receiving the maximum protocol fee discount rate for each order. Maximum discount rates for pools are specified in `TradingFeeConfig`, with a default rate of 25% used if not specified.
 
-For detailed information about dynamic protocol fee calculation, and the unsettled fees mechanism, see the [Unsettled Fees](docs/unsettled-fees.md) documentation.
+For detailed information about dynamic protocol fee calculation, and the unsettled fees mechanism, see the [Design](docs/design.md) and [Unsettled Fees](docs/unsettled-fees.md) documentation.
+
+### Pool Creation Fees
+
+When creating a new trading pool, there are two separate fees:
+
+DeepBook protocol requires DEEP coins (currently set to 500 DEEP) as a fee for each new pool creation. Additionally, the Wrapper charges a configurable protocol fee (currently set to 100 DEEP coins) stored in the `PoolCreationConfig` object.
 
 ## Economic Considerations
 
 ### DEEP Reserves Sustainability
 
-#### Order Fees
-
-The Deepbook Wrapper's order fee structure has minimal economic risk. By collecting fees in SUI, we maintain a stable and liquid asset for reserves management. Since reserve coverage fees directly match the DEEP amount needed, there's a fair value exchange. The additional protocol fees (calculated dynamically based on order execution) help cover operational costs and reserves maintenance.
+The Wrapper's order fee structure has minimal economic risk. By collecting fees in SUI, we maintain a stable and liquid asset for reserves management. Since reserve coverage fees directly match the DEEP amount needed, there's a fair value exchange. The additional protocol fees (calculated dynamically based on order execution) help cover operational costs and reserves maintenance.
 
 ## Deployment
 
@@ -110,12 +113,6 @@ The Deepbook Wrapper's order fee structure has minimal economic risk. By collect
 2. Run `examples/wrapper/admin-withdraw-all-coins-coverage-fee.ts` to withdraw all coins coverage fees (coverage fees charged in output coin of each swap and for limit/market orders in SUI).
 3. Run `examples/wrapper/admin-withdraw-protocol-fee.ts` to withdraw all protocol fees (protocol fees charged in SUI, pool creation fees charged in DEEP).
 4. Run `examples/wrapper/withdraw-all-deep-reserves.ts` to withdraw all DEEP coins from reserves.
-
-## Pool Creation Fees
-
-When creating a new trading pool, there are two separate fees:
-
-DeepBook protocol requires 500 DEEP coins as a fee for each new pool creation. Additionally, the Wrapper charges a configurable protocol fee (currently set to 100 DEEP coins) stored in the `PoolCreationConfig` object.
 
 ## Development Tools
 

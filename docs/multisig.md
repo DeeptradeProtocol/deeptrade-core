@@ -1,4 +1,4 @@
-# Admin Control Philosophy: On-Chain Multi-Signature Enforcement
+# On-Chain Multi-Signature Enforcement
 
 A critical aspect of this protocol's design is the guarantee that administrative functions are always under the control of a multi-signature wallet. We have implemented a novel on-chain pattern to enforce this, which differs from the standard approach. This document explains our rationale.
 
