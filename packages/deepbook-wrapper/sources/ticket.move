@@ -42,7 +42,7 @@ public struct TicketCreated has copy, drop {
     ticket_type: u8,
 }
 
-/// Event emitted when a ticket is destroyed (consumed)
+/// Event emitted when a ticket is destroyed (consumed or expired)
 public struct TicketDestroyed has copy, drop {
     ticket_id: ID,
     ticket_type: u8,
