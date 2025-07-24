@@ -31,7 +31,7 @@ An administrator must first create a ticket for a specific action by calling `ti
 ### Operations
 
 - **Fund Withdrawal** (`wrapper.move`):
-  - `withdraw_deep_reserves`: Withdraws DEEP tokens from the wrapper's main reserves.
+  - `withdraw_deep_reserves`: Withdraws DEEP tokens from the protocol's main reserves.
   - `withdraw_protocol_fee`: Withdraws collected protocol fees for a specific coin type.
   - `withdraw_deep_reserves_coverage_fee`: Withdraws collected coverage fees for a specific coin type.
 - **Fee Configuration** (`fee.move`, `pool.move`):
