@@ -32,7 +32,6 @@ public fun assert_order_plans_eq(
     coverage_fee_plan: CoverageFeePlan,
     input_coin_deposit_plan: InputCoinDepositPlan,
     // Expected values for DeepPlan
-    expected_use_wrapper_deep: bool,
     expected_deep_from_wallet: u64,
     expected_deep_from_reserves: u64,
     expected_deep_sufficient: bool,
@@ -47,7 +46,6 @@ public fun assert_order_plans_eq(
     // Assert DeepPlan
     assert_deep_plan_eq(
         deep_plan,
-        expected_use_wrapper_deep,
         expected_deep_from_wallet,
         expected_deep_from_reserves,
         expected_deep_sufficient,
@@ -119,7 +117,6 @@ public fun bid_order_sufficient_resources() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -198,7 +195,6 @@ public fun bid_order_with_wrapper_deep() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_from_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -260,7 +256,6 @@ public fun bid_order_whitelisted_pool() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -334,7 +329,6 @@ public fun bid_order_coverage_fee_from_both_sources() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -391,7 +385,6 @@ public fun bid_order_insufficient_deep_no_wrapper() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         false, // expected_deep_sufficient (not enough DEEP)
@@ -448,7 +441,6 @@ public fun bid_order_quote_only_in_balance_manager() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -513,7 +505,6 @@ public fun bid_order_large_values() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -570,7 +561,6 @@ public fun bid_order_exact_resources() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_required, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -636,7 +626,6 @@ public fun ask_order_sufficient_resources() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_from_wallet, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -698,7 +687,6 @@ public fun ask_order_whitelisted_pool() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -755,7 +743,6 @@ public fun ask_order_insufficient_deep_and_base() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         false, // expected_deep_sufficient (not enough DEEP)
@@ -820,7 +807,6 @@ public fun ask_order_base_only_in_balance_manager() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -886,7 +872,6 @@ public fun ask_order_large_values() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -943,7 +928,6 @@ public fun ask_order_exact_resources() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_required, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -1000,7 +984,6 @@ public fun ask_order_complex_distribution() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -1065,7 +1048,6 @@ public fun ask_order_insufficient_base() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -1130,7 +1112,6 @@ public fun ask_order_with_wrapper_deep() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -1210,7 +1191,6 @@ public fun ask_order_coverage_fee_from_both_sources() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -1270,7 +1250,6 @@ public fun zero_quantity_order() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
@@ -1331,7 +1310,6 @@ public fun zero_price_order() {
         coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient

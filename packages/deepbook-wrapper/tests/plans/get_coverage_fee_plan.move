@@ -14,14 +14,12 @@ const SUI_PER_DEEP: u64 = 37_815_000_000;
 #[test]
 public fun whitelisted_pool_requires_no_fee() {
     let is_pool_whitelisted = true;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 100;
     let sui_per_deep = SUI_PER_DEEP;
     let sui_in_wallet = 1000;
     let balance_manager_sui = 1000;
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -41,14 +39,12 @@ public fun whitelisted_pool_requires_no_fee() {
 #[test]
 public fun not_using_wrapper_deep_requires_no_fee() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = false; // Not using wrapper DEEP
     let deep_from_reserves = 0;
     let sui_per_deep = SUI_PER_DEEP;
     let sui_in_wallet = 1000;
     let balance_manager_sui = 1000;
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -70,7 +66,6 @@ public fun not_using_wrapper_deep_requires_no_fee() {
 #[test]
 public fun fee_from_wallet_only() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 25_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -84,7 +79,6 @@ public fun fee_from_wallet_only() {
     let balance_manager_sui = 0; // Nothing in balance manager
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -104,7 +98,6 @@ public fun fee_from_wallet_only() {
 #[test]
 public fun fee_from_balance_manager_only() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 75_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -118,7 +111,6 @@ public fun fee_from_balance_manager_only() {
     let balance_manager_sui = coverage_fee * 2; // Plenty in balance manager
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -138,7 +130,6 @@ public fun fee_from_balance_manager_only() {
 #[test]
 public fun fee_split_between_wallet_and_balance_manager() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 40_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -153,7 +144,6 @@ public fun fee_split_between_wallet_and_balance_manager() {
     let sui_in_wallet = coverage_fee - balance_manager_sui;
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -183,7 +173,6 @@ public fun fee_split_between_wallet_and_balance_manager() {
 #[test]
 public fun insufficient_fee_resources() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 60_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -198,7 +187,6 @@ public fun insufficient_fee_resources() {
     let balance_manager_sui = coverage_fee / 4; // 25% in balance manager
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -218,7 +206,6 @@ public fun insufficient_fee_resources() {
 #[test]
 public fun almost_sufficient_fee_resources() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 35_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -233,7 +220,6 @@ public fun almost_sufficient_fee_resources() {
     let balance_manager_sui = (coverage_fee / 2) - 1; // Almost 50% in balance manager (1 short)
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -255,7 +241,6 @@ public fun almost_sufficient_fee_resources() {
 #[test]
 public fun exact_fee_match_with_wallet() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 50_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -269,7 +254,6 @@ public fun exact_fee_match_with_wallet() {
     let balance_manager_sui = 0; // Nothing in balance manager
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -289,7 +273,6 @@ public fun exact_fee_match_with_wallet() {
 #[test]
 public fun exact_fee_match_with_balance_manager() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 20_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -303,7 +286,6 @@ public fun exact_fee_match_with_balance_manager() {
     let balance_manager_sui = coverage_fee; // Exact match
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -323,7 +305,6 @@ public fun exact_fee_match_with_balance_manager() {
 #[test]
 public fun exact_fee_match_combined() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 80_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -338,7 +319,6 @@ public fun exact_fee_match_combined() {
     let sui_in_wallet = coverage_fee - balance_manager_sui;
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -368,7 +348,6 @@ public fun exact_fee_match_combined() {
 #[test]
 public fun large_deep_reserves_fee() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 1_000_000_000; // Large amount of DEEP
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -383,7 +362,6 @@ public fun large_deep_reserves_fee() {
     let sui_in_wallet = coverage_fee - balance_manager_sui;
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -411,7 +389,6 @@ public fun large_deep_reserves_fee() {
 #[test]
 public fun minimal_deep_reserves_fee() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 1; // Minimal amount of DEEP
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -426,7 +403,6 @@ public fun minimal_deep_reserves_fee() {
     let balance_manager_sui = 0;
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -446,7 +422,6 @@ public fun minimal_deep_reserves_fee() {
 #[test]
 public fun wallet_exactly_one_token_short() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 15_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -460,7 +435,6 @@ public fun wallet_exactly_one_token_short() {
     let balance_manager_sui = 0; // Nothing in balance manager
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -480,7 +454,6 @@ public fun wallet_exactly_one_token_short() {
 #[test]
 public fun balance_manager_exactly_one_token_short_with_empty_wallet() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 45_000;
     let sui_per_deep = SUI_PER_DEEP;
 
@@ -494,7 +467,6 @@ public fun balance_manager_exactly_one_token_short_with_empty_wallet() {
     let balance_manager_sui = coverage_fee - 1; // 1 SUI short
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -514,14 +486,12 @@ public fun balance_manager_exactly_one_token_short_with_empty_wallet() {
 #[test]
 public fun zero_deep_from_reserves() {
     let is_pool_whitelisted = false;
-    let use_wrapper_deep_reserves = true;
     let deep_from_reserves = 0; // No DEEP from reserves
     let sui_per_deep = SUI_PER_DEEP;
     let sui_in_wallet = 1000;
     let balance_manager_sui = 1000;
 
     let plan = get_coverage_fee_plan(
-        use_wrapper_deep_reserves,
         deep_from_reserves,
         is_pool_whitelisted,
         sui_per_deep,

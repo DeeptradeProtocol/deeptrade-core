@@ -66,8 +66,6 @@ const EInvalidSlippage: u64 = 10;
 /// It specifies how much DEEP to take from the user's wallet and how much to
 /// supply from the wrapper's reserves if the user's balance is insufficient.
 public struct DeepPlan has copy, drop {
-    /// Whether DEEP from wrapper reserves is needed for this order
-    use_wrapper_deep_reserves: bool,
     /// Amount of DEEP to take from user's wallet
     from_user_wallet: u64,
     /// Amount of DEEP to take from wrapper reserves
@@ -860,7 +858,6 @@ public(package) fun create_order_core(
 
     // Step 2: Determine coverage fee charging plan
     let coverage_fee_plan = get_coverage_fee_plan(
-        deep_plan.use_wrapper_deep_reserves,
         deep_plan.from_deep_reserves,
         is_pool_whitelisted,
         sui_per_deep,
@@ -883,7 +880,6 @@ public(package) fun create_order_core(
 /// Calculates optimal allocation from user wallet, balance manager, and wrapper reserves
 ///
 /// Returns a DeepPlan structure with the following information:
-/// - use_wrapper_deep_reserves: Whether DEEP from wrapper reserves will be used
 /// - from_user_wallet: Amount of DEEP to take from user's wallet
 /// - from_deep_reserves: Amount of DEEP to take from wrapper reserves
 /// - deep_reserves_cover_order: Whether wrapper has enough DEEP to cover what's needed
@@ -897,7 +893,6 @@ public(package) fun get_deep_plan(
     // If pool is whitelisted, no DEEP is needed
     if (is_pool_whitelisted) {
         return DeepPlan {
-            use_wrapper_deep_reserves: false,
             from_user_wallet: 0,
             from_deep_reserves: 0,
             deep_reserves_cover_order: true,
@@ -917,7 +912,6 @@ public(package) fun get_deep_plan(
         };
 
         DeepPlan {
-            use_wrapper_deep_reserves: false,
             from_user_wallet: from_wallet,
             from_deep_reserves: 0,
             deep_reserves_cover_order: true,
@@ -930,7 +924,6 @@ public(package) fun get_deep_plan(
 
         if (!has_enough) {
             return DeepPlan {
-                use_wrapper_deep_reserves: true,
                 from_user_wallet: 0,
                 from_deep_reserves: 0,
                 deep_reserves_cover_order: false,
@@ -938,7 +931,6 @@ public(package) fun get_deep_plan(
         };
 
         DeepPlan {
-            use_wrapper_deep_reserves: true,
             from_user_wallet: from_wallet,
             from_deep_reserves: still_needed,
             deep_reserves_cover_order: true,
@@ -951,7 +943,6 @@ public(package) fun get_deep_plan(
 /// Returns early with zero fees for whitelisted pools or when not using wrapper DEEP.
 ///
 /// Parameters:
-/// - use_wrapper_deep_reserves: Whether the order requires DEEP from wrapper reserves
 /// - deep_from_reserves: Amount of DEEP to be taken from wrapper reserves
 /// - is_pool_whitelisted: Whether the pool is whitelisted by DeepBook
 /// - sui_per_deep: Current DEEP/SUI price from reference pool
@@ -965,27 +956,23 @@ public(package) fun get_deep_plan(
 ///   - user_covers_fee: Whether user has sufficient funds to cover fees
 ///
 /// Flow:
-/// 1. Returns zero fee plan if pool is whitelisted, or not using wrapper DEEP, or wrapper has not enough DEEP
+/// 1. Returns zero fee plan if pool is whitelisted, or not using wrapper DEEP
 /// 2. Calculates coverage fee
 /// 3. Returns insufficient fee plan if user lacks total funds
 /// 4. Plans coverage fee collection from available sources
 public(package) fun get_coverage_fee_plan(
-    use_wrapper_deep_reserves: bool,
     deep_from_reserves: u64,
     is_pool_whitelisted: bool,
     sui_per_deep: u64,
     sui_in_wallet: u64,
     balance_manager_sui: u64,
 ): CoverageFeePlan {
-    let wrapper_has_not_enough_deep = use_wrapper_deep_reserves && deep_from_reserves == 0;
-
-    // No fee for whitelisted pools, or when not using wrapper DEEP, or when wrapper has not enough DEEP.
-    // Not enough DEEP case is handled with specific error in `execute_deep_plan` function.
-    if (is_pool_whitelisted || !use_wrapper_deep_reserves || wrapper_has_not_enough_deep) {
+    // No fee for whitelisted pools, or when not using wrapper DEEP
+    if (is_pool_whitelisted || deep_from_reserves == 0) {
         return zero_coverage_fee_plan()
     };
 
-    // Sanity check: SUI per DEEP must be greater than zero. Otherwise, the price retrieving process is flawed.
+    // Sanity check: SUI per DEEP must be greater than zero. Otherwise, the price retrieving process is flawed
     assert!(sui_per_deep > 0, EInvalidSuiPerDeep);
 
     // Calculate coverage fee amount
@@ -1826,13 +1813,11 @@ fun create_empty_protocol_fee_plan(user_covers_fee: bool): ProtocolFeePlan {
 #[test_only]
 public fun assert_deep_plan_eq(
     actual: DeepPlan,
-    expected_use_wrapper: bool,
     expected_from_wallet: u64,
     expected_from_wrapper: u64,
     expected_sufficient: bool,
 ) {
     use std::unit_test::assert_eq;
-    assert_eq!(actual.use_wrapper_deep_reserves, expected_use_wrapper);
     assert_eq!(actual.from_user_wallet, expected_from_wallet);
     assert_eq!(actual.from_deep_reserves, expected_from_wrapper);
     assert_eq!(actual.deep_reserves_cover_order, expected_sufficient);
