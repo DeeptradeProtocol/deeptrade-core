@@ -71,7 +71,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 
 ## Deployment
 
-1. Go to `packages/deepbook-wrapper` directory
+1. Go to `packages/deeptrade` directory
 2. Uncomment `0x0` address in Move.toml before deploying contract
 3. Run command:
    `sui client publish --gas-budget 220000000 --skip-dependency-verification`
@@ -81,7 +81,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 
 ## Upgrade
 
-1. Go to `packages/deepbook-wrapper` directory (`cd packages/deepbook-wrapper/`)
+1. Go to `packages/deeptrade` directory (`cd packages/deeptrade/`)
 2. Set `address` to `0x0` in `Move.toml`
 3. Verify compability:
    `sui-local sui client upgrade --dry-run --verify-compatibility --upgrade-capability 0xae8c80532528977c531c7ee477d55d9e8618320e03c0ce923740ee8635cab01b --gas-budget 1000000000`

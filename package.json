@@ -1,7 +1,7 @@
 {
-  "name": "sui-deepbook-wrapper-contract",
-  "version": "1.0.0",
-  "description": "Deepbook wrapper that manages DEEP token fees and collects trading fees from swaps",
+  "name": "sui-deeptrade-contract",
+  "version": "2.0.0",
+  "description": "A trading protocol on Sui that abstracts DeepBook's DEEP fees, featuring a tiered discount system and its own on-chain governance",
   "main": "index.js",
   "directories": {
     "example": "examples"

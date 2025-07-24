@@ -109,7 +109,10 @@ class MoveCodeAnalyzer {
       const line = lines[i];
 
       // Handle multi-line comments
-      if (this.patterns.multiLineCommentStart.test(line) && !this.patterns.multiLineCommentFull.test(line)) {
+      if (
+        this.patterns.multiLineCommentStart.test(line) &&
+        !this.patterns.multiLineCommentFull.test(line)
+      ) {
         inMultiLineComment = true;
         stats.comments++;
         continue;
@@ -274,23 +277,27 @@ class MoveCodeAnalyzer {
     if (testsAnalysis && Object.keys(testsAnalysis.files).length > 0) {
       const testsEffective = this.getEffectiveLines(testsAnalysis.totals);
       console.log(`🧪 Test LoC: ${testsEffective} lines`);
-      console.log(`📈 Total project lines: ${sourcesAnalysis.totals.total + testsAnalysis.totals.total} lines`);
+      console.log(
+        `📈 Total project lines: ${
+          sourcesAnalysis.totals.total + testsAnalysis.totals.total
+        } lines`
+      );
     }
 
     if (sourcesAnalysis.totals.deprecated > 0) {
       console.log(
-        `🔄 Note: ${sourcesAnalysis.totals.deprecated} deprecated method lines detected and excluded from effective count`,
+        `🔄 Note: ${sourcesAnalysis.totals.deprecated} deprecated method lines detected and excluded from effective count`
       );
     }
 
     if (sourcesAnalysis.totals.testFunctions > 0) {
       if (this.options.skipTestFunctions) {
         console.log(
-          `🧪 Note: ${sourcesAnalysis.totals.testFunctions} test function lines detected and excluded from effective count`,
+          `🧪 Note: ${sourcesAnalysis.totals.testFunctions} test function lines detected and excluded from effective count`
         );
       } else {
         console.log(
-          `🧪 Note: ${sourcesAnalysis.totals.testFunctions} test function lines detected and included in effective count`,
+          `🧪 Note: ${sourcesAnalysis.totals.testFunctions} test function lines detected and included in effective count`
         );
       }
     }
@@ -317,7 +324,11 @@ class MoveCodeAnalyzer {
     console.log("-".repeat(totalWidth));
 
     const headers =
-      "Module".padEnd(moduleWidth) + "Total".padEnd(8) + "Code".padEnd(8) + "Comments".padEnd(10) + "Blank".padEnd(8);
+      "Module".padEnd(moduleWidth) +
+      "Total".padEnd(8) +
+      "Code".padEnd(8) +
+      "Comments".padEnd(10) +
+      "Blank".padEnd(8);
     if (showDeprecated) {
       console.log(headers + "Deprecated".padEnd(12) + "Test".padEnd(8));
     } else {
@@ -326,7 +337,9 @@ class MoveCodeAnalyzer {
     console.log("-".repeat(totalWidth));
 
     // Sort files by code lines (descending)
-    const sortedFiles = Object.entries(analysis.files).sort(([, a], [, b]) => b.code - a.code);
+    const sortedFiles = Object.entries(analysis.files).sort(
+      ([, a], [, b]) => b.code - a.code
+    );
 
     sortedFiles.forEach(([file, stats]) => {
       let filename = file.replace(".move", "");
@@ -344,7 +357,9 @@ class MoveCodeAnalyzer {
         stats.blank.toString().padEnd(8);
 
       if (showDeprecated) {
-        row += stats.deprecated.toString().padEnd(12) + stats.testFunctions.toString().padEnd(8);
+        row +=
+          stats.deprecated.toString().padEnd(12) +
+          stats.testFunctions.toString().padEnd(8);
       }
       console.log(row);
     });
@@ -359,7 +374,9 @@ class MoveCodeAnalyzer {
       analysis.totals.blank.toString().padEnd(8);
 
     if (showDeprecated) {
-      totalRow += analysis.totals.deprecated.toString().padEnd(12) + analysis.totals.testFunctions.toString().padEnd(8);
+      totalRow +=
+        analysis.totals.deprecated.toString().padEnd(12) +
+        analysis.totals.testFunctions.toString().padEnd(8);
     }
     console.log(totalRow);
 
@@ -371,19 +388,28 @@ class MoveCodeAnalyzer {
     console.log(`• Raw lines: ${analysis.totals.total}`);
     console.log(`• Code lines: ${analysis.totals.code}`);
     console.log(
-      `• Comment lines: ${analysis.totals.comments} (${((analysis.totals.comments / analysis.totals.total) * 100).toFixed(1)}%)`,
+      `• Comment lines: ${analysis.totals.comments} (${(
+        (analysis.totals.comments / analysis.totals.total) *
+        100
+      ).toFixed(1)}%)`
     );
     console.log(`• Blank lines: ${analysis.totals.blank}`);
 
     if (showDeprecated && analysis.totals.deprecated > 0) {
       console.log(
-        `• Deprecated lines: ${analysis.totals.deprecated} (${((analysis.totals.deprecated / analysis.totals.total) * 100).toFixed(1)}%)`,
+        `• Deprecated lines: ${analysis.totals.deprecated} (${(
+          (analysis.totals.deprecated / analysis.totals.total) *
+          100
+        ).toFixed(1)}%)`
       );
     }
 
     if (showDeprecated && analysis.totals.testFunctions > 0) {
       console.log(
-        `• Test function lines: ${analysis.totals.testFunctions} (${((analysis.totals.testFunctions / analysis.totals.total) * 100).toFixed(1)}%)`,
+        `• Test function lines: ${analysis.totals.testFunctions} (${(
+          (analysis.totals.testFunctions / analysis.totals.total) *
+          100
+        ).toFixed(1)}%)`
       );
     }
   }
@@ -398,7 +424,8 @@ function main() {
   if (args.includes("--include-comments")) options.skipComments = false;
   if (args.includes("--include-blank")) options.skipBlankLines = false;
   if (args.includes("--include-deprecated")) options.skipDeprecated = false;
-  if (args.includes("--include-test-functions")) options.skipTestFunctions = false;
+  if (args.includes("--include-test-functions"))
+    options.skipTestFunctions = false;
   if (args.includes("--details")) options.showDetails = true;
   if (args.includes("--help")) {
     console.log(`
@@ -418,12 +445,26 @@ Default: Counts only code lines (skips comments, blank lines, and deprecated cod
   }
 
   const analyzer = new MoveCodeAnalyzer(options);
-  const sourcesPath = path.join(__dirname, "..", "packages", "deepbook-wrapper", "sources");
-  const testsPath = path.join(__dirname, "..", "packages", "deepbook-wrapper", "tests");
+  const sourcesPath = path.join(
+    __dirname,
+    "..",
+    "packages",
+    "deeptrade",
+    "sources"
+  );
+  const testsPath = path.join(
+    __dirname,
+    "..",
+    "packages",
+    "deeptrade",
+    "tests"
+  );
 
   if (!fs.existsSync(sourcesPath)) {
     console.error("❌ Sources directory not found:", sourcesPath);
-    console.log("Make sure you're running this from the project root directory.");
+    console.log(
+      "Make sure you're running this from the project root directory."
+    );
     return;
   }
 
