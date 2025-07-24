@@ -1,8 +1,8 @@
-# DeepBook Wrapper Design
+# Deeptrade Design
 
 ## Overview
 
-The DeepBook Wrapper charges additional fees on top of the standard DeepBook fees. These wrapper fees are calculated using protocol fee configuration system and are applied regardless of which fee type is used for the underlying DeepBook order.
+Deeptrade charges additional fees on top of the standard DeepBook fees. These wrapper fees are calculated using protocol fee configuration system and are applied regardless of which fee type is used for the underlying DeepBook order.
 
 ## Fee Configuration
 

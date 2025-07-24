@@ -14,7 +14,7 @@ The wrapper acts as an intermediary, managing all DEEP-related fee operations.
 
 For detailed technical specifications and implementation details, please refer to:
 
-- [DeepBook Wrapper Design](docs/design.md)
+- [Deeptrade Design](docs/design.md)
 - [Loyalty Program](docs/loyalty.md)
 - [Oracle Price Calculation](docs/oracle-price-calculation.md)
 - [Oracle Pricing Security](docs/oracle-pricing-security.md)
@@ -119,7 +119,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 
 ### Lines of Code Analysis
 
-Analyze and count lines of code across all DeepBook Wrapper modules:
+Analyze and count lines of code across all Deeptrade package modules:
 
 ```bash
 node scripts/count-loc.js [--help for options]

@@ -1,6 +1,6 @@
 # Contract Versioning
 
-This document outlines the versioning mechanism for the DeepBook Wrapper contract. The system is designed to allow for safe upgrades of the contract logic while interacting with a single, persistent `Wrapper` object.
+This document outlines the versioning mechanism for the Deeptrade package. The system is designed to allow for safe upgrades of the contract logic while interacting with a single, persistent `Wrapper` object.
 
 ## Motivation
 
