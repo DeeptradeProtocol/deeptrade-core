@@ -14,7 +14,7 @@ The wrapper acts as an intermediary, managing all DEEP-related fee operations.
 
 For detailed technical specifications and implementation details, please refer to:
 
-- [Deeptrade Design](docs/design.md)
+- [Fee Design](docs/fee-design.md)
 - [Loyalty Program](docs/loyalty.md)
 - [Oracle Price Calculation](docs/oracle-price-calculation.md)
 - [Oracle Pricing Security](docs/oracle-pricing-security.md)
@@ -55,7 +55,7 @@ DeepBook protocol requires paying fees for order placement in either DEEP coins 
 This structure incentivizes users to hold DEEP coins while ensuring trading accessibility for everyone.
 For whitelisted pools, there are no DEEP fees, so no coverage fees are required. However, protocol fees are still charged, with whitelisted pools receiving the maximum protocol fee discount rate for each order. Maximum discount rates for pools are specified in `TradingFeeConfig`, with a default rate of 25% used if not specified.
 
-For detailed information about dynamic protocol fee calculation, and the unsettled fees mechanism, see the [Design](docs/design.md) and [Unsettled Fees](docs/unsettled-fees.md) documentation.
+For detailed information about dynamic protocol fee calculation, and the unsettled fees mechanism, see the [Fee Design](docs/fee-design.md) and [Unsettled Fees](docs/unsettled-fees.md) documentation.
 
 ### Pool Creation Fees
 
