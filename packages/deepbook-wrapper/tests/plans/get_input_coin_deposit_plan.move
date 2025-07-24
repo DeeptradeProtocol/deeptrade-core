@@ -28,7 +28,6 @@ public fun balance_manager_has_exact_required_amount() {
     // Balance manager has exact amount needed, no need for wallet
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet (nothing needed)
         true, // has_sufficient_resources
     );
@@ -49,7 +48,6 @@ public fun balance_manager_has_more_than_required() {
     // Balance manager has more than enough, no need for wallet
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet (nothing needed)
         true, // has_sufficient_resources
     );
@@ -70,7 +68,6 @@ public fun balance_manager_has_enough_empty_wallet() {
     // Balance manager is sufficient even with empty wallet
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet (nothing needed)
         true, // has_sufficient_resources
     );
@@ -94,7 +91,6 @@ public fun balance_manager_partial_wallet_sufficient() {
     // Should take the additional needed amount from wallet
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         additional_needed, // take_from_wallet
         true, // has_sufficient_resources
     );
@@ -116,7 +112,6 @@ public fun balance_manager_partial_wallet_exact_match() {
     // Should take exactly what's needed from wallet
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         additional_needed, // take_from_wallet
         true, // has_sufficient_resources
     );
@@ -138,7 +133,6 @@ public fun balance_manager_almost_sufficient() {
     // Should take just 1 token from wallet
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         additional_needed, // take_from_wallet
         true, // has_sufficient_resources
     );
@@ -162,7 +156,6 @@ public fun balance_manager_partial_wallet_insufficient() {
     // Not enough in wallet to cover the difference, so take_from_wallet should be 0
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet (not enough, so 0)
         false, // has_sufficient_resources
     );
@@ -183,7 +176,6 @@ public fun balance_manager_empty_wallet_insufficient() {
     // Empty wallet can't cover the difference
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet (nothing available)
         false, // has_sufficient_resources
     );
@@ -205,7 +197,6 @@ public fun wallet_one_token_short() {
     // One token short in wallet, so take_from_wallet should be 0
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet (not enough, so 0)
         false, // has_sufficient_resources
     );
@@ -226,7 +217,6 @@ public fun both_sources_empty() {
     // Nothing available from either source
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet
         false, // has_sufficient_resources
     );
@@ -249,7 +239,6 @@ public fun zero_required_amount() {
     // Zero required amount should be sufficient regardless of balances
     assert_input_coin_deposit_plan_eq(
         plan,
-        0, // amount_needed (zero)
         0, // take_from_wallet (nothing needed)
         true, // has_sufficient_resources
     );
@@ -270,7 +259,6 @@ public fun huge_required_amount() {
     // Large values should work correctly
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         required_amount - balance_manager_balance, // take_from_wallet
         true, // has_sufficient_resources
     );
@@ -291,7 +279,6 @@ public fun huge_required_amount_insufficient() {
     // Just 1 token short for a huge amount
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         0, // take_from_wallet (not enough, so 0)
         false, // has_sufficient_resources
     );
@@ -312,7 +299,6 @@ public fun balance_manager_empty_wallet_just_enough() {
     // Wallet has exactly what's needed
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         required_amount, // take_from_wallet (all from wallet)
         true, // has_sufficient_resources
     );
@@ -333,7 +319,6 @@ public fun small_values() {
     // Small values should work correctly
     assert_input_coin_deposit_plan_eq(
         plan,
-        required_amount, // amount_needed
         required_amount - balance_manager_balance, // take_from_wallet
         true, // has_sufficient_resources
     );

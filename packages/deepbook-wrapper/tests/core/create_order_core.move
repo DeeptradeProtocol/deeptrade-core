@@ -1,15 +1,15 @@
 #[test_only]
 module deepbook_wrapper::create_order_core_tests;
 
-use deepbook_wrapper::fee::calculate_full_order_fee;
+use deepbook_wrapper::fee::calculate_deep_reserves_coverage_order_fee;
 use deepbook_wrapper::helper::calculate_order_amount;
 use deepbook_wrapper::order::{
     create_order_core,
     assert_deep_plan_eq,
-    assert_fee_plan_eq,
+    assert_coverage_fee_plan_eq,
     assert_input_coin_deposit_plan_eq,
     DeepPlan,
-    FeePlan,
+    CoverageFeePlan,
     InputCoinDepositPlan
 };
 use std::unit_test::assert_eq;
@@ -29,47 +29,39 @@ const SUI_PER_DEEP: u64 = 37_815_000_000;
 /// Helper function to assert all three plans match expected values
 public fun assert_order_plans_eq(
     deep_plan: DeepPlan,
-    fee_plan: FeePlan,
+    coverage_fee_plan: CoverageFeePlan,
     input_coin_deposit_plan: InputCoinDepositPlan,
     // Expected values for DeepPlan
-    expected_use_wrapper_deep: bool,
     expected_deep_from_wallet: u64,
     expected_deep_from_reserves: u64,
     expected_deep_sufficient: bool,
-    // Expected values for FeePlan (split into coverage and protocol fees)
+    // Expected values for CoverageFeePlan
     expected_coverage_fee_from_wallet: u64,
     expected_coverage_fee_from_balance_manager: u64,
-    expected_protocol_fee_from_wallet: u64,
-    expected_protocol_fee_from_balance_manager: u64,
-    expected_user_covers_wrapper_fee: bool,
+    expected_user_covers_fee: bool,
     // Expected values for InputCoinDepositPlan
-    expected_order_amount: u64,
     expected_deposit_from_wallet: u64,
     expected_deposit_sufficient: bool,
 ) {
     // Assert DeepPlan
     assert_deep_plan_eq(
         deep_plan,
-        expected_use_wrapper_deep,
         expected_deep_from_wallet,
         expected_deep_from_reserves,
         expected_deep_sufficient,
     );
 
-    // Assert FeePlan
-    assert_fee_plan_eq(
-        fee_plan,
+    // Assert CoverageFeePlan
+    assert_coverage_fee_plan_eq(
+        coverage_fee_plan,
         expected_coverage_fee_from_wallet,
         expected_coverage_fee_from_balance_manager,
-        expected_protocol_fee_from_wallet,
-        expected_protocol_fee_from_balance_manager,
-        expected_user_covers_wrapper_fee,
+        expected_user_covers_fee,
     );
 
     // Assert InputCoinDepositPlan
     assert_input_coin_deposit_plan_eq(
         input_coin_deposit_plan,
-        expected_order_amount,
         expected_deposit_from_wallet,
         expected_deposit_sufficient,
     );
@@ -103,10 +95,10 @@ public fun bid_order_sufficient_resources() {
 
     // For this test case we expect:
     // 1. DEEP: Half from wallet, half from balance manager
-    // 2. Fees: None because no wrapper DEEP used (both coverage and protocol fees are 0)
+    // 2. No coverage fees because no wrapper DEEP is used
     // 3. Token deposit: Remaining from wallet
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -122,21 +114,17 @@ public fun bid_order_sufficient_resources() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -167,17 +155,20 @@ public fun bid_order_with_wrapper_deep() {
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
-    let (_, coverage_fee, protocol_fee) = calculate_full_order_fee(sui_per_deep, deep_from_wrapper);
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_wrapper,
+    );
 
     // For this test case we expect:
     // 1. DEEP: All from wallet and balance manager + some from wrapper
-    // 2. Fees: First from balance manager, then from wallet if needed
+    // 2. Coverage fee: First from balance manager, then from wallet if needed
     // 3. Token deposit: Remaining from wallet
 
     let deep_from_wallet = deep_in_wallet;
     let deposit_from_wallet = order_amount - balance_manager_input_coin;
 
-    // Calculate fee distribution based on new logic
+    // Calculate coverage fee distribution
     let coverage_from_bm = if (balance_manager_sui >= coverage_fee) {
         coverage_fee
     } else {
@@ -185,15 +176,7 @@ public fun bid_order_with_wrapper_deep() {
     };
     let coverage_from_wallet = coverage_fee - coverage_from_bm;
 
-    let remaining_bm = balance_manager_sui - coverage_from_bm;
-    let protocol_from_bm = if (remaining_bm >= protocol_fee) {
-        protocol_fee
-    } else {
-        remaining_bm
-    };
-    let protocol_from_wallet = protocol_fee - protocol_from_bm;
-
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -209,21 +192,17 @@ public fun bid_order_with_wrapper_deep() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_from_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (prioritize balance manager, then wallet)
+        // CoverageFeePlan expectations
         coverage_from_wallet, // expected_coverage_fee_from_wallet
         coverage_from_bm, // expected_coverage_fee_from_balance_manager
-        protocol_from_wallet, // expected_protocol_fee_from_wallet
-        protocol_from_bm, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         deposit_from_wallet, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -255,10 +234,10 @@ public fun bid_order_whitelisted_pool() {
 
     // For this test case we expect:
     // 1. DEEP: None needed (whitelisted pool)
-    // 2. Fees: None (whitelisted pool)
+    // 2. Coverage fees: None (whitelisted pool)
     // 3. Token deposit: All from balance manager
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -274,28 +253,24 @@ public fun bid_order_whitelisted_pool() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
 }
 
 #[test]
-public fun bid_order_fee_from_both_sources() {
+public fun bid_order_coverage_fee_from_both_sources() {
     // Order parameters
     let quantity = 1_000_000_000_000;
     let price = 2_000_000;
@@ -313,21 +288,21 @@ public fun bid_order_fee_from_both_sources() {
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
-    let (total_fee, coverage_fee, protocol_fee) = calculate_full_order_fee(
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
         deep_from_wrapper,
     );
 
-    // Set up a scenario where fees need to come from both sources
-    // Distribute total fee with majority in balance manager to test prioritized usage
-    let balance_manager_sui = (total_fee * 3) / 4;
-    let sui_in_wallet = total_fee - balance_manager_sui;
+    // Set up a scenario where coverage fee needs to come from both sources
+    // Put majority in balance manager to test prioritized usage
+    let balance_manager_sui = (coverage_fee * 3) / 4;
+    let sui_in_wallet = coverage_fee - balance_manager_sui;
 
     // Set up input coin balances
     let wallet_input_coin = AMOUNT_LARGE;
     let balance_manager_input_coin = AMOUNT_LARGE;
 
-    // Calculate expected fee distribution
+    // Calculate expected coverage fee distribution
     let coverage_from_bm = if (balance_manager_sui >= coverage_fee) {
         coverage_fee
     } else {
@@ -335,15 +310,7 @@ public fun bid_order_fee_from_both_sources() {
     };
     let coverage_from_wallet = coverage_fee - coverage_from_bm;
 
-    let remaining_bm = balance_manager_sui - coverage_from_bm;
-    let protocol_from_bm = if (remaining_bm >= protocol_fee) {
-        protocol_fee
-    } else {
-        remaining_bm
-    };
-    let protocol_from_wallet = protocol_fee - protocol_from_bm;
-
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -359,21 +326,17 @@ public fun bid_order_fee_from_both_sources() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         coverage_from_wallet, // expected_coverage_fee_from_wallet
         coverage_from_bm, // expected_coverage_fee_from_balance_manager
-        protocol_from_wallet, // expected_protocol_fee_from_wallet
-        protocol_from_bm, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -403,7 +366,7 @@ public fun bid_order_insufficient_deep_no_wrapper() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -419,21 +382,17 @@ public fun bid_order_insufficient_deep_no_wrapper() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         false, // expected_deep_sufficient (not enough DEEP)
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -463,7 +422,7 @@ public fun bid_order_quote_only_in_balance_manager() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -479,21 +438,17 @@ public fun bid_order_quote_only_in_balance_manager() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -518,20 +473,20 @@ public fun bid_order_large_values() {
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
-    let (total_fee, coverage_fee, protocol_fee) = calculate_full_order_fee(
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
         deep_from_wrapper,
     );
 
     // Set up SUI balances to cover fees
     let balance_manager_sui = 0;
-    let sui_in_wallet = total_fee;
+    let sui_in_wallet = coverage_fee;
 
     // Set up input coin balances
     let balance_manager_input_coin = 0;
     let wallet_input_coin = order_amount;
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -547,21 +502,17 @@ public fun bid_order_large_values() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         coverage_fee, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        protocol_fee, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         order_amount, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -591,7 +542,7 @@ public fun bid_order_exact_resources() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -607,21 +558,17 @@ public fun bid_order_exact_resources() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_required, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        order_amount, // expected_order_amount
         order_amount, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -657,10 +604,10 @@ public fun ask_order_sufficient_resources() {
 
     // For this test case we expect:
     // 1. DEEP: Half from wallet, half from balance manager
-    // 2. No fees since user doesn't use wrapper DEEP
+    // 2. No coverage fees since user doesn't use wrapper DEEP
     // 3. Token deposit: Full amount from wallet
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -676,21 +623,17 @@ public fun ask_order_sufficient_resources() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_from_wallet, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet (balance manager has enough)
         true, // expected_deposit_sufficient
     );
@@ -722,10 +665,10 @@ public fun ask_order_whitelisted_pool() {
 
     // For this test case we expect:
     // 1. DEEP: None needed (whitelisted pool)
-    // 2. Fees: None (whitelisted pool)
+    // 2. Coverage fees: None (whitelisted pool)
     // 3. Token deposit: All from balance manager
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -741,21 +684,17 @@ public fun ask_order_whitelisted_pool() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -785,7 +724,7 @@ public fun ask_order_insufficient_deep_and_base() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -801,21 +740,17 @@ public fun ask_order_insufficient_deep_and_base() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         false, // expected_deep_sufficient (not enough DEEP)
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         false, // expected_deposit_sufficient
     );
@@ -844,13 +779,16 @@ public fun ask_order_base_only_in_balance_manager() {
 
     let deep_from_wrapper = deep_required - balance_manager_deep;
 
-    // Calculate fee for wrapper DEEP usage
-    let (_, coverage_fee, protocol_fee) = calculate_full_order_fee(sui_per_deep, deep_from_wrapper);
+    // Calculate coverage fee for wrapper DEEP usage
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_wrapper,
+    );
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -866,21 +804,17 @@ public fun ask_order_base_only_in_balance_manager() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         coverage_fee, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        protocol_fee, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -906,17 +840,20 @@ public fun ask_order_large_values() {
 
     let deep_from_wrapper = deep_required - deep_in_wallet;
 
-    // Calculate fee for wrapper DEEP usage
-    let (_, coverage_fee, protocol_fee) = calculate_full_order_fee(sui_per_deep, deep_from_wrapper);
+    // Calculate coverage fee for wrapper DEEP usage
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_wrapper,
+    );
 
     // All resources from wallet
-    let sui_in_wallet = coverage_fee + protocol_fee;
+    let sui_in_wallet = coverage_fee;
     let wallet_input_coin = quantity;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -932,21 +869,17 @@ public fun ask_order_large_values() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         coverage_fee, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        protocol_fee, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         quantity, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -976,7 +909,7 @@ public fun ask_order_exact_resources() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -992,21 +925,17 @@ public fun ask_order_exact_resources() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_required, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         quantity, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -1036,7 +965,7 @@ public fun ask_order_complex_distribution() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -1052,21 +981,17 @@ public fun ask_order_complex_distribution() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -1091,17 +1016,20 @@ public fun ask_order_insufficient_base() {
     let wrapper_deep_reserves = AMOUNT_MEDIUM;
     let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
 
-    // Calculate fee for wrapper DEEP usage
-    let (_, coverage_fee, protocol_fee) = calculate_full_order_fee(sui_per_deep, deep_from_wrapper);
+    // Calculate coverage fee for wrapper DEEP usage
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_wrapper,
+    );
 
     // Wallet has enough for fees but not enough for the deposit
-    let sui_in_wallet = coverage_fee + protocol_fee;
+    let sui_in_wallet = coverage_fee;
     let wallet_input_coin = AMOUNT_SMALL;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -1117,21 +1045,17 @@ public fun ask_order_insufficient_base() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         coverage_fee, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        protocol_fee, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet
         false, // expected_deposit_sufficient (not enough base coins)
     );
@@ -1156,17 +1080,20 @@ public fun ask_order_with_wrapper_deep() {
     let wrapper_deep_reserves = AMOUNT_MEDIUM;
     let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
 
-    // Calculate fee for wrapper DEEP usage
-    let (_, coverage_fee, protocol_fee) = calculate_full_order_fee(sui_per_deep, deep_from_wrapper);
+    // Calculate coverage fee for wrapper DEEP usage
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_wrapper,
+    );
 
     // Set up SUI and input coin balances
-    let sui_in_wallet = coverage_fee + protocol_fee;
+    let sui_in_wallet = coverage_fee;
     let wallet_input_coin = quantity - balance_manager_input_coin;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -1182,28 +1109,24 @@ public fun ask_order_with_wrapper_deep() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         coverage_fee, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        protocol_fee, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         wallet_input_coin, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
 }
 
 #[test]
-public fun ask_order_fee_from_both_sources() {
+public fun ask_order_coverage_fee_from_both_sources() {
     // Order parameters
     let quantity = 35_123_821;
     let price = 474_576_743;
@@ -1220,32 +1143,24 @@ public fun ask_order_fee_from_both_sources() {
 
     let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
 
-    // Calculate fee for wrapper DEEP usage
-    let (total_fee, coverage_fee, protocol_fee) = calculate_full_order_fee(
+    // Calculate coverage fee for wrapper DEEP usage
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
         deep_from_wrapper,
     );
 
     // Important: Make sure wallet doesn't have enough to cover all fees
     // We'll put 1/3 of the fee in wallet, 2/3 in balance manager
-    let fee_in_wallet = total_fee / 3; // 1/3 of fee in wallet
-    let fee_in_balance_manager = total_fee - fee_in_wallet; // 2/3 of fee in balance manager
+    let fee_in_wallet = coverage_fee / 3; // 1/3 of coverage fee in wallet
+    let fee_in_balance_manager = coverage_fee - fee_in_wallet; // 2/3 of coverage fee in balance manager
 
-    // Calculate individual fee components
+    // Calculate coverage fee distribution
     let coverage_from_bm = if (fee_in_balance_manager >= coverage_fee) {
         coverage_fee
     } else {
         fee_in_balance_manager
     };
     let coverage_from_wallet = coverage_fee - coverage_from_bm;
-
-    let remaining_bm = fee_in_balance_manager - coverage_from_bm;
-    let protocol_from_bm = if (remaining_bm >= protocol_fee) {
-        protocol_fee
-    } else {
-        remaining_bm
-    };
-    let protocol_from_wallet = protocol_fee - protocol_from_bm;
 
     // Set up SUI balances to match fee distribution
     let balance_manager_sui = fee_in_balance_manager;
@@ -1257,7 +1172,7 @@ public fun ask_order_fee_from_both_sources() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -1273,21 +1188,17 @@ public fun ask_order_fee_from_both_sources() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        true, // expected_use_wrapper_deep
         deep_in_wallet, // expected_deep_from_wallet
         deep_from_wrapper, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         coverage_from_wallet, // expected_coverage_fee_from_wallet
         coverage_from_bm, // expected_coverage_fee_from_balance_manager
-        protocol_from_wallet, // expected_protocol_fee_from_wallet
-        protocol_from_bm, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        quantity, // expected_order_amount
         0, // expected_deposit_from_wallet (all from balance manager)
         true, // expected_deposit_sufficient
     );
@@ -1319,7 +1230,7 @@ public fun zero_quantity_order() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -1336,21 +1247,17 @@ public fun zero_quantity_order() {
     // For this test case, order amount should be zero
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        0, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );
@@ -1380,7 +1287,7 @@ public fun zero_price_order() {
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
 
-    let (deep_plan, fee_plan, input_coin_deposit_plan) = create_order_core(
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
         balance_manager_deep,
@@ -1400,21 +1307,17 @@ public fun zero_price_order() {
 
     assert_order_plans_eq(
         deep_plan,
-        fee_plan,
+        coverage_fee_plan,
         input_coin_deposit_plan,
         // DeepPlan expectations
-        false, // expected_use_wrapper_deep
         0, // expected_deep_from_wallet
         0, // expected_deep_from_reserves
         true, // expected_deep_sufficient
-        // FeePlan expectations (split into coverage and protocol fees)
+        // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
         0, // expected_coverage_fee_from_balance_manager
-        0, // expected_protocol_fee_from_wallet
-        0, // expected_protocol_fee_from_balance_manager
-        true, // expected_user_covers_wrapper_fee
+        true, // expected_user_covers_fee
         // InputCoinDepositPlan expectations
-        0, // expected_order_amount
         0, // expected_deposit_from_wallet
         true, // expected_deposit_sufficient
     );

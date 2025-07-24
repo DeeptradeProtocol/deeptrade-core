@@ -1,12 +1,12 @@
 #[test_only]
 module deepbook_wrapper::validate_fees_against_max_tests;
 
-use deepbook_wrapper::fee::calculate_full_order_fee;
+use deepbook_wrapper::fee::calculate_deep_reserves_coverage_order_fee;
 use deepbook_wrapper::helper::apply_slippage;
 use deepbook_wrapper::order::{
     validate_fees_against_max,
     EDeepRequiredExceedsMax,
-    ESuiFeeExceedsMax
+    ECoverageFeeExceedsMax
 };
 use std::unit_test::assert_eq;
 
@@ -31,7 +31,10 @@ fun both_fees_within_limits() {
         estimated_deep_required_slippage,
     );
     let max_sui_fee = apply_slippage(estimated_sui_fee, estimated_sui_fee_slippage);
-    let (actual_sui_fee, _, _) = calculate_full_order_fee(sui_per_deep, deep_from_reserves);
+    let actual_sui_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_reserves,
+    );
 
     // Ensure our test parameters are valid (fees should be within limits)
     assert!(deep_required <= max_deep_required);
@@ -82,7 +85,7 @@ fun deep_fee_exceeds_limit() {
     );
 }
 
-#[test, expected_failure(abort_code = ESuiFeeExceedsMax)]
+#[test, expected_failure(abort_code = ECoverageFeeExceedsMax)]
 fun sui_fee_exceeds_limit() {
     // Test case: SUI fee exceeds maximum allowed limit
 
@@ -97,10 +100,8 @@ fun sui_fee_exceeds_limit() {
     let estimated_sui_fee_slippage = 0; // 0% slippage (no tolerance)
 
     // With 1000 DEEP from reserves at 1 SUI per DEEP:
-    // Using math::mul logic:
-    // Coverage fee = math::mul(1_000_000_000, 1_000_000_000) = 1_000_000_000 (1 SUI)
-    // Protocol fee = math::mul(math::mul(1_000_000_000, 10_000_000), 1_000_000_000) = 10_000_000 (0.01 SUI)
-    // Total = ~1.01 SUI, much higher than our 0.001 SUI limit
+    // Coverage fee = calculate_deep_reserves_coverage_order_fee(1_000_000_000, 1_000_000_000)
+    // This will be approximately 1 SUI, much higher than our 0.001 SUI limit
 
     // This should abort with ESuiFeeExceedsMax (code 6)
     validate_fees_against_max(
@@ -129,7 +130,6 @@ fun both_fees_exceed_limits() {
     let estimated_sui_fee_slippage = 0; // 0% slippage (no tolerance)
 
     // Should abort with EDeepRequiredExceedsMax (code 5) because DEEP is checked first
-    // We remove assertions to avoid test setup failures
     validate_fees_against_max(
         deep_required,
         deep_from_reserves,
@@ -225,6 +225,74 @@ fun zero_values_edge_case() {
     let estimated_sui_fee_slippage = 100_000_000; // 10% slippage
 
     // This should not abort - all values are zero or within limits
+    validate_fees_against_max(
+        deep_required,
+        deep_from_reserves,
+        sui_per_deep,
+        estimated_deep_required,
+        estimated_deep_required_slippage,
+        estimated_sui_fee,
+        estimated_sui_fee_slippage,
+    );
+}
+
+#[test]
+fun high_sui_per_deep_price() {
+    // Test case: Test with high SUI per DEEP price
+
+    let deep_required = 50_000_000; // 50 DEEP (6 decimals)
+    let deep_from_reserves = 25_000_000; // 25 DEEP from wrapper reserves
+    let sui_per_deep = 5_000_000_000; // 5 SUI per DEEP (high price)
+
+    // Set estimates to accommodate the high price
+    let estimated_deep_required = 60_000_000; // 60 DEEP (higher than actual)
+    let estimated_deep_required_slippage = 100_000_000; // 10% slippage
+    let estimated_sui_fee = 120_000_000_000; // 120 SUI (should be enough for coverage fee)
+    let estimated_sui_fee_slippage = 200_000_000; // 20% slippage
+
+    // Calculate what the actual fee would be
+    let actual_sui_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_reserves,
+    );
+    let max_sui_fee = apply_slippage(estimated_sui_fee, estimated_sui_fee_slippage);
+
+    // Verify our test setup
+    assert!(actual_sui_fee <= max_sui_fee);
+
+    // This should not abort - fees are within limits despite high SUI price
+    validate_fees_against_max(
+        deep_required,
+        deep_from_reserves,
+        sui_per_deep,
+        estimated_deep_required,
+        estimated_deep_required_slippage,
+        estimated_sui_fee,
+        estimated_sui_fee_slippage,
+    );
+}
+
+#[test]
+fun minimal_slippage_tolerance() {
+    // Test case: Test with minimal slippage tolerance
+
+    let deep_required = 100_000_000; // 100 DEEP (6 decimals)
+    let deep_from_reserves = 50_000_000; // 50 DEEP from wrapper reserves
+    let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP
+
+    // Set estimates exactly equal to actual values with minimal slippage
+    let estimated_deep_required = deep_required; // Exactly the same
+    let estimated_deep_required_slippage = 1_000_000; // 0.1% slippage (very small)
+
+    // Calculate the exact coverage fee and set estimate accordingly
+    let exact_coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_reserves,
+    );
+    let estimated_sui_fee = exact_coverage_fee; // Exactly the same
+    let estimated_sui_fee_slippage = 1_000_000; // 0.1% slippage (very small)
+
+    // This should not abort - values are exactly equal with minimal tolerance
     validate_fees_against_max(
         deep_required,
         deep_from_reserves,

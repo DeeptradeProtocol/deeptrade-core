@@ -2,6 +2,7 @@
 /// The AdminCap is created once during module initialization and is given to the
 /// package publisher. It can be transferred between addresses and is used to
 /// authorize privileged operations in the wrapper module.
+/// For a detailed explanation of administrative roles and procedures, see the docs/admin.md documentation.
 module deepbook_wrapper::admin;
 
 /// Capability that marks the holder as an admin of the DeepBook wrapper
@@ -15,4 +16,11 @@ fun init(ctx: &mut TxContext) {
         AdminCap { id: object::new(ctx) },
         ctx.sender(),
     )
+}
+
+// === Test Functions ===
+/// Get an AdminCap for testing purposes
+#[test_only]
+public fun get_admin_cap_for_testing(ctx: &mut TxContext): AdminCap {
+    AdminCap { id: object::new(ctx) }
 }
