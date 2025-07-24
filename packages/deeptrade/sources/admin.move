@@ -1,7 +1,7 @@
 /// Module that manages administrative capabilities for the Deeptrade package.
 /// The AdminCap is created once during module initialization and is given to the
 /// package publisher. It can be transferred between addresses and is used to
-/// authorize privileged operations in the wrapper module.
+/// authorize privileged operations in the Deeptrade package.
 /// For a detailed explanation of administrative roles and procedures, see the docs/admin.md documentation.
 module deepbook_wrapper::admin;
 

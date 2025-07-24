@@ -93,7 +93,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 7. Set `address` to new `address` of deployed package in `Move.toml`
 8. Build contract with new address: `sui move build`
 
-## Wrapper Package Ids:
+## Deeptrade Package Ids:
 
 ```
 0x1271ca74fee31ee2ffb4d6373eafb9ada44cdef0700ca34ec650b21de60cc80b

@@ -86,9 +86,9 @@ public struct CoverageFeePlan has copy, drop {
     user_covers_fee: bool,
 }
 
-/// A plan for charging the wrapper's protocol fees on an order.
+/// A plan for charging the Deeptrade wrapper's protocol fees on an order.
 ///
-/// The protocol fee is an additional fee charged by the wrapper for its services,
+/// The protocol fee is an additional fee charged by the Deeptrade wrapper for its services,
 /// paid in the order's input coin (base or quote). This plan calculates the
 /// maker and taker portions of the fee and specifies an allocation of the payment between
 /// the user's wallet and balance manager.
@@ -1657,10 +1657,10 @@ fun execute_coverage_fee_plan(
     };
 }
 
-/// Executes a `ProtocolFeePlan` to collect wrapper service fees from the user's
+/// Executes a `ProtocolFeePlan` to collect Deeptrade fees from the user's
 /// wallet and balance manager.
 ///
-/// Taker fees are collected immediately into the wrapper's protocol fees. Maker
+/// Taker fees are collected immediately into the Deeptrade's protocol fees. Maker
 /// fees are added to an unsettled list for future settlement by the user or protocol.
 ///
 /// Aborts if the plan indicates the user has insufficient funds.
