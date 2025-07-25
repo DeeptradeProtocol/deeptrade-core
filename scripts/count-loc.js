@@ -258,7 +258,7 @@ class MoveCodeAnalyzer {
   }
 
   formatResults(sourcesAnalysis, testsAnalysis = null) {
-    console.log("\n📊 Sui Deeptrade Package - Lines of Code Analysis");
+    console.log("\n📊 Sui Deeptrade Core Package - Lines of Code Analysis");
     console.log("=".repeat(67));
 
     // Sources section
