@@ -1,4 +1,4 @@
-module deeptrade_core::wrapper;
+module deeptrade_core::treasury;
 
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::helper::current_version;

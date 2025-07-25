@@ -15,7 +15,7 @@ use deeptrade_core::unsettled_fees::{
     settle_protocol_fee_and_record,
     start_protocol_fee_settlement
 };
-use deeptrade_core::wrapper::Wrapper;
+use deeptrade_core::treasury::Wrapper;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;

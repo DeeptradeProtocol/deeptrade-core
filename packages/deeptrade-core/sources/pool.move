@@ -10,7 +10,7 @@ use deeptrade_core::ticket::{
     validate_ticket,
     destroy_ticket
 };
-use deeptrade_core::wrapper::{Wrapper, join_protocol_fee};
+use deeptrade_core::treasury::{Wrapper, join_protocol_fee};
 use sui::clock::Clock;
 use sui::coin::Coin;
 use sui::event;

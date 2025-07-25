@@ -17,7 +17,7 @@ use deeptrade_core::unsettled_fees::{
     get_unsettled_fee_balance,
     settle_user_fees
 };
-use deeptrade_core::wrapper::{Self, Wrapper};
+use deeptrade_core::treasury::{Self, Wrapper};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;
@@ -1619,7 +1619,7 @@ public(package) fun setup_test_environment(): (Scenario, ID, ID) {
     // Setup wrapper
     scenario.next_tx(OWNER);
     {
-        wrapper::init_for_testing(scenario.ctx());
+        treasury::init_for_testing(scenario.ctx());
     };
 
     // Setup deepbook infrastructure
