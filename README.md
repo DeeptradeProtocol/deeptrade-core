@@ -71,7 +71,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 
 ## Deployment
 
-1. Go to `packages/deeptrade` directory
+1. Go to `packages/deeptrade-core` directory
 2. Uncomment `0x0` address in Move.toml before deploying contract
 3. Run command:
    `sui client publish --gas-budget 220000000 --skip-dependency-verification`
@@ -81,7 +81,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 
 ## Upgrade
 
-1. Go to `packages/deeptrade` directory (`cd packages/deeptrade/`)
+1. Go to `packages/deeptrade-core` directory (`cd packages/deeptrade-core/`)
 2. Set `address` to `0x0` in `Move.toml`
 3. Verify compability:
    `sui-local sui client upgrade --dry-run --verify-compatibility --upgrade-capability 0xae8c80532528977c531c7ee477d55d9e8618320e03c0ce923740ee8635cab01b --gas-budget 1000000000`
@@ -93,7 +93,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 7. Set `address` to new `address` of deployed package in `Move.toml`
 8. Build contract with new address: `sui move build`
 
-## Deeptrade Package Ids:
+## Deeptrade Core Package Ids:
 
 ```
 0x1271ca74fee31ee2ffb4d6373eafb9ada44cdef0700ca34ec650b21de60cc80b
@@ -119,7 +119,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 
 ### Lines of Code Analysis
 
-Analyze and count lines of code across all Deeptrade package modules:
+Analyze and count lines of code across all Deeptrade Core package modules:
 
 ```bash
 node scripts/count-loc.js [--help for options]
