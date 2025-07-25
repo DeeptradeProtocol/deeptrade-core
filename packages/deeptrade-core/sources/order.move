@@ -22,7 +22,6 @@ use deeptrade_core::helper::{
     hundred_percent
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
-use deeptrade_core::unsettled_fees::{add_unsettled_fee, settle_user_fees};
 use deeptrade_core::treasury::{
     Wrapper,
     join_deep_reserves_coverage_fee,
@@ -30,6 +29,7 @@ use deeptrade_core::treasury::{
     deep_reserves,
     split_deep_reserves
 };
+use deeptrade_core::unsettled_fees::{add_unsettled_fee, settle_user_fees};
 use pyth::price_info::PriceInfoObject;
 use std::u64;
 use sui::balance;
