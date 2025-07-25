@@ -23,7 +23,7 @@ use deeptrade_core::helper::{
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::treasury::{
-    Wrapper,
+    Treasury,
     join_deep_reserves_coverage_fee,
     join_protocol_fee,
     deep_reserves,
@@ -153,7 +153,7 @@ public struct InputCoinDepositPlan has copy, drop {
 /// - estimated_sui_fee_slippage: Maximum acceptable slippage for estimated SUI fee in billionths (e.g., 10_000_000 = 1%)
 /// - clock: System clock for timestamp verification
 public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -288,7 +288,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 /// - estimated_sui_fee_slippage: Maximum acceptable slippage for estimated SUI fee in billionths (e.g., 10_000_000 = 1%)
 /// - clock: System clock for timestamp verification
 public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -408,7 +408,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -509,7 +509,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for order book state
 public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -605,7 +605,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -702,7 +702,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_market_order_input_fee<BaseToken, QuoteToken>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -786,7 +786,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 ///
 /// Returns the settled fees as a coin of the specified type
 public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     pool: &mut Pool<BaseAsset, QuoteAsset>,
     balance_manager: &mut BalanceManager,
     order_id: u128,
@@ -1219,7 +1219,7 @@ public(package) fun validate_fees_against_max(
 /// - discount_rate: Discount rate applied to fees
 /// - deep_fee_type: Whether using DEEP fee type rates (true) or input coin fee type rates (false)
 public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
@@ -1327,7 +1327,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
 /// - estimated_sui_fee_slippage: Maximum acceptable slippage for estimated SUI fee in billionths (e.g., 10_000_000 = 1%)
 /// - clock: System clock for timestamp verification
 fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &Pool<BaseToken, QuoteToken>,
@@ -1594,7 +1594,7 @@ fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
 /// 3. Takes DEEP coins from wrapper reserves when needed
 /// 4. Deposits all acquired DEEP coins to the balance manager
 fun execute_deep_plan(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     balance_manager: &mut BalanceManager,
     deep_coin: &mut Coin<DEEP>,
     deep_plan: &DeepPlan,
@@ -1630,7 +1630,7 @@ fun execute_deep_plan(
 /// Aborts:
 /// - EInsufficientFee: If user cannot cover the fees
 fun execute_coverage_fee_plan(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     balance_manager: &mut BalanceManager,
     sui_coin: &mut Coin<SUI>,
     fee_plan: &CoverageFeePlan,
@@ -1665,7 +1665,7 @@ fun execute_coverage_fee_plan(
 ///
 /// Aborts if the plan indicates the user has insufficient funds.
 fun execute_protocol_fee_plan<CoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     balance_manager: &mut BalanceManager,
     coin: &mut Coin<CoinType>,
     order_info: &OrderInfo,

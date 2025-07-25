@@ -2,7 +2,7 @@ module deeptrade_core::swap;
 
 use deepbook::pool::Pool;
 use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee};
-use deeptrade_core::treasury::{Wrapper, join_protocol_fee};
+use deeptrade_core::treasury::{Treasury, join_protocol_fee};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event;
@@ -27,7 +27,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// Swaps a specific amount of base tokens for quote tokens using input fee model.
 ///
 /// Parameters:
-/// - wrapper: Wrapper object holding protocol state and DEEP reserves
+/// - wrapper: Treasury object holding protocol state and DEEP reserves
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_in: The base tokens being provided for the swap
 /// - min_quote_out: Minimum amount of quote tokens to receive (slippage protection)
@@ -44,7 +44,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns remaining base and received quote tokens
 public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     pool: &mut Pool<BaseToken, QuoteToken>,
     base_in: Coin<BaseToken>,
     min_quote_out: u64,
@@ -95,7 +95,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// Swaps a specific amount of quote tokens for base tokens using input fee model.
 ///
 /// Parameters:
-/// - wrapper: Wrapper object holding protocol state and DEEP reserves
+/// - wrapper: Treasury object holding protocol state and DEEP reserves
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - quote_in: The quote tokens being provided for the swap
 /// - min_base_out: Minimum amount of base tokens to receive (slippage protection)
@@ -112,7 +112,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns received base and remaining quote tokens
 public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     pool: &mut Pool<BaseToken, QuoteToken>,
     quote_in: Coin<QuoteToken>,
     min_base_out: u64,
