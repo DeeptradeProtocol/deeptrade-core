@@ -13,7 +13,7 @@ const EInsufficientOutputAmount: u64 = 1;
 
 // === Events ===
 public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop {
-    wrapper_id: ID,
+    treasury_id: ID,
     pool_id: ID,
     base_to_quote: bool,
     input_amount: u64,
@@ -27,7 +27,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// Swaps a specific amount of base tokens for quote tokens using input fee model.
 ///
 /// Parameters:
-/// - wrapper: Treasury object holding protocol state and DEEP reserves
+/// - treasury: Treasury object holding protocol state and DEEP reserves
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_in: The base tokens being provided for the swap
 /// - min_quote_out: Minimum amount of quote tokens to receive (slippage protection)
@@ -44,7 +44,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns remaining base and received quote tokens
 public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     pool: &mut Pool<BaseToken, QuoteToken>,
     base_in: Coin<BaseToken>,
     min_quote_out: u64,
@@ -52,7 +52,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (Coin<BaseToken>, Coin<QuoteToken>) {
-    wrapper.verify_version();
+    treasury.verify_version();
 
     let base_quantity = base_in.value();
 
@@ -73,13 +73,13 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     let (taker_fee_rate, _, _) = pool.pool_trade_params();
     let fee_balance = charge_swap_fee(&mut result_quote, taker_fee_rate);
     let fee_amount = fee_balance.value();
-    join_protocol_fee(wrapper, fee_balance);
+    join_protocol_fee(treasury, fee_balance);
 
     // Verify that the final output after Deeptrade fees still meets the user's minimum requirement
     validate_minimum_output(&result_quote, min_quote_out);
 
     event::emit(SwapExecuted<BaseToken, QuoteToken> {
-        wrapper_id: object::id(wrapper),
+        treasury_id: object::id(treasury),
         pool_id: object::id(pool),
         base_to_quote: true,
         input_amount: base_quantity,
@@ -95,7 +95,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// Swaps a specific amount of quote tokens for base tokens using input fee model.
 ///
 /// Parameters:
-/// - wrapper: Treasury object holding protocol state and DEEP reserves
+/// - treasury: Treasury object holding protocol state and DEEP reserves
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - quote_in: The quote tokens being provided for the swap
 /// - min_base_out: Minimum amount of base tokens to receive (slippage protection)
@@ -112,7 +112,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns received base and remaining quote tokens
 public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     pool: &mut Pool<BaseToken, QuoteToken>,
     quote_in: Coin<QuoteToken>,
     min_base_out: u64,
@@ -120,7 +120,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (Coin<BaseToken>, Coin<QuoteToken>) {
-    wrapper.verify_version();
+    treasury.verify_version();
 
     let quote_quantity = quote_in.value();
 
@@ -141,13 +141,13 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     let (taker_fee_rate, _, _) = pool.pool_trade_params();
     let fee_balance = charge_swap_fee(&mut result_base, taker_fee_rate);
     let fee_amount = fee_balance.value();
-    join_protocol_fee(wrapper, fee_balance);
+    join_protocol_fee(treasury, fee_balance);
 
     // Verify that the final output after Deeptrade fees still meets the user's minimum requirement
     validate_minimum_output(&result_base, min_base_out);
 
     event::emit(SwapExecuted<BaseToken, QuoteToken> {
-        wrapper_id: object::id(wrapper),
+        treasury_id: object::id(treasury),
         pool_id: object::id(pool),
         base_to_quote: false,
         input_amount: quote_quantity,
@@ -194,7 +194,7 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
         clock,
     );
 
-    let (base_out, quote_out) = apply_wrapper_fees(
+    let (base_out, quote_out) = apply_treasury_fees(
         pool,
         base_out,
         quote_out,
@@ -235,7 +235,7 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// 1. Gets the taker fee rate from the pool
 /// 2. Applies Deeptrade fee to the output quantities
 /// 3. Returns the final output quantities
-fun apply_wrapper_fees<BaseToken, QuoteToken>(
+fun apply_treasury_fees<BaseToken, QuoteToken>(
     pool: &Pool<BaseToken, QuoteToken>,
     mut base_out: u64,
     mut quote_out: u64,

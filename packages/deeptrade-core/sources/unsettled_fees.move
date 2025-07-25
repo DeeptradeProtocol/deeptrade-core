@@ -88,15 +88,15 @@ public fun start_protocol_fee_settlement<FeeCoinType>(): FeeSettlementReceipt<Fe
 /// - The order is still live (i.e., present in the account's open orders).
 /// - No unsettled fees exist for the order.
 public fun settle_protocol_fee_and_record<BaseToken, QuoteToken, FeeCoinType>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     receipt: &mut FeeSettlementReceipt<FeeCoinType>,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     order_id: u128,
 ) {
-    wrapper.verify_version();
+    treasury.verify_version();
 
-    let unsettled_fees = wrapper.unsettled_fees_mut();
+    let unsettled_fees = treasury.unsettled_fees_mut();
     let open_orders = pool.account_open_orders(balance_manager);
 
     // Don't settle fees to protocol while the order is live
@@ -120,7 +120,7 @@ public fun settle_protocol_fee_and_record<BaseToken, QuoteToken, FeeCoinType>(
         receipt.total_fees_settled = receipt.total_fees_settled + settled_amount;
     };
 
-    join_protocol_fee(wrapper, unsettled_fee_balance);
+    join_protocol_fee(treasury, unsettled_fee_balance);
     unsettled_fee.destroy_empty();
 }
 
@@ -151,11 +151,11 @@ public fun finish_protocol_fee_settlement<FeeCoinType>(receipt: FeeSettlementRec
 ///
 /// See `docs/unsettled-fees.md` for detailed explanation of the unsettled fees system.
 public(package) fun add_unsettled_fee<CoinType>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     fee: Balance<CoinType>,
     order_info: &OrderInfo,
 ) {
-    wrapper.verify_version();
+    treasury.verify_version();
 
     // Order must be live or partially filled to have unsettled fee
     let order_status = order_info.status();
@@ -174,7 +174,7 @@ public(package) fun add_unsettled_fee<CoinType>(
     let fee_value = fee.value();
     assert!(fee_value > 0, EZeroUnsettledFee);
 
-    let unsettled_fees = wrapper.unsettled_fees_mut();
+    let unsettled_fees = treasury.unsettled_fees_mut();
     let unsettled_fee_key = UnsettledFeeKey {
         pool_id: order_info.pool_id(),
         balance_manager_id: order_info.balance_manager_id(),
@@ -210,18 +210,18 @@ public(package) fun add_unsettled_fee<CoinType>(
 ///
 /// See `docs/unsettled-fees.md` for detailed explanation of the unsettled fees system.
 public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     order_id: u128,
     ctx: &mut TxContext,
 ): Coin<FeeCoinType> {
-    wrapper.verify_version();
+    treasury.verify_version();
 
     // Verify the caller owns the balance manager
     assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
 
-    let unsettled_fees = wrapper.unsettled_fees_mut();
+    let unsettled_fees = treasury.unsettled_fees_mut();
     let unsettled_fee_key = UnsettledFeeKey {
         pool_id: object::id(pool),
         balance_manager_id: object::id(balance_manager),
@@ -298,12 +298,12 @@ fun destroy_empty<CoinType>(unsettled_fee: UnsettledFee<CoinType>) {
 /// Check if an unsettled fee exists for a specific order
 #[test_only]
 public fun has_unsettled_fee(
-    wrapper: &Treasury,
+    treasury: &Treasury,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
 ): bool {
-    let unsettled_fees = wrapper.unsettled_fees();
+    let unsettled_fees = treasury.unsettled_fees();
     let key = UnsettledFeeKey { pool_id, balance_manager_id, order_id };
     unsettled_fees.contains(key)
 }
@@ -311,12 +311,12 @@ public fun has_unsettled_fee(
 /// Get the unsettled fee balance for a specific order
 #[test_only]
 public fun get_unsettled_fee_balance<CoinType>(
-    wrapper: &Treasury,
+    treasury: &Treasury,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
 ): u64 {
-    let unsettled_fees = wrapper.unsettled_fees();
+    let unsettled_fees = treasury.unsettled_fees();
     let key = UnsettledFeeKey { pool_id, balance_manager_id, order_id };
     let unsettled_fee: &UnsettledFee<CoinType> = unsettled_fees.borrow(key);
     unsettled_fee.balance.value()
@@ -325,12 +325,12 @@ public fun get_unsettled_fee_balance<CoinType>(
 /// Get the order parameters stored in an unsettled fee
 #[test_only]
 public fun get_unsettled_fee_order_params<CoinType>(
-    wrapper: &Treasury,
+    treasury: &Treasury,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
 ): (u64, u64) {
-    let unsettled_fees = wrapper.unsettled_fees();
+    let unsettled_fees = treasury.unsettled_fees();
     let key = UnsettledFeeKey { pool_id, balance_manager_id, order_id };
     let unsettled_fee: &UnsettledFee<CoinType> = unsettled_fees.borrow(key);
     (unsettled_fee.order_quantity, unsettled_fee.maker_quantity)
