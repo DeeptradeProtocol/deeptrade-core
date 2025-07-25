@@ -44,7 +44,7 @@ Oracle prices must pass strict checks:
 
 ## Fallback Mechanism
 
-When oracle prices are unavailable, client applications automatically switch users to **input coin fees** instead of using DEEP reserves. This maintains service availability without compromising security.
+When oracle prices are unavailable, client applications could automatically switch users to **input coin fees** instead of using DEEP reserves. This maintains service availability without compromising security.
 
 ## Result
 
