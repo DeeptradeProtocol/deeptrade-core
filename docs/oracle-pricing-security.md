@@ -2,9 +2,9 @@
 
 ## The Problem
 
-The wrapper maintains DEEP reserves to help users who don't have enough DEEP for DeepBook trading fees. When users need DEEP from our reserves, we must calculate how much SUI to charge them as coverage fee and protocol fee.
+The Deeptrade maintains DEEP reserves to help users who don't have enough DEEP for DeepBook trading fees. When users need DEEP from our reserves, we must calculate how much SUI to charge them as coverage fee and protocol fee.
 
-Previously, the wrapper used only a reference pool (DEEP/SUI market on DeepBook) to get the DEEP/SUI price for this calculation.
+Previously, the Deeptrade used only a reference pool (DEEP/SUI market on DeepBook) to get the DEEP/SUI price for this calculation.
 
 This created a critical vulnerability:
 
