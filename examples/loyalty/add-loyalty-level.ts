@@ -1,11 +1,11 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, LOYALTY_PROGRAM_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../constants";
+import { ADMIN_CAP_OBJECT_ID, LOYALTY_PROGRAM_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { percentageInBillionths } from "../utils";
 
-const LEVEL = 2; // Level ID to create
-const FEE_DISCOUNT_PERCENTAGE = 50; // 50% discount rate
+const LEVEL = 1; // Level ID to create
+const FEE_DISCOUNT_PERCENTAGE = 20; // 20% discount rate
 const FEE_DISCOUNT_RATE = percentageInBillionths(FEE_DISCOUNT_PERCENTAGE);
 
 // Usage: yarn ts-node examples/loyalty/add-loyalty-level.ts > add-loyalty-level.log 2>&1
@@ -13,7 +13,7 @@ const FEE_DISCOUNT_RATE = percentageInBillionths(FEE_DISCOUNT_PERCENTAGE);
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::loyalty::add_loyalty_level`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::loyalty::add_loyalty_level`,
     arguments: [
       tx.object(LOYALTY_PROGRAM_OBJECT_ID),
       tx.object(ADMIN_CAP_OBJECT_ID),

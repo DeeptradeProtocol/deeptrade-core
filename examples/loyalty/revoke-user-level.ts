@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, LOYALTY_PROGRAM_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../constants";
+import { ADMIN_CAP_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID, LOYALTY_PROGRAM_OBJECT_ID } from "../constants";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 
@@ -10,7 +10,7 @@ const USER_ADDRESS = ""; // Address of the user to revoke the level from
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::loyalty::revoke_user_level`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::loyalty::revoke_user_level`,
     arguments: [
       tx.object(LOYALTY_PROGRAM_OBJECT_ID),
       tx.object(ADMIN_CAP_OBJECT_ID),
