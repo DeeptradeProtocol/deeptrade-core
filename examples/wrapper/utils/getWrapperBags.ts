@@ -1,10 +1,10 @@
 import { provider } from "../../common";
-import { WRAPPER_OBJECT_ID } from "../../constants";
+import { TREASURY_OBJECT_ID } from "../../constants";
 
 export async function getTreasuryBags() {
   // Fetch the treasury object using its ID
   const treasuryObjectResponse = await provider.getObject({
-    id: WRAPPER_OBJECT_ID,
+    id: TREASURY_OBJECT_ID,
     options: { showContent: true },
   });
 

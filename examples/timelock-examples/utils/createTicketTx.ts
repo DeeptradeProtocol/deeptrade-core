@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { WRAPPER_PACKAGE_ID } from "../../constants";
+import { DEEPTRADE_CORE_PACKAGE_ID } from "../../constants";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 
 export enum TicketType {
@@ -28,12 +28,12 @@ export function createTicketTx({ ticketType, adminCapId, pks, weights, threshold
 
   // Get the ticket type using helper functions from Move
   const ticketTypeArg = tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::treasury::${getTicketTypeHelperFunction(ticketType)}`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::${getTicketTypeHelperFunction(ticketType)}`,
     arguments: [],
   });
 
   const ticket = tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::treasury::create_ticket`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::create_ticket`,
     arguments: [
       tx.object(adminCapId),
       ticketTypeArg,

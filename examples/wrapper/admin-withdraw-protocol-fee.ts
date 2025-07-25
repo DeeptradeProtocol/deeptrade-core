@@ -1,4 +1,4 @@
-import { ADMIN_CAP_OBJECT_ID, DEEP_COIN_TYPE, SUI_COIN_TYPE, WRAPPER_PACKAGE_ID } from "../constants";
+import { ADMIN_CAP_OBJECT_ID, DEEP_COIN_TYPE, SUI_COIN_TYPE, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
@@ -10,7 +10,7 @@ import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
   // Withdraw SUI protocol fee
   const tx = getWithdrawFeeTx({
     coinType: SUI_COIN_TYPE,
-    target: `${WRAPPER_PACKAGE_ID}::treasury::withdraw_protocol_fee`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_protocol_fee`,
     user: MULTISIG_CONFIG.address,
     adminCapId: ADMIN_CAP_OBJECT_ID,
     pks: MULTISIG_CONFIG.publicKeysSuiBytes,
@@ -21,7 +21,7 @@ import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
   // Withdraw DEEP protocol fee (pool creation fee)
   getWithdrawFeeTx({
     coinType: DEEP_COIN_TYPE,
-    target: `${WRAPPER_PACKAGE_ID}::treasury::withdraw_protocol_fee`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_protocol_fee`,
     user: MULTISIG_CONFIG.address,
     adminCapId: ADMIN_CAP_OBJECT_ID,
     transaction: tx,

@@ -1,4 +1,4 @@
-import { ADMIN_CAP_OBJECT_ID, NS_COIN_TYPE, WRAPPER_PACKAGE_ID } from "../constants";
+import { ADMIN_CAP_OBJECT_ID, NS_COIN_TYPE, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
@@ -9,7 +9,7 @@ import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
 
   const tx = getWithdrawFeeTx({
     coinType: NS_COIN_TYPE,
-    target: `${WRAPPER_PACKAGE_ID}::treasury::withdraw_deep_reserves_coverage_fee`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_deep_reserves_coverage_fee`,
     user: MULTISIG_CONFIG.address,
     adminCapId: ADMIN_CAP_OBJECT_ID,
     pks: MULTISIG_CONFIG.publicKeysSuiBytes,

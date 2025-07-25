@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, TRADING_FEE_CONFIG_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../../constants";
+import { ADMIN_CAP_OBJECT_ID, TRADING_FEE_CONFIG_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../../constants";
 import { percentageInBillionths } from "../../utils";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import { MULTISIG_CONFIG } from "../../multisig/multisig";
@@ -29,7 +29,7 @@ async () => {
   const newFeeInBillionths = percentageInBillionths(NEW_FEE);
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::fee::update_default_fees`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::fee::update_default_fees`,
     arguments: [
       tx.object(TRADING_FEE_CONFIG_OBJECT_ID),
       tx.object(TICKET_OBJECT_ID), // The ticket created in step 1

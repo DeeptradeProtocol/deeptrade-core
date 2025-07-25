@@ -2,14 +2,14 @@ import { bcs } from "@mysten/sui/bcs";
 import { Transaction } from "@mysten/sui/transactions";
 import { user } from "../../common";
 import { provider } from "../../common";
-import { DEEP_DECIMALS, WRAPPER_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../../constants";
+import { DEEP_DECIMALS, TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../../constants";
 
 export async function getDeepReservesBalance() {
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::treasury::deep_reserves`,
-    arguments: [tx.object(WRAPPER_OBJECT_ID)],
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::deep_reserves`,
+    arguments: [tx.object(TREASURY_OBJECT_ID)],
   });
 
   const res = await provider.devInspectTransactionBlock({

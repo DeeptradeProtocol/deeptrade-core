@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, WRAPPER_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../../constants";
+import { ADMIN_CAP_OBJECT_ID, TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../../constants";
 import { MULTISIG_CONFIG } from "../../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../../multisig/buildAndLogMultisigTransaction";
 
@@ -11,9 +11,9 @@ const VERSION = 1;
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::treasury::disable_version`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::disable_version`,
     arguments: [
-      tx.object(WRAPPER_OBJECT_ID),
+      tx.object(TREASURY_OBJECT_ID),
       tx.object(ADMIN_CAP_OBJECT_ID),
       tx.pure.u16(VERSION),
       tx.pure.vector("vector<u8>", MULTISIG_CONFIG.publicKeysSuiBytes),

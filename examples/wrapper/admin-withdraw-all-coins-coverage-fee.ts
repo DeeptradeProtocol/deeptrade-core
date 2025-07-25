@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../constants";
+import { ADMIN_CAP_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
@@ -23,7 +23,7 @@ import { processFeesBag } from "./utils/processFeeBag";
   for (const coinType of coinTypes) {
     getWithdrawFeeTx({
       coinType,
-      target: `${WRAPPER_PACKAGE_ID}::treasury::withdraw_deep_reserves_coverage_fee`,
+      target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_deep_reserves_coverage_fee`,
       user: MULTISIG_CONFIG.address,
       adminCapId: ADMIN_CAP_OBJECT_ID,
       transaction: tx,
