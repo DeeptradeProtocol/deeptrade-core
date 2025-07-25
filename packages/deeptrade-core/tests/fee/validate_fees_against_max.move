@@ -16,7 +16,7 @@ fun both_fees_within_limits() {
 
     // Setup test parameters
     let deep_required = 100_000_000; // 100 DEEP (6 decimals)
-    let deep_from_reserves = 50_000_000; // 50 DEEP from wrapper reserves
+    let deep_from_reserves = 50_000_000; // 50 DEEP from treasury reserves
     let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP (SUI has 9 decimals)
 
     // Estimated values with some buffer
@@ -57,7 +57,7 @@ fun deep_fee_exceeds_limit() {
     // Test case: DEEP fee exceeds maximum allowed limit
 
     let deep_required = 110_000_000; // 110 DEEP (6 decimals)
-    let deep_from_reserves = 50_000_000; // 50 DEEP from wrapper reserves
+    let deep_from_reserves = 50_000_000; // 50 DEEP from treasury reserves
     let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP (SUI has 9 decimals)
 
     // Set estimated DEEP requirement lower so actual exceeds limit
@@ -90,7 +90,7 @@ fun sui_fee_exceeds_limit() {
     // Test case: SUI fee exceeds maximum allowed limit
 
     let deep_required = 90_000_000; // 90 DEEP (6 decimals) - within DEEP limit
-    let deep_from_reserves = 1_000_000_000; // 1000 DEEP from wrapper reserves (large amount)
+    let deep_from_reserves = 1_000_000_000; // 1000 DEEP from treasury reserves (large amount)
     let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP (9 decimals)
 
     // Set estimated values so DEEP is within limit but SUI exceeds
@@ -120,7 +120,7 @@ fun both_fees_exceed_limits() {
     // Test case: Both fees exceed limits, should abort with DEEP error first
 
     let deep_required = 110_000_000; // 110 DEEP (6 decimals) - exceeds DEEP limit
-    let deep_from_reserves = 50_000_000; // 50 DEEP from wrapper reserves
+    let deep_from_reserves = 50_000_000; // 50 DEEP from treasury reserves
     let sui_per_deep = 2_000_000_000; // 2 SUI per DEEP (higher price)
 
     // Set both estimates low so both actual fees exceed limits
@@ -241,7 +241,7 @@ fun high_sui_per_deep_price() {
     // Test case: Test with high SUI per DEEP price
 
     let deep_required = 50_000_000; // 50 DEEP (6 decimals)
-    let deep_from_reserves = 25_000_000; // 25 DEEP from wrapper reserves
+    let deep_from_reserves = 25_000_000; // 25 DEEP from treasury reserves
     let sui_per_deep = 5_000_000_000; // 5 SUI per DEEP (high price)
 
     // Set estimates to accommodate the high price
@@ -277,7 +277,7 @@ fun minimal_slippage_tolerance() {
     // Test case: Test with minimal slippage tolerance
 
     let deep_required = 100_000_000; // 100 DEEP (6 decimals)
-    let deep_from_reserves = 50_000_000; // 50 DEEP from wrapper reserves
+    let deep_from_reserves = 50_000_000; // 50 DEEP from treasury reserves
     let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP
 
     // Set estimates exactly equal to actual values with minimal slippage

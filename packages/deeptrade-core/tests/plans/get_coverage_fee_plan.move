@@ -37,7 +37,7 @@ public fun whitelisted_pool_requires_no_fee() {
 }
 
 #[test]
-public fun not_using_wrapper_deep_requires_no_fee() {
+public fun not_using_treasury_deep_requires_no_fee() {
     let is_pool_whitelisted = false;
     let deep_from_reserves = 0;
     let sui_per_deep = SUI_PER_DEEP;
@@ -52,7 +52,7 @@ public fun not_using_wrapper_deep_requires_no_fee() {
         balance_manager_sui,
     );
 
-    // Not using wrapper DEEP should have no fees regardless of other parameters
+    // Not using treasury DEEP should have no fees regardless of other parameters
     assert_coverage_fee_plan_eq(
         plan,
         0, // from_wallet

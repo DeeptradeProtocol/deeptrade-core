@@ -24,7 +24,7 @@ const ALICE: address = @0xAAAA;
 
 #[test]
 fun live_order_success() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -35,7 +35,7 @@ fun live_order_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_live_order_info(
             pool_id,
@@ -48,21 +48,21 @@ fun live_order_success() {
         );
 
         // Verify fee doesn't exist before adding
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), false);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, order_id), false);
 
         // Should succeed for live order with remaining quantity
-        add_unsettled_fee(&mut wrapper, fee_balance, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
 
         // Verify fee was stored correctly
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), true);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, order_id), true);
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id, balance_manager_id, order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id, balance_manager_id, order_id),
             fee_amount,
         );
 
         // Verify order parameters were stored correctly
         let (stored_order_quantity, stored_maker_quantity) = get_unsettled_fee_order_params<SUI>(
-            &wrapper,
+            &treasury,
             pool_id,
             balance_manager_id,
             order_id,
@@ -70,7 +70,7 @@ fun live_order_success() {
         assert_eq!(stored_order_quantity, original_quantity);
         assert_eq!(stored_maker_quantity, expected_maker_quantity);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -78,7 +78,7 @@ fun live_order_success() {
 
 #[test]
 fun partially_filled_order_success() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -89,7 +89,7 @@ fun partially_filled_order_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_partially_filled_order_info(
             pool_id,
@@ -102,21 +102,21 @@ fun partially_filled_order_success() {
         );
 
         // Verify fee doesn't exist before adding
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), false);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, order_id), false);
 
         // Should succeed for partially filled order with remaining quantity
-        add_unsettled_fee(&mut wrapper, fee_balance, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
 
         // Verify fee was stored correctly
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), true);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, order_id), true);
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id, balance_manager_id, order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id, balance_manager_id, order_id),
             fee_amount,
         );
 
         // Verify order parameters were stored correctly
         let (stored_order_quantity, stored_maker_quantity) = get_unsettled_fee_order_params<SUI>(
-            &wrapper,
+            &treasury,
             pool_id,
             balance_manager_id,
             order_id,
@@ -124,7 +124,7 @@ fun partially_filled_order_success() {
         assert_eq!(stored_order_quantity, original_quantity);
         assert_eq!(stored_maker_quantity, expected_maker_quantity);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -132,7 +132,7 @@ fun partially_filled_order_success() {
 
 #[test, expected_failure(abort_code = unsettled_fees::EUnsettledFeeAlreadyExists)]
 fun join_existing_fee_fails() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -143,7 +143,7 @@ fun join_existing_fee_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let order_info = create_live_order_info(
             pool_id,
             balance_manager_id,
@@ -156,20 +156,20 @@ fun join_existing_fee_fails() {
 
         // Add first fee
         let fee_balance_1 = balance::create_for_testing<SUI>(fee_amount_1);
-        add_unsettled_fee(&mut wrapper, fee_balance_1, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance_1, &order_info);
 
         // Verify first fee was stored correctly
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, order_id), true);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, order_id), true);
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id, balance_manager_id, order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id, balance_manager_id, order_id),
             fee_amount_1,
         );
 
         // Add second fee to same order - should fail
         let fee_balance_2 = balance::create_for_testing<SUI>(fee_amount_2);
-        add_unsettled_fee(&mut wrapper, fee_balance_2, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance_2, &order_info);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -177,7 +177,7 @@ fun join_existing_fee_fails() {
 
 #[test, expected_failure(abort_code = unsettled_fees::EOrderNotLiveOrPartiallyFilled)]
 fun cancelled_order_fails() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -185,7 +185,7 @@ fun cancelled_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_cancelled_order_info(
             pool_id,
@@ -198,9 +198,9 @@ fun cancelled_order_fails() {
         );
 
         // Should fail for cancelled order
-        add_unsettled_fee(&mut wrapper, fee_balance, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -208,7 +208,7 @@ fun cancelled_order_fails() {
 
 #[test, expected_failure(abort_code = unsettled_fees::EOrderFullyExecuted)]
 fun fully_executed_order_fails() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -216,7 +216,7 @@ fun fully_executed_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_live_order_info(
             pool_id,
@@ -229,9 +229,9 @@ fun fully_executed_order_fails() {
         );
 
         // Should fail for fully executed order
-        add_unsettled_fee(&mut wrapper, fee_balance, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -239,14 +239,14 @@ fun fully_executed_order_fails() {
 
 #[test, expected_failure(abort_code = unsettled_fees::EZeroUnsettledFee)]
 fun zero_fee_fails() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(0); // zero fee
         let order_info = create_live_order_info(
             pool_id,
@@ -259,9 +259,9 @@ fun zero_fee_fails() {
         );
 
         // Should fail for zero fee amount
-        add_unsettled_fee(&mut wrapper, fee_balance, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -269,11 +269,11 @@ fun zero_fee_fails() {
 
 #[test]
 fun different_coin_types() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
 
         let pool_id = id_from_address(@0x1);
         let balance_manager_id = id_from_address(@0x2);
@@ -303,40 +303,40 @@ fun different_coin_types() {
         );
 
         // Verify no fees exist initially
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, sui_order_id), false);
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, deep_order_id), false);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, sui_order_id), false);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, deep_order_id), false);
 
         // Add SUI fee to first order
         let sui_fee = balance::create_for_testing<SUI>(1000);
-        add_unsettled_fee(&mut wrapper, sui_fee, &sui_order_info);
+        add_unsettled_fee(&mut treasury, sui_fee, &sui_order_info);
 
         // Add DEEP fee to second order
         let deep_fee = balance::create_for_testing<DEEP>(2000);
-        add_unsettled_fee(&mut wrapper, deep_fee, &deep_order_info);
+        add_unsettled_fee(&mut treasury, deep_fee, &deep_order_info);
 
         // Verify both fees exist and are stored separately
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, sui_order_id), true);
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id, balance_manager_id, deep_order_id), true);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, sui_order_id), true);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, deep_order_id), true);
 
         // Verify correct amounts
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id, balance_manager_id, sui_order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id, balance_manager_id, sui_order_id),
             1000,
         );
         assert_eq!(
-            get_unsettled_fee_balance<DEEP>(&wrapper, pool_id, balance_manager_id, deep_order_id),
+            get_unsettled_fee_balance<DEEP>(&treasury, pool_id, balance_manager_id, deep_order_id),
             2000,
         );
 
         // Verify order params are correct for both types
         let (order_quantity_sui, maker_quantity_sui) = get_unsettled_fee_order_params<SUI>(
-            &wrapper,
+            &treasury,
             pool_id,
             balance_manager_id,
             sui_order_id,
         );
         let (order_quantity_deep, maker_quantity_deep) = get_unsettled_fee_order_params<DEEP>(
-            &wrapper,
+            &treasury,
             pool_id,
             balance_manager_id,
             deep_order_id,
@@ -347,7 +347,7 @@ fun different_coin_types() {
         assert_eq!(order_quantity_deep, 6000);
         assert_eq!(maker_quantity_deep, 3000); // 6000 - 3000
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -355,11 +355,11 @@ fun different_coin_types() {
 
 #[test]
 fun cross_pool_scenarios() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
 
         let pool_id_1 = id_from_address(@0x1);
         let pool_id_2 = id_from_address(@0x2);
@@ -389,40 +389,40 @@ fun cross_pool_scenarios() {
         );
 
         // Verify no fees exist initially
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id_1, balance_manager_id, order_id), false);
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id_2, balance_manager_id, order_id), false);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id_1, balance_manager_id, order_id), false);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id_2, balance_manager_id, order_id), false);
 
         // Add fee to first pool
         let fee_1 = balance::create_for_testing<SUI>(1000);
-        add_unsettled_fee(&mut wrapper, fee_1, &order_info_1);
+        add_unsettled_fee(&mut treasury, fee_1, &order_info_1);
 
         // Add fee to second pool
         let fee_2 = balance::create_for_testing<SUI>(1500);
-        add_unsettled_fee(&mut wrapper, fee_2, &order_info_2);
+        add_unsettled_fee(&mut treasury, fee_2, &order_info_2);
 
         // Verify both fees exist and are stored separately
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id_1, balance_manager_id, order_id), true);
-        assert_eq!(has_unsettled_fee(&wrapper, pool_id_2, balance_manager_id, order_id), true);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id_1, balance_manager_id, order_id), true);
+        assert_eq!(has_unsettled_fee(&treasury, pool_id_2, balance_manager_id, order_id), true);
 
         // Verify correct amounts for each pool
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id_1, balance_manager_id, order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id_1, balance_manager_id, order_id),
             1000,
         );
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id_2, balance_manager_id, order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id_2, balance_manager_id, order_id),
             1500,
         );
 
         // Verify order params are different for each pool
         let (order_quantity_1, maker_quantity_1) = get_unsettled_fee_order_params<SUI>(
-            &wrapper,
+            &treasury,
             pool_id_1,
             balance_manager_id,
             order_id,
         );
         let (order_quantity_2, maker_quantity_2) = get_unsettled_fee_order_params<SUI>(
-            &wrapper,
+            &treasury,
             pool_id_2,
             balance_manager_id,
             order_id,
@@ -438,15 +438,15 @@ fun cross_pool_scenarios() {
 
         // Verify fees remain unchanged
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id_1, balance_manager_id, order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id_1, balance_manager_id, order_id),
             1000,
         );
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(&wrapper, pool_id_2, balance_manager_id, order_id),
+            get_unsettled_fee_balance<SUI>(&treasury, pool_id_2, balance_manager_id, order_id),
             1500,
         );
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -454,7 +454,7 @@ fun cross_pool_scenarios() {
 
 #[test, expected_failure(abort_code = unsettled_fees::EOrderNotLiveOrPartiallyFilled)]
 fun filled_order_fails() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -462,7 +462,7 @@ fun filled_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_filled_order_info(
             pool_id,
@@ -475,9 +475,9 @@ fun filled_order_fails() {
         );
 
         // Should fail for filled order
-        add_unsettled_fee(&mut wrapper, fee_balance, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
@@ -485,7 +485,7 @@ fun filled_order_fails() {
 
 #[test, expected_failure(abort_code = unsettled_fees::EOrderNotLiveOrPartiallyFilled)]
 fun expired_order_fails() {
-    let mut scenario = setup_wrapper_test(OWNER);
+    let mut scenario = setup_treasury_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -493,7 +493,7 @@ fun expired_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Treasury>();
+        let mut treasury = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_expired_order_info(
             pool_id,
@@ -506,16 +506,16 @@ fun expired_order_fails() {
         );
 
         // Should fail for expired order
-        add_unsettled_fee(&mut wrapper, fee_balance, &order_info);
+        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
 
-        return_shared(wrapper);
+        return_shared(treasury);
     };
 
     scenario.end();
 }
 
-/// Setup a test scenario with an initialized wrapper
-public(package) fun setup_wrapper_test(owner: address): Scenario {
+/// Setup a test scenario with an initialized treasury
+public(package) fun setup_treasury_test(owner: address): Scenario {
     let mut scenario = begin(owner);
     {
         let ctx = scenario.ctx();
