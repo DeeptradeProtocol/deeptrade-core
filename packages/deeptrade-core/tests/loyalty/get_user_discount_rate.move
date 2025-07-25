@@ -1,14 +1,14 @@
 #[test_only]
-module deepbook_wrapper::get_user_discount_rate_tests;
+module deeptrade_core::get_user_discount_rate_tests;
 
-use deepbook_wrapper::grant_user_level_tests::{
+use deeptrade_core::grant_user_level_tests::{
     setup_test_environment,
     get_test_multisig_pks,
     get_test_multisig_weights,
     get_test_multisig_threshold,
     get_test_multisig_address
 };
-use deepbook_wrapper::loyalty::{Self, LoyaltyProgram};
+use deeptrade_core::loyalty::{Self, LoyaltyProgram};
 use std::unit_test::assert_eq;
 use sui::test_scenario::{end, return_shared};
 use sui::test_utils::destroy;
@@ -70,7 +70,7 @@ fun get_discount_rate_for_user_with_valid_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant BRONZE level to ALICE
         loyalty::grant_user_level(
@@ -149,7 +149,7 @@ fun get_discount_rate_after_level_changes() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant BRONZE level to ALICE
         loyalty::grant_user_level(
@@ -180,7 +180,7 @@ fun get_discount_rate_after_level_changes() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::revoke_user_level(
             &mut loyalty_program,
@@ -209,7 +209,7 @@ fun get_discount_rate_after_level_changes() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant GOLD level to ALICE
         loyalty::grant_user_level(
@@ -249,7 +249,7 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add a new level
         loyalty::add_loyalty_level(
@@ -292,7 +292,7 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // First revoke ALICE's level
         loyalty::revoke_user_level(
@@ -342,7 +342,7 @@ fun get_discount_rate_multiple_users_same_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant GOLD level to multiple users
         loyalty::grant_user_level(
@@ -407,7 +407,7 @@ fun get_discount_rate_consistency_with_view_functions() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant SILVER level to ALICE
         loyalty::grant_user_level(

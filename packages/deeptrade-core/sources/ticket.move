@@ -1,6 +1,6 @@
-module deepbook_wrapper::ticket;
+module deeptrade_core::ticket;
 
-use deepbook_wrapper::admin::AdminCap;
+use deeptrade_core::admin::AdminCap;
 use multisig::multisig;
 use sui::clock::Clock;
 use sui::event;

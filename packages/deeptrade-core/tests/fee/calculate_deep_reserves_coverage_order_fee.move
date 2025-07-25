@@ -1,7 +1,7 @@
 #[test_only]
-module deepbook_wrapper::calculate_deep_reserves_coverage_order_fee_tests;
+module deeptrade_core::calculate_deep_reserves_coverage_order_fee_tests;
 
-use deepbook_wrapper::fee::calculate_deep_reserves_coverage_order_fee;
+use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
 use std::unit_test::assert_eq;
 
 const SUI_PER_DEEP: u64 = 37_815_000_000;

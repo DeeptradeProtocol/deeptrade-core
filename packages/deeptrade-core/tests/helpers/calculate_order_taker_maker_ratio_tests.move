@@ -1,8 +1,8 @@
 #[test_only]
-module deepbook_wrapper::calculate_order_taker_maker_ratio_tests;
+module deeptrade_core::calculate_order_taker_maker_ratio_tests;
 
 use deepbook::constants::{live, partially_filled, filled, canceled, expired};
-use deepbook_wrapper::helper::{
+use deeptrade_core::helper::{
     calculate_order_taker_maker_ratio,
     EZeroOriginalQuantity,
     EExecutedQuantityExceedsOriginal

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-module deepbook_wrapper::math;
+module deeptrade_core::math;
 
 /// scaling setting for float
 const FLOAT_SCALING_U128: u128 = 1_000_000_000;

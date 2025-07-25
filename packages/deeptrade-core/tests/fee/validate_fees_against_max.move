@@ -1,9 +1,9 @@
 #[test_only]
-module deepbook_wrapper::validate_fees_against_max_tests;
+module deeptrade_core::validate_fees_against_max_tests;
 
-use deepbook_wrapper::fee::calculate_deep_reserves_coverage_order_fee;
-use deepbook_wrapper::helper::apply_slippage;
-use deepbook_wrapper::order::{
+use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
+use deeptrade_core::helper::apply_slippage;
+use deeptrade_core::order::{
     validate_fees_against_max,
     EDeepRequiredExceedsMax,
     ECoverageFeeExceedsMax

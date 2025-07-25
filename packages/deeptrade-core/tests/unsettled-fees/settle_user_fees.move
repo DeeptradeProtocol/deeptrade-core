@@ -1,5 +1,5 @@
 #[test_only]
-module deepbook_wrapper::settle_user_fees_tests;
+module deeptrade_core::settle_user_fees_tests;
 
 use deepbook::balance_manager::BalanceManager;
 use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
@@ -10,14 +10,14 @@ use deepbook::pool_tests::{
     setup_pool_with_default_fees_and_reference_pool,
     place_limit_order
 };
-use deepbook_wrapper::unsettled_fees::{
+use deeptrade_core::unsettled_fees::{
     Self,
     add_unsettled_fee,
     has_unsettled_fee,
     get_unsettled_fee_balance,
     settle_user_fees
 };
-use deepbook_wrapper::wrapper::{Self, Wrapper};
+use deeptrade_core::wrapper::{Self, Wrapper};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;

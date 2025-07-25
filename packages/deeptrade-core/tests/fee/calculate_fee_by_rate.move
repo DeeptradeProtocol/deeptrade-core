@@ -1,7 +1,7 @@
 #[test_only]
-module deepbook_wrapper::calculate_fee_by_rate_tests;
+module deeptrade_core::calculate_fee_by_rate_tests;
 
-use deepbook_wrapper::fee::calculate_fee_by_rate;
+use deeptrade_core::fee::calculate_fee_by_rate;
 use std::unit_test::assert_eq;
 
 /// Constants for common test values

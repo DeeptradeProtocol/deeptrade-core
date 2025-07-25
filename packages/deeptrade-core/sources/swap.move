@@ -1,8 +1,8 @@
-module deepbook_wrapper::swap;
+module deeptrade_core::swap;
 
 use deepbook::pool::Pool;
-use deepbook_wrapper::fee::{calculate_fee_by_rate, charge_swap_fee};
-use deepbook_wrapper::wrapper::{Wrapper, join_protocol_fee};
+use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee};
+use deeptrade_core::wrapper::{Wrapper, join_protocol_fee};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event;

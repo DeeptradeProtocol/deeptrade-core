@@ -1,4 +1,4 @@
-module deepbook_wrapper::oracle;
+module deeptrade_core::oracle;
 
 use pyth::price::Price;
 use pyth::price_identifier::PriceIdentifier;

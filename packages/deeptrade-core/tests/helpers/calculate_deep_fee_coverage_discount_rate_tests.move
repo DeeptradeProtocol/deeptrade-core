@@ -1,7 +1,7 @@
 #[test_only]
-module deepbook_wrapper::calculate_discount_rate_tests;
+module deeptrade_core::calculate_discount_rate_tests;
 
-use deepbook_wrapper::helper::{calculate_deep_fee_coverage_discount_rate, EInvalidDeepFromReserves};
+use deeptrade_core::helper::{calculate_deep_fee_coverage_discount_rate, EInvalidDeepFromReserves};
 use std::unit_test::assert_eq;
 
 // Common discount rates for testing

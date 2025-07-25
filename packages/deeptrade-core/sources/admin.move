@@ -3,7 +3,7 @@
 /// package publisher. It can be transferred between addresses and is used to
 /// authorize privileged operations in the Deeptrade package.
 /// For a detailed explanation of administrative roles and procedures, see the docs/admin.md documentation.
-module deepbook_wrapper::admin;
+module deeptrade_core::admin;
 
 public struct AdminCap has key, store {
     id: UID,

@@ -1,7 +1,7 @@
 #[test_only]
-module deepbook_wrapper::get_deep_plan_tests;
+module deeptrade_core::get_deep_plan_tests;
 
-use deepbook_wrapper::order::{get_deep_plan, assert_deep_plan_eq};
+use deeptrade_core::order::{get_deep_plan, assert_deep_plan_eq};
 
 // -------------------------------------
 // Constants for realistic DEEP amounts

@@ -1,16 +1,16 @@
-module deepbook_wrapper::order;
+module deeptrade_core::order;
 
 use deepbook::balance_manager::{BalanceManager, TradeProof};
 use deepbook::constants;
 use deepbook::order_info::OrderInfo;
 use deepbook::pool::Pool;
-use deepbook_wrapper::fee::{
+use deeptrade_core::fee::{
     TradingFeeConfig,
     calculate_protocol_fees,
     calculate_input_coin_deepbook_fee,
     calculate_deep_reserves_coverage_order_fee
 };
-use deepbook_wrapper::helper::{
+use deeptrade_core::helper::{
     calculate_deep_required,
     transfer_if_nonzero,
     calculate_order_amount,
@@ -21,9 +21,9 @@ use deepbook_wrapper::helper::{
     calculate_deep_fee_coverage_discount_rate,
     hundred_percent
 };
-use deepbook_wrapper::loyalty::LoyaltyProgram;
-use deepbook_wrapper::unsettled_fees::{add_unsettled_fee, settle_user_fees};
-use deepbook_wrapper::wrapper::{
+use deeptrade_core::loyalty::LoyaltyProgram;
+use deeptrade_core::unsettled_fees::{add_unsettled_fee, settle_user_fees};
+use deeptrade_core::wrapper::{
     Wrapper,
     join_deep_reserves_coverage_fee,
     join_protocol_fee,

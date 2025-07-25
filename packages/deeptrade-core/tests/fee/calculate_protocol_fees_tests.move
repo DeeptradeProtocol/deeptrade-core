@@ -1,7 +1,7 @@
 #[test_only]
-module deepbook_wrapper::calculate_protocol_fees_tests;
+module deeptrade_core::calculate_protocol_fees_tests;
 
-use deepbook_wrapper::fee::calculate_protocol_fees;
+use deeptrade_core::fee::calculate_protocol_fees;
 use std::unit_test::assert_eq;
 
 // === Test Constants ===
@@ -314,7 +314,7 @@ fun no_execution() {
 // === Invalid Scenarios ===
 
 #[test]
-#[expected_failure(abort_code = deepbook_wrapper::fee::EInvalidRatioSum)]
+#[expected_failure(abort_code = deeptrade_core::fee::EInvalidRatioSum)]
 fun ratios_sum_greater_than_100_percent() {
     let (_, _, _) = calculate_protocol_fees(
         600_000_000, // 60% taker
@@ -327,7 +327,7 @@ fun ratios_sum_greater_than_100_percent() {
 }
 
 #[test]
-#[expected_failure(abort_code = deepbook_wrapper::fee::EInvalidRatioSum)]
+#[expected_failure(abort_code = deeptrade_core::fee::EInvalidRatioSum)]
 fun both_ratios_maximum() {
     let (_, _, _) = calculate_protocol_fees(
         SCALE, // 100% taker
@@ -340,7 +340,7 @@ fun both_ratios_maximum() {
 }
 
 #[test]
-#[expected_failure(abort_code = deepbook_wrapper::fee::EZeroOrderAmount)]
+#[expected_failure(abort_code = deeptrade_core::fee::EZeroOrderAmount)]
 fun zero_order_amount() {
     let (_, _, _) = calculate_protocol_fees(
         SCALE, // 100% taker
@@ -353,7 +353,7 @@ fun zero_order_amount() {
 }
 
 #[test]
-#[expected_failure(abort_code = deepbook_wrapper::fee::EInvalidRatioSum)]
+#[expected_failure(abort_code = deeptrade_core::fee::EInvalidRatioSum)]
 fun invalid_ratios_and_zero_order_amount() {
     // Test that ratio validation happens first
     let (_, _, _) = calculate_protocol_fees(
@@ -367,7 +367,7 @@ fun invalid_ratios_and_zero_order_amount() {
 }
 
 #[test]
-#[expected_failure(abort_code = deepbook_wrapper::fee::EInvalidRatioSum)]
+#[expected_failure(abort_code = deeptrade_core::fee::EInvalidRatioSum)]
 fun ratios_sum_off_by_one_over() {
     let (_, _, _) = calculate_protocol_fees(
         500_000_000, // 50% taker
@@ -380,7 +380,7 @@ fun ratios_sum_off_by_one_over() {
 }
 
 #[test]
-#[expected_failure(abort_code = deepbook_wrapper::fee::EInvalidRatioSum)]
+#[expected_failure(abort_code = deeptrade_core::fee::EInvalidRatioSum)]
 fun single_ratio_over_100_percent() {
     let (_, _, _) = calculate_protocol_fees(
         1_000_000_001, // 100% + 1 taker (invalid)

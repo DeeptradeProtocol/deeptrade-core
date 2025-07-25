@@ -1,21 +1,21 @@
 #[test_only]
-module deepbook_wrapper::settle_protocol_fees_tests;
+module deeptrade_core::settle_protocol_fees_tests;
 
 use deepbook::balance_manager::BalanceManager;
 use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
 use deepbook::constants;
 use deepbook::pool::Pool;
 use deepbook::pool_tests::place_limit_order;
-use deepbook_wrapper::order::cancel_order_and_settle_fees;
-use deepbook_wrapper::settle_user_fees_tests::setup_test_environment;
-use deepbook_wrapper::unsettled_fees::{
+use deeptrade_core::order::cancel_order_and_settle_fees;
+use deeptrade_core::settle_user_fees_tests::setup_test_environment;
+use deeptrade_core::unsettled_fees::{
     add_unsettled_fee,
     has_unsettled_fee,
     get_unsettled_fee_balance,
     settle_protocol_fee_and_record,
     start_protocol_fee_settlement
 };
-use deepbook_wrapper::wrapper::Wrapper;
+use deeptrade_core::wrapper::Wrapper;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;

@@ -1,6 +1,6 @@
 [package]
-name = "deepbook_wrapper"
-version = "0.0.4"
+name = "deeptrade_core"
+version = "1.0.0"
 edition = "2024.beta"
 
 [dependencies]
@@ -10,5 +10,4 @@ Pyth = { local = "../pyth", address = "0x04e20ddf36af412a4096f9014f4a565af9e812d
 multisig = { git = "https://github.com/MystenLabs/multisig-move.git", subdir = "move", rev = "main" }
 
 [addresses]
-deepbook_wrapper = "0x03aafc54af513d592bcb91136d61b94ea40b0f9b50477f24a3a9a38fca625174"
-# deepbook_wrapper = "0x0"
+deeptrade_core = "0x0"
