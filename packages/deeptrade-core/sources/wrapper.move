@@ -34,7 +34,6 @@ const ESenderIsNotMultisig: u64 = 6;
 const EVersionPermanentlyDisabled: u64 = 7;
 
 // === Structs ===
-/// Wrapper struct for DeepBook V3
 public struct Wrapper has key, store {
     id: UID,
     allowed_versions: VecSet<u16>,

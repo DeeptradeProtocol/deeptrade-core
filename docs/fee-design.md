@@ -1,12 +1,12 @@
-# DeepBook Wrapper Design
+# Fee Design
 
 ## Overview
 
-The DeepBook Wrapper charges additional fees on top of the standard DeepBook fees. These wrapper fees are calculated using protocol fee configuration system and are applied regardless of which fee type is used for the underlying DeepBook order.
+The Deeptrade protocol charges additional fees on top of the standard DeepBook fees. These fees are calculated using a protocol-level fee configuration system and are applied regardless of which fee type is used for the underlying DeepBook order.
 
 ## Fee Configuration
 
-The wrapper uses a unified protocol fee calculation system with configurable rates and discounts. Fee rates and discount configurations are specified per pool in the `TradingFeeConfig`:
+The Deeptrade protocol uses a unified fee calculation system with configurable rates and discounts. Fee rates and discount configurations are specified per pool in the `TradingFeeConfig`:
 
 - Taker and maker fee rates for both fee types
 - Maximum discount rates for DEEP fee type
@@ -21,13 +21,13 @@ The system offers two types of protocol fee discounts:
 
 ### Dynamic Fee Calculation and Fee Estimation Strategy
 
-When estimating fees for users, the wrapper calculates the protocol fee assuming the order will be fully executed as a taker order, then applies the user's total discount rate (combining DEEP coverage discounts and loyalty discounts) to this estimated amount. This approach provides users with a fee upper limit, preventing scenarios where they would have to pay more than the displayed amount. The actual fee charged is then adjusted based on the actual execution status of their order.
+When estimating fees for users, the protocol calculates the fee assuming the order will be fully executed as a taker order, then applies the user's total discount rate (combining DEEP coverage discounts and loyalty discounts) to this estimated amount. This approach provides users with a fee upper limit, preventing scenarios where they would have to pay more than the displayed amount. The actual fee charged is then adjusted based on the actual execution status of their order.
 
 For detailed information about dynamic fee calculation based on order execution status and the unsettled fees mechanism, see the [unsettled-fees.md](./unsettled-fees.md) documentation.
 
 ## Fee Structure
 
-The wrapper supports two fee types for order creation (mirroring DeepBook's fee types), with a unified protocol fee calculation system for both:
+The Deeptrade protocol supports two fee types for order creation (mirroring DeepBook's fee types), with a unified protocol fee calculation system for both:
 
 ### DEEP-based Fees
 
@@ -36,14 +36,14 @@ The `order::create_limit_order` function creates a limit order using DEEP tokens
 1. Target pool - where the order will be placed
 2. Reference pool (DEEP/SUI or SUI/DEEP) - used to get the DEEP/SUI price
 
-The reference pool helps calculate how much SUI equals the DEEP a user borrows from our wrapper's DEEP reserves.
+The reference pool helps calculate how much SUI equals the DEEP a user borrows from the protocol's DEEP reserves.
 We take the DEEP/SUI price from the reference pool, oracle prices, and calculate the SUI equivalent of the borrowed DEEP.
 
 The process works like this:
 
 1. Calculate how much DEEP the user needs for DeepBook fees
-2. Provide this DEEP from our reserves
-3. Get the best DEEP/SUI price for the wrapper either from oracle or from the reference pool (read more in [Oracle Pricing Security](docs/oracle-pricing-security.md) documentation)
+2. Provide this DEEP from the protocol's reserves
+3. Get the best DEEP/SUI price for the protocol either from an oracle or from the reference pool (read more in [Oracle Pricing Security](./oracle-pricing-security.md) documentation)
 4. Calculate the SUI equivalent of the borrowed DEEP
 5. Charge this amount from the user as a **DEEP Reserve Coverage Fee**
 
@@ -53,7 +53,7 @@ The DEEP fee type includes a **protective slippage validation system** to handle
 
 1. **DeepBook's DEEP price points** - The DEEP required for an order is calculated based on DeepBook's internal DEEP price points, which **change constantly over time**. This makes the exact DEEP requirement unpredictable between fee estimation and order execution.
 
-2. **DEEP/SUI price for coverage fee calculation** - This affects the SUI equivalent charged when the wrapper borrows DEEP from its reserves
+2. **DEEP/SUI price for coverage fee calculation** - This affects the SUI equivalent charged when the user borrows DEEP from the protocol's reserves.
 
 **How the validation works:**
 
@@ -106,4 +106,4 @@ We have two functions for creating limit orders:
 
 Why we need separate functions: In the Move language, the `pool` argument (target pool) is a mutable reference, while the `reference_pool` argument is a regular reference. Move doesn't allow these to be the same object (for example, when creating a limit order on the DEEP/SUI pool while using that same pool as the reference pool).
 
-We created `create_limit_order_whitelisted` to handle this limitation. Since whitelisted pools (by DeepBook's design) don't charge DEEP fees, our wrapper doesn't need to charge wrapper fees for them. Therefore, no reference pool is needed when working with whitelisted pools.
+We created `create_limit_order_whitelisted` to handle this limitation. Since whitelisted pools (by DeepBook's design) don't charge DEEP fees, the Deeptrade protocol doesn't need to charge coverage fees for them. Therefore, no reference pool is needed when working with whitelisted pools.

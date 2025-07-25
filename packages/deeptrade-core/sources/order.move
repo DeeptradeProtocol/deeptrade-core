@@ -86,9 +86,9 @@ public struct CoverageFeePlan has copy, drop {
     user_covers_fee: bool,
 }
 
-/// A plan for charging the wrapper's protocol fees on an order.
+/// A plan for charging the Deeptrade wrapper's protocol fees on an order.
 ///
-/// The protocol fee is an additional fee charged by the wrapper for its services,
+/// The protocol fee is an additional fee charged by the Deeptrade wrapper for its services,
 /// paid in the order's input coin (base or quote). This plan calculates the
 /// maker and taker portions of the fee and specifies an allocation of the payment between
 /// the user's wallet and balance manager.
@@ -128,7 +128,7 @@ public struct InputCoinDepositPlan has copy, drop {
 /// 4. Plans and charges protocol fees based on order execution results
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance managing the order process
+/// - wrapper: The Deeptrade wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -265,7 +265,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 /// 4. Plans and charges protocol fees based on order execution results
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance managing the order process
+/// - wrapper: The Deeptrade wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -392,7 +392,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// to be used.
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance to add protocol fees to
+/// - wrapper: The Deeptrade wrapper instance to add protocol fees to
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -496,7 +496,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// to be used.
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance to add protocol fees to
+/// - wrapper: The Deeptrade wrapper instance to add protocol fees to
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -589,7 +589,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance managing the order process
+/// - wrapper: The Deeptrade wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -689,7 +689,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance managing the order process
+/// - wrapper: The Deeptrade wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -778,7 +778,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 /// Cancels an order and settles any associated with the order unsettled fees
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance
+/// - wrapper: The Deeptrade wrapper instance
 /// - pool: The trading pool where the order was placed
 /// - balance_manager: User's balance manager
 /// - order_id: ID of the order to cancel
@@ -1208,7 +1208,7 @@ public(package) fun validate_fees_against_max(
 /// from user's wallet and balance manager according to the protocol fee plan
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance
+/// - wrapper: The Deeptrade wrapper instance
 /// - trading_fee_config: Trading fee configuration object
 /// - pool: The trading pool where the order was placed
 /// - balance_manager: User's balance manager
@@ -1306,7 +1306,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
 /// processing the plans created by create_order_core.
 ///
 /// Parameters:
-/// - wrapper: The DeepBook wrapper instance managing the order process
+/// - wrapper: The Deeptrade wrapper instance managing the order process
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -1657,10 +1657,10 @@ fun execute_coverage_fee_plan(
     };
 }
 
-/// Executes a `ProtocolFeePlan` to collect wrapper service fees from the user's
+/// Executes a `ProtocolFeePlan` to collect Deeptrade fees from the user's
 /// wallet and balance manager.
 ///
-/// Taker fees are collected immediately into the wrapper's protocol fees. Maker
+/// Taker fees are collected immediately into the Deeptrade's protocol fees. Maker
 /// fees are added to an unsettled list for future settlement by the user or protocol.
 ///
 /// Aborts if the plan indicates the user has insufficient funds.
