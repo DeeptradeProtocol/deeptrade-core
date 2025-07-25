@@ -3,14 +3,14 @@ import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
 
-// yarn ts-node examples/wrapper/admin-withdraw-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
+// yarn ts-node examples/treasury/admin-withdraw-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
 (async () => {
   console.warn(`Building transaction to withdraw protocol fees for SUI and DEEP`);
 
   // Withdraw SUI protocol fee
   const tx = getWithdrawFeeTx({
     coinType: SUI_COIN_TYPE,
-    target: `${WRAPPER_PACKAGE_ID}::wrapper::withdraw_protocol_fee`,
+    target: `${WRAPPER_PACKAGE_ID}::treasury::withdraw_protocol_fee`,
     user: MULTISIG_CONFIG.address,
     adminCapId: ADMIN_CAP_OBJECT_ID,
     pks: MULTISIG_CONFIG.publicKeysSuiBytes,
@@ -21,7 +21,7 @@ import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
   // Withdraw DEEP protocol fee (pool creation fee)
   getWithdrawFeeTx({
     coinType: DEEP_COIN_TYPE,
-    target: `${WRAPPER_PACKAGE_ID}::wrapper::withdraw_protocol_fee`,
+    target: `${WRAPPER_PACKAGE_ID}::treasury::withdraw_protocol_fee`,
     user: MULTISIG_CONFIG.address,
     adminCapId: ADMIN_CAP_OBJECT_ID,
     transaction: tx,

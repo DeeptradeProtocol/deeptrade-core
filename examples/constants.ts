@@ -1,4 +1,4 @@
-// Wrapper package data
+// Deeptrade Core package data
 export const WRAPPER_PACKAGE_ID = "0x03aafc54af513d592bcb91136d61b94ea40b0f9b50477f24a3a9a38fca625174";
 export const ADMIN_CAP_OBJECT_ID = "0xf8bba85b752e91112596e66ea72a9ea67feece403ca982d8629308804af731dc";
 export const WRAPPER_OBJECT_ID = "0x33744a4ca9a1f0b96f20be165c3c4844aa1ceced81adcfca3d8c57a29f99735d";

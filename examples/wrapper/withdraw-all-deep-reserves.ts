@@ -4,14 +4,14 @@ import { getDeepReservesBalance } from "./utils/getDeepReservesBalance";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 
-// yarn ts-node examples/wrapper/withdraw-all-deep-reserves.ts > withdraw-all-deep-reserves.log 2>&1
+// yarn ts-node examples/treasury/withdraw-all-deep-reserves.ts > withdraw-all-deep-reserves.log 2>&1
 (async () => {
   const tx = new Transaction();
 
   const { deepReservesRaw: amountToWithdraw, deepReserves: amountToWithdrawFormatted } = await getDeepReservesBalance();
 
   const withdrawnCoin = tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::wrapper::withdraw_deep_reserves`,
+    target: `${WRAPPER_PACKAGE_ID}::treasury::withdraw_deep_reserves`,
     arguments: [
       tx.object(WRAPPER_OBJECT_ID),
       tx.object(ADMIN_CAP_OBJECT_ID),

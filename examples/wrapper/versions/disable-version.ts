@@ -6,12 +6,12 @@ import { buildAndLogMultisigTransaction } from "../../multisig/buildAndLogMultis
 // Set the version to disable here
 const VERSION = 1;
 
-// Usage: yarn ts-node examples/wrapper/versions/disable-version.ts > disable-version.log 2>&1
+// Usage: yarn ts-node examples/treasury/versions/disable-version.ts > disable-version.log 2>&1
 (async () => {
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::wrapper::disable_version`,
+    target: `${WRAPPER_PACKAGE_ID}::treasury::disable_version`,
     arguments: [
       tx.object(WRAPPER_OBJECT_ID),
       tx.object(ADMIN_CAP_OBJECT_ID),

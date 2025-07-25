@@ -28,12 +28,12 @@ export function createTicketTx({ ticketType, adminCapId, pks, weights, threshold
 
   // Get the ticket type using helper functions from Move
   const ticketTypeArg = tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::wrapper::${getTicketTypeHelperFunction(ticketType)}`,
+    target: `${WRAPPER_PACKAGE_ID}::treasury::${getTicketTypeHelperFunction(ticketType)}`,
     arguments: [],
   });
 
   const ticket = tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::wrapper::create_ticket`,
+    target: `${WRAPPER_PACKAGE_ID}::treasury::create_ticket`,
     arguments: [
       tx.object(adminCapId),
       ticketTypeArg,
