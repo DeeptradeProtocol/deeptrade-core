@@ -88,14 +88,14 @@ public fun bid_order_sufficient_resources() {
     let sui_in_wallet = AMOUNT_LARGE;
     let wallet_input_coin = AMOUNT_LARGE;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid); // 2_000_000_000
 
     // For this test case we expect:
     // 1. DEEP: Half from wallet, half from balance manager
-    // 2. No coverage fees because no wrapper DEEP is used
+    // 2. No coverage fees because no treasury DEEP is used
     // 3. Token deposit: Remaining from wallet
 
     let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
@@ -107,7 +107,7 @@ public fun bid_order_sufficient_resources() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -131,7 +131,7 @@ public fun bid_order_sufficient_resources() {
 }
 
 #[test]
-public fun bid_order_with_wrapper_deep() {
+public fun bid_order_with_treasury_deep() {
     // Order parameters
     let quantity = 100_000_000_000;
     let price = 1_500_000;
@@ -149,19 +149,19 @@ public fun bid_order_with_wrapper_deep() {
     let sui_in_wallet = 80_000_000;
     let wallet_input_coin = 80_000_000;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
-    let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
+    let deep_from_treasury = deep_required - balance_manager_deep - deep_in_wallet;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // For this test case we expect:
-    // 1. DEEP: All from wallet and balance manager + some from wrapper
+    // 1. DEEP: All from wallet and balance manager + some from treasury
     // 2. Coverage fee: First from balance manager, then from wallet if needed
     // 3. Token deposit: Remaining from wallet
 
@@ -185,7 +185,7 @@ public fun bid_order_with_wrapper_deep() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -196,7 +196,7 @@ public fun bid_order_with_wrapper_deep() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         deep_from_wallet, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         coverage_from_wallet, // expected_coverage_fee_from_wallet
@@ -227,7 +227,7 @@ public fun bid_order_whitelisted_pool() {
     let sui_in_wallet = AMOUNT_MEDIUM;
     let wallet_input_coin = AMOUNT_MEDIUM;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -246,7 +246,7 @@ public fun bid_order_whitelisted_pool() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -282,15 +282,15 @@ public fun bid_order_coverage_fee_from_both_sources() {
     let deep_required = AMOUNT_MEDIUM;
     let balance_manager_deep = AMOUNT_SMALL;
     let deep_in_wallet = AMOUNT_SMALL;
-    let wrapper_deep_reserves = AMOUNT_LARGE;
+    let treasury_deep_reserves = AMOUNT_LARGE;
 
-    let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
+    let deep_from_treasury = deep_required - balance_manager_deep - deep_in_wallet;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // Set up a scenario where coverage fee needs to come from both sources
@@ -319,7 +319,7 @@ public fun bid_order_coverage_fee_from_both_sources() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -330,7 +330,7 @@ public fun bid_order_coverage_fee_from_both_sources() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         deep_in_wallet, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         coverage_from_wallet, // expected_coverage_fee_from_wallet
@@ -343,7 +343,7 @@ public fun bid_order_coverage_fee_from_both_sources() {
 }
 
 #[test]
-public fun bid_order_insufficient_deep_no_wrapper() {
+public fun bid_order_insufficient_deep_no_treasury() {
     // Order parameters
     let quantity = 100_000_000_000;
     let price = 1_500_000;
@@ -361,7 +361,7 @@ public fun bid_order_insufficient_deep_no_wrapper() {
     let sui_in_wallet = AMOUNT_LARGE;
     let wallet_input_coin = AMOUNT_LARGE;
 
-    let wrapper_deep_reserves = AMOUNT_SMALL; // Not enough DEEP in wrapper
+    let treasury_deep_reserves = AMOUNT_SMALL; // Not enough DEEP in treasury
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -375,7 +375,7 @@ public fun bid_order_insufficient_deep_no_wrapper() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -417,7 +417,7 @@ public fun bid_order_quote_only_in_balance_manager() {
     let sui_in_wallet = 0;
     let wallet_input_coin = 0;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -431,7 +431,7 @@ public fun bid_order_quote_only_in_balance_manager() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -467,15 +467,15 @@ public fun bid_order_large_values() {
     let deep_required = AMOUNT_MEDIUM;
     let balance_manager_deep = AMOUNT_SMALL;
     let deep_in_wallet = AMOUNT_SMALL;
-    let wrapper_deep_reserves = AMOUNT_LARGE;
+    let treasury_deep_reserves = AMOUNT_LARGE;
 
-    let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
+    let deep_from_treasury = deep_required - balance_manager_deep - deep_in_wallet;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // Set up SUI balances to cover fees
@@ -495,7 +495,7 @@ public fun bid_order_large_values() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -506,7 +506,7 @@ public fun bid_order_large_values() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         deep_in_wallet, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         coverage_fee, // expected_coverage_fee_from_wallet
@@ -534,10 +534,10 @@ public fun bid_order_exact_resources() {
     let balance_manager_input_coin = 0;
 
     let deep_in_wallet = deep_required; // Exact amount in wallet
-    let sui_in_wallet = 0; // No SUI needed since not using wrapper DEEP
+    let sui_in_wallet = 0; // No SUI needed since not using treasury DEEP
     let wallet_input_coin = calculate_order_amount(quantity, price, is_bid);
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -551,7 +551,7 @@ public fun bid_order_exact_resources() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -595,7 +595,7 @@ public fun ask_order_sufficient_resources() {
     let sui_in_wallet = AMOUNT_LARGE;
     let wallet_input_coin = 100_000_000_000;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     let deep_from_wallet = deep_required - balance_manager_deep;
 
@@ -604,7 +604,7 @@ public fun ask_order_sufficient_resources() {
 
     // For this test case we expect:
     // 1. DEEP: Half from wallet, half from balance manager
-    // 2. No coverage fees since user doesn't use wrapper DEEP
+    // 2. No coverage fees since user doesn't use treasury DEEP
     // 3. Token deposit: Full amount from wallet
 
     let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
@@ -616,7 +616,7 @@ public fun ask_order_sufficient_resources() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -658,7 +658,7 @@ public fun ask_order_whitelisted_pool() {
     let sui_in_wallet = AMOUNT_MEDIUM;
     let wallet_input_coin = AMOUNT_MEDIUM;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -677,7 +677,7 @@ public fun ask_order_whitelisted_pool() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -719,7 +719,7 @@ public fun ask_order_insufficient_deep_and_base() {
     let sui_in_wallet = AMOUNT_LARGE;
     let wallet_input_coin = AMOUNT_MEDIUM;
 
-    let wrapper_deep_reserves = AMOUNT_SMALL; // Not enough DEEP in wrapper
+    let treasury_deep_reserves = AMOUNT_SMALL; // Not enough DEEP in treasury
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -733,7 +733,7 @@ public fun ask_order_insufficient_deep_and_base() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -775,14 +775,14 @@ public fun ask_order_base_only_in_balance_manager() {
     let sui_in_wallet = 0;
     let wallet_input_coin = 0;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
-    let deep_from_wrapper = deep_required - balance_manager_deep;
+    let deep_from_treasury = deep_required - balance_manager_deep;
 
-    // Calculate coverage fee for wrapper DEEP usage
+    // Calculate coverage fee for treasury DEEP usage
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // Calculate expected values
@@ -797,7 +797,7 @@ public fun ask_order_base_only_in_balance_manager() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -808,7 +808,7 @@ public fun ask_order_base_only_in_balance_manager() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         0, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
@@ -836,14 +836,14 @@ public fun ask_order_large_values() {
     let balance_manager_input_coin = 0;
 
     let deep_in_wallet = AMOUNT_MEDIUM - 100;
-    let wrapper_deep_reserves = AMOUNT_LARGE;
+    let treasury_deep_reserves = AMOUNT_LARGE;
 
-    let deep_from_wrapper = deep_required - deep_in_wallet;
+    let deep_from_treasury = deep_required - deep_in_wallet;
 
-    // Calculate coverage fee for wrapper DEEP usage
+    // Calculate coverage fee for treasury DEEP usage
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // All resources from wallet
@@ -862,7 +862,7 @@ public fun ask_order_large_values() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -873,7 +873,7 @@ public fun ask_order_large_values() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         deep_in_wallet, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         coverage_fee, // expected_coverage_fee_from_wallet
@@ -901,10 +901,10 @@ public fun ask_order_exact_resources() {
     let balance_manager_input_coin = 0;
 
     let deep_in_wallet = deep_required; // Exactly what's needed
-    let sui_in_wallet = 0; // No SUI needed since not using wrapper DEEP
+    let sui_in_wallet = 0; // No SUI needed since not using treasury DEEP
     let wallet_input_coin = quantity; // Exactly what's needed
 
-    let wrapper_deep_reserves = 0;
+    let treasury_deep_reserves = 0;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -918,7 +918,7 @@ public fun ask_order_exact_resources() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -960,7 +960,7 @@ public fun ask_order_complex_distribution() {
     let sui_in_wallet = AMOUNT_LARGE;
     let wallet_input_coin = 700_000;
 
-    let wrapper_deep_reserves = deep_required;
+    let treasury_deep_reserves = deep_required;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -974,7 +974,7 @@ public fun ask_order_complex_distribution() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -1006,20 +1006,20 @@ public fun ask_order_insufficient_base() {
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
 
-    // Resource balances - not enough DEEP to force using wrapper DEEP
+    // Resource balances - not enough DEEP to force using treasury DEEP
     let deep_required = AMOUNT_MEDIUM;
     let balance_manager_deep = AMOUNT_SMALL / 2;
     let balance_manager_sui = AMOUNT_LARGE;
     let balance_manager_input_coin = quantity - AMOUNT_SMALL - 1; // Not enough base coins
 
     let deep_in_wallet = AMOUNT_SMALL / 2;
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
-    let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
+    let deep_from_treasury = deep_required - balance_manager_deep - deep_in_wallet;
 
-    // Calculate coverage fee for wrapper DEEP usage
+    // Calculate coverage fee for treasury DEEP usage
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // Wallet has enough for fees but not enough for the deposit
@@ -1038,7 +1038,7 @@ public fun ask_order_insufficient_base() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -1049,7 +1049,7 @@ public fun ask_order_insufficient_base() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         deep_in_wallet, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
@@ -1062,7 +1062,7 @@ public fun ask_order_insufficient_base() {
 }
 
 #[test]
-public fun ask_order_with_wrapper_deep() {
+public fun ask_order_with_treasury_deep() {
     // Order parameters
     let quantity = 70_000;
     let price = 54_000_000;
@@ -1077,13 +1077,13 @@ public fun ask_order_with_wrapper_deep() {
     let balance_manager_input_coin = 15_000;
 
     let deep_in_wallet = AMOUNT_SMALL;
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
-    let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
+    let deep_from_treasury = deep_required - balance_manager_deep - deep_in_wallet;
 
-    // Calculate coverage fee for wrapper DEEP usage
+    // Calculate coverage fee for treasury DEEP usage
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // Set up SUI and input coin balances
@@ -1102,7 +1102,7 @@ public fun ask_order_with_wrapper_deep() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -1113,7 +1113,7 @@ public fun ask_order_with_wrapper_deep() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         deep_in_wallet, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         0, // expected_coverage_fee_from_wallet
@@ -1134,19 +1134,19 @@ public fun ask_order_coverage_fee_from_both_sources() {
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
 
-    // Resource balances - not enough DEEP to avoid using wrapper
+    // Resource balances - not enough DEEP to avoid using treasury
     let deep_required = AMOUNT_MEDIUM;
     let balance_manager_deep = AMOUNT_SMALL;
     let balance_manager_input_coin = quantity; // All base coins in balance manager
     let deep_in_wallet = AMOUNT_SMALL;
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
-    let deep_from_wrapper = deep_required - balance_manager_deep - deep_in_wallet;
+    let deep_from_treasury = deep_required - balance_manager_deep - deep_in_wallet;
 
-    // Calculate coverage fee for wrapper DEEP usage
+    // Calculate coverage fee for treasury DEEP usage
     let coverage_fee = calculate_deep_reserves_coverage_order_fee(
         sui_per_deep,
-        deep_from_wrapper,
+        deep_from_treasury,
     );
 
     // Important: Make sure wallet doesn't have enough to cover all fees
@@ -1181,7 +1181,7 @@ public fun ask_order_coverage_fee_from_both_sources() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -1192,7 +1192,7 @@ public fun ask_order_coverage_fee_from_both_sources() {
         input_coin_deposit_plan,
         // DeepPlan expectations
         deep_in_wallet, // expected_deep_from_wallet
-        deep_from_wrapper, // expected_deep_from_reserves
+        deep_from_treasury, // expected_deep_from_reserves
         true, // expected_deep_sufficient
         // CoverageFeePlan expectations
         coverage_from_wallet, // expected_coverage_fee_from_wallet
@@ -1225,7 +1225,7 @@ public fun zero_quantity_order() {
     let sui_in_wallet = AMOUNT_LARGE;
     let wallet_input_coin = AMOUNT_MEDIUM;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -1239,7 +1239,7 @@ public fun zero_quantity_order() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );
@@ -1282,7 +1282,7 @@ public fun zero_price_order() {
     let sui_in_wallet = AMOUNT_LARGE;
     let wallet_input_coin = AMOUNT_MEDIUM;
 
-    let wrapper_deep_reserves = AMOUNT_MEDIUM;
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
 
     // Calculate expected values
     let order_amount = calculate_order_amount(quantity, price, is_bid);
@@ -1296,7 +1296,7 @@ public fun zero_price_order() {
         deep_in_wallet,
         sui_in_wallet,
         wallet_input_coin,
-        wrapper_deep_reserves,
+        treasury_deep_reserves,
         order_amount,
         sui_per_deep,
     );

@@ -23,7 +23,7 @@ fun whitelisted_pools() {
         0, // deep required
         0, // manager balance
         0, // wallet balance
-        0, // wrapper reserves
+        0, // treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 
@@ -33,7 +33,7 @@ fun whitelisted_pools() {
         DEEP_LARGE, // deep required
         0, // manager balance
         0, // wallet balance
-        0, // wrapper reserves
+        0, // treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 
@@ -43,7 +43,7 @@ fun whitelisted_pools() {
         DEEP_LARGE, // deep required
         DEEP_SMALL, // some in manager
         DEEP_SMALL, // some in wallet
-        DEEP_HUGE, // large wrapper reserves
+        DEEP_HUGE, // large treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 }
@@ -61,7 +61,7 @@ fun user_has_sufficient_deep_all_in_manager() {
         required, // deep required
         required, // exact amount in manager
         0, // nothing in wallet
-        0, // wrapper reserves (unused)
+        0, // treasury reserves (unused)
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 
@@ -71,7 +71,7 @@ fun user_has_sufficient_deep_all_in_manager() {
         required, // deep required
         required * 2, // excess in manager
         0, // nothing in wallet
-        0, // wrapper reserves (unused)
+        0, // treasury reserves (unused)
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 }
@@ -85,7 +85,7 @@ fun user_has_sufficient_deep_all_in_wallet() {
         required, // deep required
         0, // nothing in manager
         required, // exact amount in wallet
-        0, // wrapper reserves (unused)
+        0, // treasury reserves (unused)
     );
     assert_deep_plan_eq(plan, required, 0, true);
 
@@ -95,7 +95,7 @@ fun user_has_sufficient_deep_all_in_wallet() {
         required, // deep required
         0, // nothing in manager
         required * 2, // excess in wallet
-        0, // wrapper reserves (unused)
+        0, // treasury reserves (unused)
     );
     assert_deep_plan_eq(plan, required, 0, true);
 }
@@ -112,7 +112,7 @@ fun user_has_sufficient_deep_split() {
         required, // deep required
         manager_amount, // some in manager
         wallet_amount, // rest in wallet
-        0, // wrapper reserves (unused)
+        0, // treasury reserves (unused)
     );
     assert_deep_plan_eq(plan, wallet_amount, 0, true);
 
@@ -122,7 +122,7 @@ fun user_has_sufficient_deep_split() {
         required, // deep required
         manager_amount * 2, // excess in manager
         wallet_amount * 2, // excess in wallet
-        0, // wrapper reserves (unused)
+        0, // treasury reserves (unused)
     );
     // Should only take what's needed from wallet
     assert_deep_plan_eq(plan, required - manager_amount * 2, 0, true);
@@ -137,7 +137,7 @@ fun user_has_more_deep_in_manager_than_required() {
         required, // deep required
         required * 2, // double required in manager
         DEEP_SMALL, // small amount in wallet
-        0, // wrapper reserves (unused)
+        0, // treasury reserves (unused)
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 }
@@ -147,20 +147,20 @@ fun user_has_more_deep_in_manager_than_required() {
 // -------------------------------------
 
 #[test]
-fun user_needs_partial_wrapper_deep() {
-    // User has some DEEP, needs wrapper for the rest
+fun user_needs_partial_treasury_deep() {
+    // User has some DEEP, needs treasury for the rest
     let required = DEEP_MEDIUM;
     let user_deep = required / 2;
-    let wrapper_needed = required - user_deep;
+    let treasury_needed = required - user_deep;
 
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         user_deep, // some in wallet
-        required, // sufficient wrapper reserves
+        required, // sufficient treasury reserves
     );
-    assert_deep_plan_eq(plan, user_deep, wrapper_needed, true);
+    assert_deep_plan_eq(plan, user_deep, treasury_needed, true);
 
     // Split user DEEP between manager and wallet
     let manager_deep = user_deep / 2;
@@ -171,14 +171,14 @@ fun user_needs_partial_wrapper_deep() {
         required, // deep required
         manager_deep, // some in manager
         wallet_deep, // some in wallet
-        required, // sufficient wrapper reserves
+        required, // sufficient treasury reserves
     );
-    assert_deep_plan_eq(plan, wallet_deep, wrapper_needed, true);
+    assert_deep_plan_eq(plan, wallet_deep, treasury_needed, true);
 }
 
 #[test]
-fun user_needs_all_wrapper_deep() {
-    // No user DEEP, all from wrapper
+fun user_needs_all_treasury_deep() {
+    // No user DEEP, all from treasury
     let required = DEEP_MEDIUM;
 
     let plan = get_deep_plan(
@@ -186,36 +186,36 @@ fun user_needs_all_wrapper_deep() {
         required, // deep required
         0, // nothing in manager
         0, // nothing in wallet
-        required, // exact wrapper reserves
+        required, // exact treasury reserves
     );
     assert_deep_plan_eq(plan, 0, required, true);
 
-    // No user DEEP, wrapper has excess
+    // No user DEEP, treasury has excess
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         0, // nothing in wallet
-        required * 2, // excess wrapper reserves
+        required * 2, // excess treasury reserves
     );
     assert_deep_plan_eq(plan, 0, required, true);
 }
 
 #[test]
-fun wrapper_exact_remainder() {
+fun treasury_exact_remainder() {
     // Treasury has exact amount needed for remainder
     let required = DEEP_MEDIUM;
     let user_deep = required / 3;
-    let wrapper_needed = required - user_deep;
+    let treasury_needed = required - user_deep;
 
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         user_deep, // some in wallet
-        wrapper_needed, // exact wrapper reserves needed
+        treasury_needed, // exact treasury reserves needed
     );
-    assert_deep_plan_eq(plan, user_deep, wrapper_needed, true);
+    assert_deep_plan_eq(plan, user_deep, treasury_needed, true);
 }
 
 // -------------------------------------
@@ -223,29 +223,29 @@ fun wrapper_exact_remainder() {
 // -------------------------------------
 
 #[test]
-fun insufficient_wrapper_reserves() {
+fun insufficient_treasury_reserves() {
     // Treasury doesn't have enough to fulfill
     let required = DEEP_MEDIUM;
     let user_deep = required / 2;
-    let wrapper_needed = required - user_deep;
-    let insufficient_reserves = wrapper_needed - 1; // One token short
+    let treasury_needed = required - user_deep;
+    let insufficient_reserves = treasury_needed - 1; // One token short
 
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         user_deep, // some in wallet
-        insufficient_reserves, // insufficient wrapper reserves
+        insufficient_reserves, // insufficient treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, false);
 
-    // Almost nothing in wrapper
+    // Almost nothing in treasury
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         user_deep, // some in wallet
-        1, // just 1 token in wrapper
+        1, // just 1 token in treasury
     );
     assert_deep_plan_eq(plan, 0, 0, false);
 }
@@ -260,18 +260,18 @@ fun no_deep_anywhere() {
         required, // deep required
         0, // nothing in manager
         0, // nothing in wallet
-        0, // no wrapper reserves
+        0, // no treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, false);
 
-    // Small amount in user, none in wrapper
+    // Small amount in user, none in treasury
     let small_amount = required / 10;
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         small_amount, // small amount in manager
         0, // nothing in wallet
-        0, // no wrapper reserves
+        0, // no treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, false);
 }
@@ -288,7 +288,7 @@ fun zero_deep_required() {
         0, // zero deep required
         0, // manager balance
         0, // wallet balance
-        0, // wrapper reserves
+        0, // treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 
@@ -298,7 +298,7 @@ fun zero_deep_required() {
         0, // zero deep required
         DEEP_SMALL, // some in manager
         DEEP_SMALL, // some in wallet
-        DEEP_SMALL, // some in wrapper
+        DEEP_SMALL, // some in treasury
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 }
@@ -314,7 +314,7 @@ fun large_values() {
         large_value, // large deep required
         large_value, // matching manager balance
         0, // wallet balance
-        0, // wrapper reserves
+        0, // treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 
@@ -324,17 +324,17 @@ fun large_values() {
         large_value, // large deep required
         0, // manager balance
         large_value, // matching wallet balance
-        0, // wrapper reserves
+        0, // treasury reserves
     );
     assert_deep_plan_eq(plan, large_value, 0, true);
 
-    // Large requirement with matching wrapper reserves
+    // Large requirement with matching treasury reserves
     let plan = get_deep_plan(
         false, // not whitelisted
         large_value, // large deep required
         0, // manager balance
         0, // wallet balance
-        large_value, // matching wrapper reserves
+        large_value, // matching treasury reserves
     );
     assert_deep_plan_eq(plan, 0, large_value, true);
 }
@@ -354,7 +354,7 @@ fun exact_balance_boundaries() {
         required, // deep required
         required, // exact amount in manager
         0, // nothing in wallet
-        0, // no wrapper reserves
+        0, // no treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, true);
 
@@ -364,7 +364,7 @@ fun exact_balance_boundaries() {
         required, // deep required
         0, // nothing in manager
         required, // exact amount in wallet
-        0, // no wrapper reserves
+        0, // no treasury reserves
     );
     assert_deep_plan_eq(plan, required, 0, true);
 
@@ -376,21 +376,21 @@ fun exact_balance_boundaries() {
         required, // deep required
         manager_amount, // some in manager
         wallet_amount, // rest in wallet
-        0, // no wrapper reserves
+        0, // no treasury reserves
     );
     assert_deep_plan_eq(plan, wallet_amount, 0, true);
 
     // Treasury exactly matches what's needed
     let user_amount = required / 2;
-    let wrapper_needed = required - user_amount;
+    let treasury_needed = required - user_amount;
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         user_amount, // some in wallet
-        wrapper_needed, // exact wrapper reserves needed
+        treasury_needed, // exact treasury reserves needed
     );
-    assert_deep_plan_eq(plan, user_amount, wrapper_needed, true);
+    assert_deep_plan_eq(plan, user_amount, treasury_needed, true);
 }
 
 #[test]
@@ -404,7 +404,7 @@ fun one_token_boundaries() {
         required, // deep required
         required - 1, // one token less in manager
         0, // nothing in wallet
-        0, // no wrapper reserves
+        0, // no treasury reserves
     );
     assert_deep_plan_eq(plan, 0, 0, false);
 
@@ -414,29 +414,29 @@ fun one_token_boundaries() {
         required, // deep required
         required - 1, // one token less in manager
         1, // one token in wallet
-        0, // no wrapper reserves
+        0, // no treasury reserves
     );
     assert_deep_plan_eq(plan, 1, 0, true);
 
-    // One token short with wrapper
+    // One token short with treasury
     let user_amount = required / 2;
-    let wrapper_needed = required - user_amount;
+    let treasury_needed = required - user_amount;
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         user_amount, // some in wallet
-        wrapper_needed - 1, // one token short in wrapper
+        treasury_needed - 1, // one token short in treasury
     );
     assert_deep_plan_eq(plan, 0, 0, false);
 
-    // One extra token in wrapper
+    // One extra token in treasury
     let plan = get_deep_plan(
         false, // not whitelisted
         required, // deep required
         0, // nothing in manager
         user_amount, // some in wallet
-        wrapper_needed + 1, // one token extra in wrapper
+        treasury_needed + 1, // one token extra in treasury
     );
-    assert_deep_plan_eq(plan, user_amount, wrapper_needed, true);
+    assert_deep_plan_eq(plan, user_amount, treasury_needed, true);
 }

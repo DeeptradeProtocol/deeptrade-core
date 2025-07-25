@@ -49,44 +49,44 @@ public struct Treasury has key, store {
 public struct ChargedFeeKey<phantom CoinType> has copy, drop, store {}
 
 // === Events ===
-/// Event emitted when DEEP coins are withdrawn from the wrapper's reserves
+/// Event emitted when DEEP coins are withdrawn from the treasury's reserves
 public struct DeepReservesWithdrawn<phantom DEEP> has copy, drop {
-    wrapper_id: ID,
+    treasury_id: ID,
     amount: u64,
 }
 
 /// Event emitted when deep reserves coverage fees are withdrawn for a specific coin type
 public struct CoverageFeeWithdrawn<phantom CoinType> has copy, drop {
-    wrapper_id: ID,
+    treasury_id: ID,
     amount: u64,
 }
 
 /// Event emitted when protocol fees are withdrawn for a specific coin type
 public struct ProtocolFeeWithdrawn<phantom CoinType> has copy, drop {
-    wrapper_id: ID,
+    treasury_id: ID,
     amount: u64,
 }
 
-/// Event emitted when DEEP coins are deposited into the wrapper's reserves
+/// Event emitted when DEEP coins are deposited into the treasury's reserves
 public struct DeepReservesDeposited has copy, drop {
-    wrapper_id: ID,
+    treasury_id: ID,
     amount: u64,
 }
 
-/// Event emitted when a new version is enabled for the wrapper
+/// Event emitted when a new version is enabled for the treasury
 public struct VersionEnabled has copy, drop {
-    wrapper_id: ID,
+    treasury_id: ID,
     version: u16,
 }
 
-/// Event emitted when a version is permanently disabled for the wrapper
+/// Event emitted when a version is permanently disabled for the treasury
 public struct VersionDisabled has copy, drop {
-    wrapper_id: ID,
+    treasury_id: ID,
     version: u16,
 }
 
 fun init(ctx: &mut TxContext) {
-    let wrapper = Treasury {
+    let treasury = Treasury {
         id: object::new(ctx),
         allowed_versions: vec_set::singleton(current_version()),
         disabled_versions: vec_set::empty(),
@@ -96,13 +96,13 @@ fun init(ctx: &mut TxContext) {
         unsettled_fees: bag::new(ctx),
     };
 
-    transfer::share_object(wrapper);
+    transfer::share_object(treasury);
 }
 
 // === Public-Mutative Functions ===
-/// Deposit DEEP coins into the wrapper's reserves
-public fun deposit_into_reserves(wrapper: &mut Treasury, deep_coin: Coin<DEEP>) {
-    wrapper.verify_version();
+/// Deposit DEEP coins into the treasury's reserves
+public fun deposit_into_reserves(treasury: &mut Treasury, deep_coin: Coin<DEEP>) {
+    treasury.verify_version();
 
     if (deep_coin.value() == 0) {
         deep_coin.destroy_zero();
@@ -110,18 +110,18 @@ public fun deposit_into_reserves(wrapper: &mut Treasury, deep_coin: Coin<DEEP>) 
     };
 
     event::emit(DeepReservesDeposited {
-        wrapper_id: wrapper.id.to_inner(),
+        treasury_id: treasury.id.to_inner(),
         amount: deep_coin.value(),
     });
 
-    wrapper.deep_reserves.join(deep_coin.into_balance());
+    treasury.deep_reserves.join(deep_coin.into_balance());
 }
 
 /// Withdraw deep reserves coverage fees for a specific coin type
 /// Performs timelock validation using an admin ticket
 ///
 /// Parameters:
-/// - wrapper: Treasury object
+/// - treasury: Treasury object
 /// - ticket: Admin ticket for timelock validation (consumed on execution)
 /// - clock: Clock for timestamp validation
 /// - ctx: Mutable transaction context for coin creation and sender verification
@@ -132,23 +132,23 @@ public fun deposit_into_reserves(wrapper: &mut Treasury, deep_coin: Coin<DEEP>) 
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
 public fun withdraw_deep_reserves_coverage_fee<CoinType>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     ticket: AdminTicket,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<CoinType> {
-    wrapper.verify_version();
+    treasury.verify_version();
     validate_ticket(&ticket, withdraw_coverage_fee_ticket_type(), clock, ctx);
     destroy_ticket(ticket, clock);
 
     let key = ChargedFeeKey<CoinType> {};
 
-    if (wrapper.deep_reserves_coverage_fees.contains(key)) {
-        let balance: Balance<CoinType> = wrapper.deep_reserves_coverage_fees.remove(key);
+    if (treasury.deep_reserves_coverage_fees.contains(key)) {
+        let balance: Balance<CoinType> = treasury.deep_reserves_coverage_fees.remove(key);
         let coin = balance.into_coin(ctx);
 
         event::emit(CoverageFeeWithdrawn<CoinType> {
-            wrapper_id: wrapper.id.to_inner(),
+            treasury_id: treasury.id.to_inner(),
             amount: coin.value(),
         });
 
@@ -162,7 +162,7 @@ public fun withdraw_deep_reserves_coverage_fee<CoinType>(
 /// Performs timelock validation using an admin ticket
 ///
 /// Parameters:
-/// - wrapper: Treasury object
+/// - treasury: Treasury object
 /// - ticket: Admin ticket for timelock validation (consumed on execution)
 /// - clock: Clock for timestamp validation
 /// - ctx: Mutable transaction context for coin creation and sender verification
@@ -173,23 +173,23 @@ public fun withdraw_deep_reserves_coverage_fee<CoinType>(
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
 public fun withdraw_protocol_fee<CoinType>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     ticket: AdminTicket,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<CoinType> {
-    wrapper.verify_version();
+    treasury.verify_version();
     validate_ticket(&ticket, withdraw_protocol_fee_ticket_type(), clock, ctx);
     destroy_ticket(ticket, clock);
 
     let key = ChargedFeeKey<CoinType> {};
 
-    if (wrapper.protocol_fees.contains(key)) {
-        let balance: Balance<CoinType> = wrapper.protocol_fees.remove(key);
+    if (treasury.protocol_fees.contains(key)) {
+        let balance: Balance<CoinType> = treasury.protocol_fees.remove(key);
         let coin = balance.into_coin(ctx);
 
         event::emit(ProtocolFeeWithdrawn<CoinType> {
-            wrapper_id: wrapper.id.to_inner(),
+            treasury_id: treasury.id.to_inner(),
             amount: coin.value(),
         });
 
@@ -199,11 +199,11 @@ public fun withdraw_protocol_fee<CoinType>(
     }
 }
 
-/// Withdraw a specified amount of DEEP coins from the wrapper's reserves
+/// Withdraw a specified amount of DEEP coins from the treasury's reserves
 /// Performs timelock validation using an admin ticket
 ///
 /// Parameters:
-/// - wrapper: Treasury object
+/// - treasury: Treasury object
 /// - ticket: Admin ticket for timelock validation (consumed on execution)
 /// - amount: Amount of DEEP tokens to withdraw
 /// - clock: Clock for timestamp validation
@@ -215,30 +215,30 @@ public fun withdraw_protocol_fee<CoinType>(
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
 public fun withdraw_deep_reserves(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     ticket: AdminTicket,
     amount: u64,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<DEEP> {
-    wrapper.verify_version();
+    treasury.verify_version();
     validate_ticket(&ticket, withdraw_deep_reserves_ticket_type(), clock, ctx);
     destroy_ticket(ticket, clock);
 
-    let coin = split_deep_reserves(wrapper, amount, ctx);
+    let coin = split_deep_reserves(treasury, amount, ctx);
 
     event::emit(DeepReservesWithdrawn<DEEP> {
-        wrapper_id: wrapper.id.to_inner(),
+        treasury_id: treasury.id.to_inner(),
         amount,
     });
 
     coin
 }
 
-/// Enable the specified package version for the wrapper
+/// Enable the specified package version for the treasury
 ///
 /// Parameters:
-/// - wrapper: Treasury object
+/// - treasury: Treasury object
 /// - _admin: Admin capability
 /// - version: Package version to enable
 /// - pks: Vector of public keys of the multi-sig signers
@@ -251,7 +251,7 @@ public fun withdraw_deep_reserves(
 ///   derived from the provided pks, weights, and threshold parameters
 /// - With EVersionAlreadyEnabled if the version is already enabled
 public fun enable_version(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     _admin: &AdminCap,
     version: u16,
     pks: vector<vector<u8>>,
@@ -265,23 +265,23 @@ public fun enable_version(
     );
 
     // Check if the version has been permanently disabled
-    assert!(!wrapper.disabled_versions.contains(&version), EVersionPermanentlyDisabled);
+    assert!(!treasury.disabled_versions.contains(&version), EVersionPermanentlyDisabled);
 
     // Check if the version is already enabled
-    assert!(!wrapper.allowed_versions.contains(&version), EVersionAlreadyEnabled);
+    assert!(!treasury.allowed_versions.contains(&version), EVersionAlreadyEnabled);
 
-    wrapper.allowed_versions.insert(version);
+    treasury.allowed_versions.insert(version);
 
     event::emit(VersionEnabled {
-        wrapper_id: wrapper.id.to_inner(),
+        treasury_id: treasury.id.to_inner(),
         version,
     });
 }
 
-/// Permanently disable the specified package version for the wrapper
+/// Permanently disable the specified package version for the treasury
 ///
 /// Parameters:
-/// - wrapper: Treasury object
+/// - treasury: Treasury object
 /// - _admin: Admin capability
 /// - version: Package version to disable
 /// - pks: Vector of public keys of the multi-sig signers
@@ -295,7 +295,7 @@ public fun enable_version(
 /// - With ECannotDisableCurrentVersion if trying to disable the current version
 /// - With EVersionNotEnabled if the version is not currently enabled
 public fun disable_version(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     _admin: &AdminCap,
     version: u16,
     pks: vector<vector<u8>>,
@@ -308,29 +308,29 @@ public fun disable_version(
         ESenderIsNotMultisig,
     );
     assert!(version != current_version(), ECannotDisableCurrentVersion);
-    assert!(wrapper.allowed_versions.contains(&version), EVersionNotEnabled);
+    assert!(treasury.allowed_versions.contains(&version), EVersionNotEnabled);
 
     // Remove from allowed and add to disabled
-    wrapper.allowed_versions.remove(&version);
-    wrapper.disabled_versions.insert(version);
+    treasury.allowed_versions.remove(&version);
+    treasury.disabled_versions.insert(version);
 
     event::emit(VersionDisabled {
-        wrapper_id: wrapper.id.to_inner(),
+        treasury_id: treasury.id.to_inner(),
         version,
     });
 }
 
 // === Public-View Functions ===
 /// Get the value of DEEP in the reserves
-public fun deep_reserves(wrapper: &Treasury): u64 { wrapper.deep_reserves.value() }
+public fun deep_reserves(treasury: &Treasury): u64 { treasury.deep_reserves.value() }
 
 // === Public-Package Functions ===
-/// Add collected deep reserves coverage fees to the wrapper's fee storage
+/// Add collected deep reserves coverage fees to the treasury's fee storage
 public(package) fun join_deep_reserves_coverage_fee<CoinType>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     fee: Balance<CoinType>,
 ) {
-    wrapper.verify_version();
+    treasury.verify_version();
 
     if (fee.value() == 0) {
         fee.destroy_zero();
@@ -338,17 +338,17 @@ public(package) fun join_deep_reserves_coverage_fee<CoinType>(
     };
 
     let key = ChargedFeeKey<CoinType> {};
-    if (wrapper.deep_reserves_coverage_fees.contains(key)) {
-        let balance: &mut Balance<CoinType> = wrapper.deep_reserves_coverage_fees.borrow_mut(key);
+    if (treasury.deep_reserves_coverage_fees.contains(key)) {
+        let balance: &mut Balance<CoinType> = treasury.deep_reserves_coverage_fees.borrow_mut(key);
         balance.join(fee);
     } else {
-        wrapper.deep_reserves_coverage_fees.add(key, fee);
+        treasury.deep_reserves_coverage_fees.add(key, fee);
     };
 }
 
-/// Add collected protocol fees to the wrapper's fee storage
-public(package) fun join_protocol_fee<CoinType>(wrapper: &mut Treasury, fee: Balance<CoinType>) {
-    wrapper.verify_version();
+/// Add collected protocol fees to the treasury's fee storage
+public(package) fun join_protocol_fee<CoinType>(treasury: &mut Treasury, fee: Balance<CoinType>) {
+    treasury.verify_version();
 
     if (fee.value() == 0) {
         fee.destroy_zero();
@@ -356,55 +356,55 @@ public(package) fun join_protocol_fee<CoinType>(wrapper: &mut Treasury, fee: Bal
     };
 
     let key = ChargedFeeKey<CoinType> {};
-    if (wrapper.protocol_fees.contains(key)) {
-        let balance: &mut Balance<CoinType> = wrapper.protocol_fees.borrow_mut(key);
+    if (treasury.protocol_fees.contains(key)) {
+        let balance: &mut Balance<CoinType> = treasury.protocol_fees.borrow_mut(key);
         balance.join(fee);
     } else {
-        wrapper.protocol_fees.add(key, fee);
+        treasury.protocol_fees.add(key, fee);
     };
 }
 
 /// Get the splitted DEEP coin from the reserves
 public(package) fun split_deep_reserves(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     amount: u64,
     ctx: &mut TxContext,
 ): Coin<DEEP> {
-    wrapper.verify_version();
+    treasury.verify_version();
 
-    let available_deep_reserves = wrapper.deep_reserves.value();
+    let available_deep_reserves = treasury.deep_reserves.value();
     assert!(amount <= available_deep_reserves, EInsufficientDeepReserves);
 
-    wrapper.deep_reserves.split(amount).into_coin(ctx)
+    treasury.deep_reserves.split(amount).into_coin(ctx)
 }
 
-/// Verify that the current package version is enabled in the wrapper
-public(package) fun verify_version(wrapper: &Treasury) {
+/// Verify that the current package version is enabled in the treasury
+public(package) fun verify_version(treasury: &Treasury) {
     let package_version = current_version();
-    assert!(wrapper.allowed_versions.contains(&package_version), EPackageVersionNotEnabled);
+    assert!(treasury.allowed_versions.contains(&package_version), EPackageVersionNotEnabled);
 }
 
-public(package) fun unsettled_fees(wrapper: &Treasury): &Bag { &wrapper.unsettled_fees }
+public(package) fun unsettled_fees(treasury: &Treasury): &Bag { &treasury.unsettled_fees }
 
-public(package) fun unsettled_fees_mut(wrapper: &mut Treasury): &mut Bag {
-    wrapper.verify_version();
-    &mut wrapper.unsettled_fees
+public(package) fun unsettled_fees_mut(treasury: &mut Treasury): &mut Bag {
+    treasury.verify_version();
+    &mut treasury.unsettled_fees
 }
 
 // === Test Functions ===
 /// Get the protocol fee balance for a specific coin type.
 #[test_only]
-public fun get_protocol_fee_balance<CoinType>(wrapper: &Treasury): u64 {
+public fun get_protocol_fee_balance<CoinType>(treasury: &Treasury): u64 {
     let key = ChargedFeeKey<CoinType> {};
-    if (wrapper.protocol_fees.contains(key)) {
-        let balance: &Balance<CoinType> = wrapper.protocol_fees.borrow(key);
+    if (treasury.protocol_fees.contains(key)) {
+        let balance: &Balance<CoinType> = treasury.protocol_fees.borrow(key);
         balance.value()
     } else {
         0
     }
 }
 
-/// Initialize the wrapper module for testing
+/// Initialize the treasury module for testing
 #[test_only]
 public fun init_for_testing(ctx: &mut TxContext) {
     init(ctx);

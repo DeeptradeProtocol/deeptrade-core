@@ -71,7 +71,7 @@ fun init(ctx: &mut TxContext) {
 /// Collects both DeepBook creation fee and protocol fee in DEEP coins
 ///
 /// Parameters:
-/// - wrapper: Main wrapper object that will receive the protocol fee
+/// - treasury: Main treasury object that will receive the protocol fee
 /// - config: Configuration object containing protocol fee information
 /// - registry: DeepBook registry to create the pool in
 /// - tick_size: Minimum price increment in the pool
@@ -84,7 +84,7 @@ fun init(ctx: &mut TxContext) {
 /// 1. Calculates required fees (DeepBook fee + protocol fee)
 /// 2. Verifies user has enough DEEP to cover all fees
 /// 3. Splits the payment into DeepBook fee and protocol fee
-/// 4. Adds protocol fee to the wrapper
+/// 4. Adds protocol fee to the treasury
 /// 5. Returns any unused DEEP coins to caller
 /// 6. Creates the permissionless pool in DeepBook
 ///
@@ -94,7 +94,7 @@ fun init(ctx: &mut TxContext) {
 /// Aborts:
 /// - ENotEnoughFee: If user doesn't provide enough DEEP to cover all fees
 public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
-    wrapper: &mut Treasury,
+    treasury: &mut Treasury,
     config: &PoolCreationConfig,
     registry: &mut Registry,
     mut creation_fee: Coin<DEEP>,
@@ -103,7 +103,7 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
     min_size: u64,
     ctx: &mut TxContext,
 ): ID {
-    wrapper.verify_version();
+    treasury.verify_version();
 
     let deepbook_fee = constants::pool_creation_fee();
     let protocol_fee = config.protocol_fee;
@@ -114,8 +114,8 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
     let deepbook_fee_coin = creation_fee.split(deepbook_fee, ctx);
     let protocol_fee_coin = creation_fee.split(protocol_fee, ctx);
 
-    // Move protocol fee to the wrapper
-    join_protocol_fee(wrapper, protocol_fee_coin.into_balance());
+    // Move protocol fee to the treasury
+    join_protocol_fee(treasury, protocol_fee_coin.into_balance());
 
     // Return unused DEEP coins to the caller
     transfer_if_nonzero(creation_fee, ctx.sender());

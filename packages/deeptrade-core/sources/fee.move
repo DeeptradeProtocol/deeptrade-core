@@ -365,7 +365,7 @@ public fun estimate_full_fee_market<BaseToken, QuoteToken, ReferenceBaseAsset, R
 // === Public-Package Functions ===
 /// Calculate the total fee for an order using DEEP fee type
 ///
-/// This function determines if the user needs to borrow DEEP from wrapper reserves and calculates
+/// This function determines if the user needs to borrow DEEP from treasury reserves and calculates
 /// the appropriate fees including coverage fees and protocol fees with discount applied.
 ///
 /// Parameters:
@@ -393,7 +393,7 @@ public(package) fun estimate_full_order_fee_core(
     max_deep_fee_coverage_discount_rate: u64,
     loyalty_discount_rate: u64,
 ): (u64, u64, u64) {
-    // Calculate the amount of DEEP to be taken from wrapper's reserves.
+    // Calculate the amount of DEEP to be taken from treasury's reserves.
     // If the user doesn't have enough DEEP, reserves will cover the difference between
     // the total DEEP required and the user's available DEEP (balance manager + wallet).
     let deep_from_reserves = if (balance_manager_deep + deep_in_wallet < deep_required)
@@ -431,12 +431,12 @@ public(package) fun estimate_full_order_fee_core(
     (deep_reserves_coverage_fee, protocol_fee, total_discount_rate)
 }
 
-/// Calculates the fee for using DEEP from wrapper reserves
+/// Calculates the fee for using DEEP from treasury reserves
 /// This fee represents the SUI equivalent value of the borrowed DEEP
 ///
 /// Parameters:
 /// - sui_per_deep: Best DEEP/SUI price either from oracle or from reference pool
-/// - deep_from_reserves: Amount of DEEP taken from wrapper reserves
+/// - deep_from_reserves: Amount of DEEP taken from treasury reserves
 ///
 /// Returns:
 /// - u64: Fee amount in SUI coins for borrowing DEEP from reserves

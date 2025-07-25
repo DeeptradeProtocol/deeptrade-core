@@ -150,7 +150,7 @@ public(package) fun calculate_order_amount(quantity: u64, price: u64, is_bid: bo
     }
 }
 
-/// Gets the DEEP/SUI price by comparing oracle and reference pool prices and selecting the best rate for the wrapper
+/// Gets the DEEP/SUI price by comparing oracle and reference pool prices and selecting the best rate for the treasury
 ///
 /// This function implements a dual-price strategy to prevent arbitrage:
 /// 1. Gets price from both oracle feeds and reference pool (both must be healthy)
@@ -187,7 +187,7 @@ public(package) fun get_sui_per_deep<ReferenceBaseAsset, ReferenceQuoteAsset>(
     );
     let reference_sui_per_deep = get_sui_per_deep_from_reference_pool(reference_pool, clock);
 
-    // Choose maximum (best for wrapper - users pay more SUI for DEEP)
+    // Choose maximum (best for treasury - users pay more SUI for DEEP)
     let sui_per_deep = u64::max(oracle_sui_per_deep, reference_sui_per_deep);
 
     assert!(sui_per_deep > 0, EInvalidSuiPerDeep);
