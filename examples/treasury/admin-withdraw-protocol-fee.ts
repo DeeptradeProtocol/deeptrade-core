@@ -3,7 +3,7 @@ import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
 import { Transaction } from "@mysten/sui/transactions";
-import { getTreasuryBags } from "./utils/getWrapperBags";
+import { getTreasuryBags } from "./utils/getTreasuryBags";
 import { processFeesBag } from "./utils/processFeeBag";
 
 // yarn ts-node examples/treasury/admin-withdraw-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
