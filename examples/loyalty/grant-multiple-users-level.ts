@@ -1,6 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
-import { grantUserLevelTx } from "./grant-user-level";
+import { grantUserLevelTx } from "./utils";
 
 const USER_ADDRESSES: string[] = []; // Addresses of the users to grant the level to
 const LEVEL = 1; // Level to grant to the users
