@@ -143,7 +143,7 @@ fun user_has_more_deep_in_manager_than_required() {
 }
 
 // -------------------------------------
-// Test Category 3: User Needs Wrapper DEEP
+// Test Category 3: User Needs Treasury DEEP
 // -------------------------------------
 
 #[test]
@@ -203,7 +203,7 @@ fun user_needs_all_wrapper_deep() {
 
 #[test]
 fun wrapper_exact_remainder() {
-    // Wrapper has exact amount needed for remainder
+    // Treasury has exact amount needed for remainder
     let required = DEEP_MEDIUM;
     let user_deep = required / 3;
     let wrapper_needed = required - user_deep;
@@ -224,7 +224,7 @@ fun wrapper_exact_remainder() {
 
 #[test]
 fun insufficient_wrapper_reserves() {
-    // Wrapper doesn't have enough to fulfill
+    // Treasury doesn't have enough to fulfill
     let required = DEEP_MEDIUM;
     let user_deep = required / 2;
     let wrapper_needed = required - user_deep;
@@ -380,7 +380,7 @@ fun exact_balance_boundaries() {
     );
     assert_deep_plan_eq(plan, wallet_amount, 0, true);
 
-    // Wrapper exactly matches what's needed
+    // Treasury exactly matches what's needed
     let user_amount = required / 2;
     let wrapper_needed = required - user_amount;
     let plan = get_deep_plan(

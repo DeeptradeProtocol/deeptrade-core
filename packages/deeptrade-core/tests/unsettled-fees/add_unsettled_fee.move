@@ -10,7 +10,7 @@ use deeptrade_core::unsettled_fees::{
     get_unsettled_fee_balance,
     get_unsettled_fee_order_params
 };
-use deeptrade_core::treasury::{Self, Wrapper};
+use deeptrade_core::treasury::{Self, Treasury};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::object::id_from_address;
@@ -35,7 +35,7 @@ fun live_order_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_live_order_info(
             pool_id,
@@ -89,7 +89,7 @@ fun partially_filled_order_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_partially_filled_order_info(
             pool_id,
@@ -143,7 +143,7 @@ fun join_existing_fee_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let order_info = create_live_order_info(
             pool_id,
             balance_manager_id,
@@ -185,7 +185,7 @@ fun cancelled_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_cancelled_order_info(
             pool_id,
@@ -216,7 +216,7 @@ fun fully_executed_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_live_order_info(
             pool_id,
@@ -246,7 +246,7 @@ fun zero_fee_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(0); // zero fee
         let order_info = create_live_order_info(
             pool_id,
@@ -273,7 +273,7 @@ fun different_coin_types() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let pool_id = id_from_address(@0x1);
         let balance_manager_id = id_from_address(@0x2);
@@ -359,7 +359,7 @@ fun cross_pool_scenarios() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let pool_id_1 = id_from_address(@0x1);
         let pool_id_2 = id_from_address(@0x2);
@@ -462,7 +462,7 @@ fun filled_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_filled_order_info(
             pool_id,
@@ -493,7 +493,7 @@ fun expired_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_expired_order_info(
             pool_id,
