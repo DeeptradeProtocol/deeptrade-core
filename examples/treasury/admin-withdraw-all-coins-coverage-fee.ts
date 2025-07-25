@@ -1,16 +1,16 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../constants";
+import { ADMIN_CAP_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
-import { getWrapperBags } from "./utils/getWrapperBags";
+import { getTreasuryBags } from "./utils/getTreasuryBags";
 import { processFeesBag } from "./utils/processFeeBag";
 
-// yarn ts-node examples/wrapper/admin-withdraw-all-coins-coverage-fee.ts > admin-withdraw-all-coins-coverage-fee.log 2>&1
+// yarn ts-node examples/treasury/admin-withdraw-all-coins-coverage-fee.ts > admin-withdraw-all-coins-coverage-fee.log 2>&1
 (async () => {
   const tx = new Transaction();
 
-  const { deepReservesBagId } = await getWrapperBags();
+  const { deepReservesBagId } = await getTreasuryBags();
 
   // Process coverage fees
   const { coinsMapByCoinType } = await processFeesBag(deepReservesBagId);
@@ -23,7 +23,7 @@ import { processFeesBag } from "./utils/processFeeBag";
   for (const coinType of coinTypes) {
     getWithdrawFeeTx({
       coinType,
-      target: `${WRAPPER_PACKAGE_ID}::wrapper::withdraw_deep_reserves_coverage_fee`,
+      target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_deep_reserves_coverage_fee`,
       user: MULTISIG_CONFIG.address,
       adminCapId: ADMIN_CAP_OBJECT_ID,
       transaction: tx,

@@ -1,5 +1,10 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, DEEP_DECIMALS, POOL_CREATION_CONFIG_OBJECT_ID, WRAPPER_PACKAGE_ID } from "../constants";
+import {
+  ADMIN_CAP_OBJECT_ID,
+  DEEP_DECIMALS,
+  POOL_CREATION_CONFIG_OBJECT_ID,
+  DEEPTRADE_CORE_PACKAGE_ID,
+} from "../constants";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 
@@ -13,7 +18,7 @@ const NEW_FEE = 200 * 10 ** DEEP_DECIMALS; // 200 DEEP
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::pool::update_pool_creation_protocol_fee`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::pool::update_pool_creation_protocol_fee`,
     arguments: [
       tx.object(POOL_CREATION_CONFIG_OBJECT_ID),
       tx.object(ADMIN_CAP_OBJECT_ID),

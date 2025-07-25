@@ -24,3 +24,6 @@ packages/deeptrade-core/traces/
 
 # Sample audit reports
 audit-reports/
+
+# meta docs
+text_docs/

@@ -76,8 +76,8 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 3. Run command:
    `sui client publish --gas-budget 220000000 --skip-dependency-verification`
 4. Use new `address` of deployed package in Move.toml
-5. Update `examples/constants.ts` with new addresses of `WRAPPER_PACKAGE_ID`, `ADMIN_CAP_OBJECT_ID`, `WRAPPER_OBJECT_ID`.
-6. Add DEEP coins to reserves by `examples/wrapper/deposit-into-reserves.ts`
+5. Update `examples/constants.ts` with new addresses of `DEEPTRADE_CORE_PACKAGE_ID`, `ADMIN_CAP_OBJECT_ID`, `TREASURY_OBJECT_ID`.
+6. Add DEEP coins to reserves by `examples/treasury/deposit-into-reserves.ts`
 
 ## Upgrade
 
@@ -89,7 +89,7 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
    `sui client upgrade --dry-run --upgrade-capability 0xae8c80532528977c531c7ee477d55d9e8618320e03c0ce923740ee8635cab01b --gas-budget 1000000000`
 5. Upgrade:
    `sui client upgrade --upgrade-capability 0xae8c80532528977c531c7ee477d55d9e8618320e03c0ce923740ee8635cab01b --gas-budget 1000000000`
-6. (optional) Update `examples/constants.ts` with new addresses of `WRAPPER_PACKAGE_ID`, `ADMIN_CAP_OBJECT_ID`, `WRAPPER_OBJECT_ID`.
+6. (optional) Update `examples/constants.ts` with new addresses of `DEEPTRADE_CORE_PACKAGE_ID`, `ADMIN_CAP_OBJECT_ID`, `TREASURY_OBJECT_ID`.
 7. Set `address` to new `address` of deployed package in `Move.toml`
 8. Build contract with new address: `sui move build`
 
@@ -110,10 +110,10 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 
 ## Fee & Reserves Withdrawal (Admin Only)
 
-1. Run `examples/wrapper/get-charged-fee-info.ts` to get the list of coins with charged fees (coverage fees and protocol fees).
-2. Run `examples/wrapper/admin-withdraw-all-coins-coverage-fee.ts` to withdraw all coins coverage fees (coverage fees charged in output coin of each swap and for limit/market orders in SUI).
-3. Run `examples/wrapper/admin-withdraw-protocol-fee.ts` to withdraw all protocol fees (protocol fees charged in SUI, pool creation fees charged in DEEP).
-4. Run `examples/wrapper/withdraw-all-deep-reserves.ts` to withdraw all DEEP coins from reserves.
+1. Run `examples/treasury/get-charged-fee-info.ts` to get the list of coins with charged fees (coverage fees and protocol fees).
+2. Run `examples/treasury/admin-withdraw-all-coins-coverage-fee.ts` to withdraw all coins coverage fees (coverage fees charged in output coin of each swap and for limit/market orders in SUI).
+3. Run `examples/treasury/admin-withdraw-protocol-fee.ts` to withdraw all protocol fees (protocol fees charged in SUI, pool creation fees charged in DEEP).
+4. Run `examples/treasury/withdraw-all-deep-reserves.ts` to withdraw all DEEP coins from reserves.
 
 ## Development Tools
 

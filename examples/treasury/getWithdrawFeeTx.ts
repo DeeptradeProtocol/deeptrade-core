@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { WRAPPER_OBJECT_ID } from "../constants";
+import { TREASURY_OBJECT_ID } from "../constants";
 
 export function getWithdrawFeeTx({
   coinType,
@@ -26,7 +26,7 @@ export function getWithdrawFeeTx({
     target,
     typeArguments: [coinType],
     arguments: [
-      tx.object(WRAPPER_OBJECT_ID),
+      tx.object(TREASURY_OBJECT_ID),
       tx.object(adminCapId),
       tx.pure.vector("vector<u8>", pks),
       tx.pure.vector("u8", weights),
