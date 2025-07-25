@@ -20,7 +20,7 @@ node_modules
 /logs
 
 # test traces
-packages/deeptrade/traces/
+packages/deeptrade-core/traces/
 
 # Sample audit reports
 audit-reports/
