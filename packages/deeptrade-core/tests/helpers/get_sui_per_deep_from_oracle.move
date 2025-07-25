@@ -1,13 +1,13 @@
 #[test_only]
-module deepbook_wrapper::get_sui_per_deep_from_oracle_tests;
+module deeptrade_core::get_sui_per_deep_from_oracle_tests;
 
-use deepbook_wrapper::helper::{
+use deeptrade_core::helper::{
     get_sui_per_deep_from_oracle,
     EInvalidPriceFeedIdentifier,
     EDecimalAdjustmentTooLarge,
     EUnexpectedPositiveExponent
 };
-use deepbook_wrapper::oracle::{
+use deeptrade_core::oracle::{
     Self,
     EPriceConfidenceExceedsThreshold,
     EStalePrice,

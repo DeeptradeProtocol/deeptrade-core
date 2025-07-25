@@ -1,8 +1,8 @@
 #[test_only]
-module deepbook_wrapper::get_coverage_fee_plan_tests;
+module deeptrade_core::get_coverage_fee_plan_tests;
 
-use deepbook_wrapper::fee::calculate_deep_reserves_coverage_order_fee;
-use deepbook_wrapper::order::{get_coverage_fee_plan, assert_coverage_fee_plan_eq};
+use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
+use deeptrade_core::order::{get_coverage_fee_plan, assert_coverage_fee_plan_eq};
 use std::unit_test::assert_eq;
 
 // ===== Constants =====

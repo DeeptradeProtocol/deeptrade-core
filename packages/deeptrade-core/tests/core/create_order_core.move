@@ -1,9 +1,9 @@
 #[test_only]
-module deepbook_wrapper::create_order_core_tests;
+module deeptrade_core::create_order_core_tests;
 
-use deepbook_wrapper::fee::calculate_deep_reserves_coverage_order_fee;
-use deepbook_wrapper::helper::calculate_order_amount;
-use deepbook_wrapper::order::{
+use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
+use deeptrade_core::helper::calculate_order_amount;
+use deeptrade_core::order::{
     create_order_core,
     assert_deep_plan_eq,
     assert_coverage_fee_plan_eq,

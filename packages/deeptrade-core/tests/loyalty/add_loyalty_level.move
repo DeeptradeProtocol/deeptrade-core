@@ -1,13 +1,13 @@
 #[test_only]
-module deepbook_wrapper::add_loyalty_level_tests;
+module deeptrade_core::add_loyalty_level_tests;
 
-use deepbook_wrapper::grant_user_level_tests::{
+use deeptrade_core::grant_user_level_tests::{
     get_test_multisig_pks,
     get_test_multisig_weights,
     get_test_multisig_threshold,
     get_test_multisig_address
 };
-use deepbook_wrapper::loyalty::{
+use deeptrade_core::loyalty::{
     Self,
     LoyaltyProgram,
     ELoyaltyLevelAlreadyExists,
@@ -48,7 +48,7 @@ fun successful_add_loyalty_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
@@ -88,7 +88,7 @@ fun add_multiple_loyalty_levels() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add multiple levels
         loyalty::add_loyalty_level(
@@ -165,7 +165,7 @@ fun add_level_with_max_discount_rate() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
@@ -201,7 +201,7 @@ fun add_level_with_zero_discount_rate_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Try to add level with zero discount rate (should fail)
         loyalty::add_loyalty_level(
@@ -230,7 +230,7 @@ fun add_level_with_different_level_ids() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add level with ID 0
         loyalty::add_loyalty_level(
@@ -286,7 +286,7 @@ fun add_duplicate_level_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add level first time
         loyalty::add_loyalty_level(
@@ -327,7 +327,7 @@ fun add_level_with_invalid_discount_rate_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Try to add level with discount rate > 100%
         loyalty::add_loyalty_level(
@@ -355,7 +355,7 @@ fun non_multisig_sender_fails() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Use invalid multisig parameters to trigger failure
         loyalty::add_loyalty_level(
@@ -386,7 +386,7 @@ fun add_then_remove_then_add_again() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
@@ -407,7 +407,7 @@ fun add_then_remove_then_add_again() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
@@ -427,7 +427,7 @@ fun add_then_remove_then_add_again() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
@@ -465,7 +465,7 @@ fun add_level_then_grant_to_user() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
@@ -486,7 +486,7 @@ fun add_level_then_grant_to_user() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::grant_user_level(
             &mut loyalty_program,

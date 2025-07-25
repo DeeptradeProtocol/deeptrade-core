@@ -1,7 +1,7 @@
 #[test_only]
-module deepbook_wrapper::get_pyth_price_tests;
+module deeptrade_core::get_pyth_price_tests;
 
-use deepbook_wrapper::oracle::{
+use deeptrade_core::oracle::{
     get_pyth_price,
     EPriceConfidenceExceedsThreshold,
     EStalePrice,

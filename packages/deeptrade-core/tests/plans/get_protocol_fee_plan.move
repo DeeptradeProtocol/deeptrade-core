@@ -1,11 +1,11 @@
 #[test_only]
-module deepbook_wrapper::get_protocol_fee_plan_tests;
+module deeptrade_core::get_protocol_fee_plan_tests;
 
 use deepbook::constants;
 use deepbook::order_info::{Self, OrderInfo};
-use deepbook_wrapper::fee::calculate_protocol_fees;
-use deepbook_wrapper::helper::calculate_order_taker_maker_ratio;
-use deepbook_wrapper::order::{get_protocol_fee_plan, assert_protocol_fee_plan_eq};
+use deeptrade_core::fee::calculate_protocol_fees;
+use deeptrade_core::helper::calculate_order_taker_maker_ratio;
+use deeptrade_core::order::{get_protocol_fee_plan, assert_protocol_fee_plan_eq};
 use std::unit_test::assert_eq;
 use sui::object::id_from_address;
 

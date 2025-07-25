@@ -1,7 +1,7 @@
 #[test_only]
-module deepbook_wrapper::grant_user_level_tests;
+module deeptrade_core::grant_user_level_tests;
 
-use deepbook_wrapper::loyalty::{
+use deeptrade_core::loyalty::{
     Self,
     LoyaltyProgram,
     ELoyaltyLevelNotFound,
@@ -40,7 +40,7 @@ fun successful_grant_user_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::grant_user_level(
             &mut loyalty_program,
@@ -83,7 +83,7 @@ fun grant_multiple_users_same_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant to ALICE
         loyalty::grant_user_level(
@@ -156,7 +156,7 @@ fun grant_users_different_levels() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant different levels to different users
         loyalty::grant_user_level(
@@ -227,7 +227,7 @@ fun grant_nonexistent_level_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Try to grant a level that doesn't exist
         loyalty::grant_user_level(
@@ -256,7 +256,7 @@ fun grant_level_to_user_with_existing_level_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant initial level
         loyalty::grant_user_level(
@@ -296,7 +296,7 @@ fun non_multisig_sender_fails() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::grant_user_level(
             &mut loyalty_program,
@@ -324,7 +324,7 @@ fun grant_to_zero_address_succeeds() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant level to zero address (edge case)
         loyalty::grant_user_level(
@@ -371,7 +371,7 @@ public(package) fun setup_test_environment(): (Scenario, ID) {
     scenario.next_tx(multisig_address);
     let loyalty_program_id = {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add test loyalty levels
         loyalty::add_loyalty_level(

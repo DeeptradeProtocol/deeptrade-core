@@ -1,16 +1,16 @@
 #[test_only]
-module deepbook_wrapper::add_unsettled_fee_tests;
+module deeptrade_core::add_unsettled_fee_tests;
 
 use deepbook::constants;
 use deepbook::order_info;
-use deepbook_wrapper::unsettled_fees::{
+use deeptrade_core::unsettled_fees::{
     Self,
     add_unsettled_fee,
     has_unsettled_fee,
     get_unsettled_fee_balance,
     get_unsettled_fee_order_params
 };
-use deepbook_wrapper::wrapper::{Self, Wrapper};
+use deeptrade_core::wrapper::{Self, Wrapper};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::object::id_from_address;

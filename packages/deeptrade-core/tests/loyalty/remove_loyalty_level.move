@@ -1,14 +1,14 @@
 #[test_only]
-module deepbook_wrapper::remove_loyalty_level_tests;
+module deeptrade_core::remove_loyalty_level_tests;
 
-use deepbook_wrapper::grant_user_level_tests::{
+use deeptrade_core::grant_user_level_tests::{
     setup_test_environment,
     get_test_multisig_pks,
     get_test_multisig_weights,
     get_test_multisig_threshold,
     get_test_multisig_address
 };
-use deepbook_wrapper::loyalty::{
+use deeptrade_core::loyalty::{
     Self,
     LoyaltyProgram,
     ELoyaltyLevelNotFound,
@@ -48,7 +48,7 @@ fun successful_remove_loyalty_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add a new level first
         loyalty::add_loyalty_level(
@@ -70,7 +70,7 @@ fun successful_remove_loyalty_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
@@ -108,7 +108,7 @@ fun remove_multiple_empty_levels() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add multiple new levels
         loyalty::add_loyalty_level(
@@ -152,7 +152,7 @@ fun remove_multiple_empty_levels() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
@@ -229,7 +229,7 @@ fun remove_level_with_different_ids() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add levels with different IDs
         loyalty::add_loyalty_level(
@@ -262,7 +262,7 @@ fun remove_level_with_different_ids() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
@@ -312,7 +312,7 @@ fun remove_nonexistent_level_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Try to remove a level that doesn't exist
         loyalty::remove_loyalty_level(
@@ -340,7 +340,7 @@ fun remove_level_with_members_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant a level to a user (this creates a member)
         loyalty::grant_user_level(
@@ -362,7 +362,7 @@ fun remove_level_with_members_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
@@ -388,7 +388,7 @@ fun non_multisig_sender_fails() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Use invalid multisig parameters to trigger failure
         loyalty::remove_loyalty_level(
@@ -418,7 +418,7 @@ fun remove_level_after_revoking_all_users() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Grant to multiple users
         loyalty::grant_user_level(
@@ -451,7 +451,7 @@ fun remove_level_after_revoking_all_users() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::revoke_user_level(
             &mut loyalty_program,
@@ -481,7 +481,7 @@ fun remove_level_after_revoking_all_users() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
@@ -517,7 +517,7 @@ fun remove_last_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Remove all levels (they start with 0 members)
         loyalty::remove_loyalty_level(
@@ -583,7 +583,7 @@ fun remove_level_then_verify_state() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add a new level
         loyalty::add_loyalty_level(
@@ -605,7 +605,7 @@ fun remove_level_then_verify_state() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
@@ -625,7 +625,7 @@ fun remove_level_then_verify_state() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deepbook_wrapper::admin::get_admin_cap_for_testing(scenario.ctx());
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Verify level doesn't exist
         let discount_rate_opt = loyalty::get_loyalty_level_fee_discount_rate(
