@@ -10,7 +10,7 @@ use deeptrade_core::ticket::{
     validate_ticket,
     destroy_ticket
 };
-use deeptrade_core::treasury::{Wrapper, join_protocol_fee};
+use deeptrade_core::treasury::{Treasury, join_protocol_fee};
 use sui::clock::Clock;
 use sui::coin::Coin;
 use sui::event;
@@ -94,7 +94,7 @@ fun init(ctx: &mut TxContext) {
 /// Aborts:
 /// - ENotEnoughFee: If user doesn't provide enough DEEP to cover all fees
 public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     config: &PoolCreationConfig,
     registry: &mut Registry,
     mut creation_fee: Coin<DEEP>,

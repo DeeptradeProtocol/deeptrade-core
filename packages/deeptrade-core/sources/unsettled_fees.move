@@ -5,7 +5,7 @@ use deepbook::constants::{live, partially_filled};
 use deepbook::order_info::OrderInfo;
 use deepbook::pool::Pool;
 use deeptrade_core::math;
-use deeptrade_core::treasury::{Wrapper, join_protocol_fee};
+use deeptrade_core::treasury::{Treasury, join_protocol_fee};
 use sui::balance::Balance;
 use sui::coin::{Self, Coin};
 use sui::event;
@@ -88,7 +88,7 @@ public fun start_protocol_fee_settlement<FeeCoinType>(): FeeSettlementReceipt<Fe
 /// - The order is still live (i.e., present in the account's open orders).
 /// - No unsettled fees exist for the order.
 public fun settle_protocol_fee_and_record<BaseToken, QuoteToken, FeeCoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     receipt: &mut FeeSettlementReceipt<FeeCoinType>,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
@@ -151,7 +151,7 @@ public fun finish_protocol_fee_settlement<FeeCoinType>(receipt: FeeSettlementRec
 ///
 /// See `docs/unsettled-fees.md` for detailed explanation of the unsettled fees system.
 public(package) fun add_unsettled_fee<CoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     fee: Balance<CoinType>,
     order_info: &OrderInfo,
 ) {
@@ -210,7 +210,7 @@ public(package) fun add_unsettled_fee<CoinType>(
 ///
 /// See `docs/unsettled-fees.md` for detailed explanation of the unsettled fees system.
 public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     order_id: u128,
@@ -298,7 +298,7 @@ fun destroy_empty<CoinType>(unsettled_fee: UnsettledFee<CoinType>) {
 /// Check if an unsettled fee exists for a specific order
 #[test_only]
 public fun has_unsettled_fee(
-    wrapper: &Wrapper,
+    wrapper: &Treasury,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
@@ -311,7 +311,7 @@ public fun has_unsettled_fee(
 /// Get the unsettled fee balance for a specific order
 #[test_only]
 public fun get_unsettled_fee_balance<CoinType>(
-    wrapper: &Wrapper,
+    wrapper: &Treasury,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
@@ -325,7 +325,7 @@ public fun get_unsettled_fee_balance<CoinType>(
 /// Get the order parameters stored in an unsettled fee
 #[test_only]
 public fun get_unsettled_fee_order_params<CoinType>(
-    wrapper: &Wrapper,
+    wrapper: &Treasury,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,

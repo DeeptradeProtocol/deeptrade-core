@@ -34,7 +34,7 @@ const ESenderIsNotMultisig: u64 = 6;
 const EVersionPermanentlyDisabled: u64 = 7;
 
 // === Structs ===
-public struct Wrapper has key, store {
+public struct Treasury has key, store {
     id: UID,
     allowed_versions: VecSet<u16>,
     // Permanently disabled package versions
@@ -86,7 +86,7 @@ public struct VersionDisabled has copy, drop {
 }
 
 fun init(ctx: &mut TxContext) {
-    let wrapper = Wrapper {
+    let wrapper = Treasury {
         id: object::new(ctx),
         allowed_versions: vec_set::singleton(current_version()),
         disabled_versions: vec_set::empty(),
@@ -101,7 +101,7 @@ fun init(ctx: &mut TxContext) {
 
 // === Public-Mutative Functions ===
 /// Deposit DEEP coins into the wrapper's reserves
-public fun deposit_into_reserves(wrapper: &mut Wrapper, deep_coin: Coin<DEEP>) {
+public fun deposit_into_reserves(wrapper: &mut Treasury, deep_coin: Coin<DEEP>) {
     wrapper.verify_version();
 
     if (deep_coin.value() == 0) {
@@ -121,7 +121,7 @@ public fun deposit_into_reserves(wrapper: &mut Wrapper, deep_coin: Coin<DEEP>) {
 /// Performs timelock validation using an admin ticket
 ///
 /// Parameters:
-/// - wrapper: Wrapper object
+/// - wrapper: Treasury object
 /// - ticket: Admin ticket for timelock validation (consumed on execution)
 /// - clock: Clock for timestamp validation
 /// - ctx: Mutable transaction context for coin creation and sender verification
@@ -132,7 +132,7 @@ public fun deposit_into_reserves(wrapper: &mut Wrapper, deep_coin: Coin<DEEP>) {
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
 public fun withdraw_deep_reserves_coverage_fee<CoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     ticket: AdminTicket,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -162,7 +162,7 @@ public fun withdraw_deep_reserves_coverage_fee<CoinType>(
 /// Performs timelock validation using an admin ticket
 ///
 /// Parameters:
-/// - wrapper: Wrapper object
+/// - wrapper: Treasury object
 /// - ticket: Admin ticket for timelock validation (consumed on execution)
 /// - clock: Clock for timestamp validation
 /// - ctx: Mutable transaction context for coin creation and sender verification
@@ -173,7 +173,7 @@ public fun withdraw_deep_reserves_coverage_fee<CoinType>(
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
 public fun withdraw_protocol_fee<CoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     ticket: AdminTicket,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -203,7 +203,7 @@ public fun withdraw_protocol_fee<CoinType>(
 /// Performs timelock validation using an admin ticket
 ///
 /// Parameters:
-/// - wrapper: Wrapper object
+/// - wrapper: Treasury object
 /// - ticket: Admin ticket for timelock validation (consumed on execution)
 /// - amount: Amount of DEEP tokens to withdraw
 /// - clock: Clock for timestamp validation
@@ -215,7 +215,7 @@ public fun withdraw_protocol_fee<CoinType>(
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
 public fun withdraw_deep_reserves(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     ticket: AdminTicket,
     amount: u64,
     clock: &Clock,
@@ -238,7 +238,7 @@ public fun withdraw_deep_reserves(
 /// Enable the specified package version for the wrapper
 ///
 /// Parameters:
-/// - wrapper: Wrapper object
+/// - wrapper: Treasury object
 /// - _admin: Admin capability
 /// - version: Package version to enable
 /// - pks: Vector of public keys of the multi-sig signers
@@ -251,7 +251,7 @@ public fun withdraw_deep_reserves(
 ///   derived from the provided pks, weights, and threshold parameters
 /// - With EVersionAlreadyEnabled if the version is already enabled
 public fun enable_version(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     _admin: &AdminCap,
     version: u16,
     pks: vector<vector<u8>>,
@@ -281,7 +281,7 @@ public fun enable_version(
 /// Permanently disable the specified package version for the wrapper
 ///
 /// Parameters:
-/// - wrapper: Wrapper object
+/// - wrapper: Treasury object
 /// - _admin: Admin capability
 /// - version: Package version to disable
 /// - pks: Vector of public keys of the multi-sig signers
@@ -295,7 +295,7 @@ public fun enable_version(
 /// - With ECannotDisableCurrentVersion if trying to disable the current version
 /// - With EVersionNotEnabled if the version is not currently enabled
 public fun disable_version(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     _admin: &AdminCap,
     version: u16,
     pks: vector<vector<u8>>,
@@ -322,12 +322,12 @@ public fun disable_version(
 
 // === Public-View Functions ===
 /// Get the value of DEEP in the reserves
-public fun deep_reserves(wrapper: &Wrapper): u64 { wrapper.deep_reserves.value() }
+public fun deep_reserves(wrapper: &Treasury): u64 { wrapper.deep_reserves.value() }
 
 // === Public-Package Functions ===
 /// Add collected deep reserves coverage fees to the wrapper's fee storage
 public(package) fun join_deep_reserves_coverage_fee<CoinType>(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     fee: Balance<CoinType>,
 ) {
     wrapper.verify_version();
@@ -347,7 +347,7 @@ public(package) fun join_deep_reserves_coverage_fee<CoinType>(
 }
 
 /// Add collected protocol fees to the wrapper's fee storage
-public(package) fun join_protocol_fee<CoinType>(wrapper: &mut Wrapper, fee: Balance<CoinType>) {
+public(package) fun join_protocol_fee<CoinType>(wrapper: &mut Treasury, fee: Balance<CoinType>) {
     wrapper.verify_version();
 
     if (fee.value() == 0) {
@@ -366,7 +366,7 @@ public(package) fun join_protocol_fee<CoinType>(wrapper: &mut Wrapper, fee: Bala
 
 /// Get the splitted DEEP coin from the reserves
 public(package) fun split_deep_reserves(
-    wrapper: &mut Wrapper,
+    wrapper: &mut Treasury,
     amount: u64,
     ctx: &mut TxContext,
 ): Coin<DEEP> {
@@ -379,14 +379,14 @@ public(package) fun split_deep_reserves(
 }
 
 /// Verify that the current package version is enabled in the wrapper
-public(package) fun verify_version(wrapper: &Wrapper) {
+public(package) fun verify_version(wrapper: &Treasury) {
     let package_version = current_version();
     assert!(wrapper.allowed_versions.contains(&package_version), EPackageVersionNotEnabled);
 }
 
-public(package) fun unsettled_fees(wrapper: &Wrapper): &Bag { &wrapper.unsettled_fees }
+public(package) fun unsettled_fees(wrapper: &Treasury): &Bag { &wrapper.unsettled_fees }
 
-public(package) fun unsettled_fees_mut(wrapper: &mut Wrapper): &mut Bag {
+public(package) fun unsettled_fees_mut(wrapper: &mut Treasury): &mut Bag {
     wrapper.verify_version();
     &mut wrapper.unsettled_fees
 }
@@ -394,7 +394,7 @@ public(package) fun unsettled_fees_mut(wrapper: &mut Wrapper): &mut Bag {
 // === Test Functions ===
 /// Get the protocol fee balance for a specific coin type.
 #[test_only]
-public fun get_protocol_fee_balance<CoinType>(wrapper: &Wrapper): u64 {
+public fun get_protocol_fee_balance<CoinType>(wrapper: &Treasury): u64 {
     let key = ChargedFeeKey<CoinType> {};
     if (wrapper.protocol_fees.contains(key)) {
         let balance: &Balance<CoinType> = wrapper.protocol_fees.borrow(key);

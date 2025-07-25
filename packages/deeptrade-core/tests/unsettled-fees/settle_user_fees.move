@@ -17,7 +17,7 @@ use deeptrade_core::unsettled_fees::{
     get_unsettled_fee_balance,
     settle_user_fees
 };
-use deeptrade_core::treasury::{Self, Wrapper};
+use deeptrade_core::treasury::{Self, Treasury};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;
@@ -37,7 +37,7 @@ fun unfilled_order_returns_all_fees() {
     // Step 1: Place order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -88,7 +88,7 @@ fun unfilled_order_returns_all_fees() {
     // Step 2: Test settle_user_fees
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -121,7 +121,7 @@ fun partially_filled_order_returns_proportional_fees() {
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a buy order for 100 units at price 2.0
         let order_info = place_limit_order<SUI, USDC>(
@@ -172,7 +172,7 @@ fun partially_filled_order_returns_proportional_fees() {
     // Step 3: Test settle_user_fees
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -211,7 +211,7 @@ fun fully_filled_order_keeps_unsettled_fees() {
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a buy order for 100 units at price 2.0
         let order_info = place_limit_order<SUI, USDC>(
@@ -262,7 +262,7 @@ fun fully_filled_order_keeps_unsettled_fees() {
     // Step 3: Verify behavior with fully filled order
     scenario.next_tx(ALICE);
     {
-        let wrapper = scenario.take_shared<Wrapper>();
+        let wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -310,7 +310,7 @@ fun settle_user_fees_fails_on_filled_order() {
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a buy order for 100 units at price 2.0
         let order_info = place_limit_order<SUI, USDC>(
@@ -361,7 +361,7 @@ fun settle_user_fees_fails_on_filled_order() {
     // Step 3: Attempt to settle fees on filled order - this should fail
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -414,7 +414,7 @@ fun order_with_no_unsettled_fees_returns_zero() {
     // Step 2: Test settle_user_fees
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -447,7 +447,7 @@ fun multiple_fee_types_settled_separately() {
     // Step 1: Place three separate orders with different fee types
     scenario.next_tx(ALICE);
     let (sui_order_id, usdc_order_id, deep_order_id) = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place first order for SUI fees
         let sui_order_info = place_limit_order<SUI, USDC>(
@@ -517,7 +517,7 @@ fun multiple_fee_types_settled_separately() {
     // Step 2: Test settle_user_fees for each fee type on different orders
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -571,7 +571,7 @@ fun settle_fees_on_invalid_order_id_returns_zero() {
 
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -631,7 +631,7 @@ fun settle_fees_on_nonexistent_order_returns_zero() {
     // Step 2: Try to settle fees on a non-existent order with similar ID format
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -670,7 +670,7 @@ fun minimal_fee_amount_precision() {
     // Step 1: Place order and add minimal unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -701,7 +701,7 @@ fun minimal_fee_amount_precision() {
     // Step 2: Test settle_user_fees with minimal amount
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -735,7 +735,7 @@ fun large_fee_amount_precision() {
     // Step 1: Place order and add large unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -766,7 +766,7 @@ fun large_fee_amount_precision() {
     // Step 2: Test settle_user_fees with large amount
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -800,7 +800,7 @@ fun rounding_behavior_with_odd_quantities() {
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a buy order for 101 units (odd number)
         let order_info = place_limit_order<SUI, USDC>(
@@ -851,7 +851,7 @@ fun rounding_behavior_with_odd_quantities() {
     // Step 3: Test settle_user_fees with odd number calculations
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -887,7 +887,7 @@ fun rounding_behavior_with_even_quantities() {
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a buy order for 100 units (even number)
         let order_info = place_limit_order<SUI, USDC>(
@@ -938,7 +938,7 @@ fun rounding_behavior_with_even_quantities() {
     // Step 3: Test settle_user_fees with even number calculations
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -973,7 +973,7 @@ fun very_small_order_quantities() {
     // Step 1: Place order with minimal quantity
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a buy order for 2 units (minimal viable quantity)
         let order_info = place_limit_order<SUI, USDC>(
@@ -1024,7 +1024,7 @@ fun very_small_order_quantities() {
     // Step 3: Test settle_user_fees with minimal quantities
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1059,7 +1059,7 @@ fun precise_proportional_calculations() {
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a buy order for 1000 units
         let order_info = place_limit_order<SUI, USDC>(
@@ -1110,7 +1110,7 @@ fun precise_proportional_calculations() {
     // Step 3: Test settle_user_fees with precise proportional calculations
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1144,7 +1144,7 @@ fun boundary_value_testing() {
     // Step 1: Place order and add large unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -1175,7 +1175,7 @@ fun boundary_value_testing() {
     // Step 2: Test settle_user_fees with large values
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1208,7 +1208,7 @@ fun unauthorized_user_cannot_settle_fees() {
     // Step 1: ALICE places order and adds unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1237,7 +1237,7 @@ fun unauthorized_user_cannot_settle_fees() {
     // Step 2: OWNER (different user) tries to settle ALICE's fees - should fail
     scenario.next_tx(OWNER);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1266,7 +1266,7 @@ fun repeated_settlement_attempts_return_zero() {
     // Step 1: Place order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1295,7 +1295,7 @@ fun repeated_settlement_attempts_return_zero() {
     // Step 2: First settlement - should return fees
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1319,7 +1319,7 @@ fun repeated_settlement_attempts_return_zero() {
     // Step 3: Second settlement - should return zero
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1350,7 +1350,7 @@ fun settlement_with_minimal_maker_quantity() {
     // Step 1: Place very small order and add relatively large fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1380,7 +1380,7 @@ fun settlement_with_minimal_maker_quantity() {
     // Step 2: Test settlement with minimal maker quantity
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1412,7 +1412,7 @@ fun user_loses_fees_when_cancelling_order_directly() {
     // Step 1: Place order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1457,7 +1457,7 @@ fun user_loses_fees_when_cancelling_order_directly() {
     // Step 3: Try to settle fees after direct cancellation
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1490,7 +1490,7 @@ fun settlement_with_different_fee_coin_type() {
     // Test settlement with USDC fees (different from SUI)
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1520,7 +1520,7 @@ fun settlement_with_different_fee_coin_type() {
     // Test settlement with USDC fee coin type
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -1550,7 +1550,7 @@ fun settlement_with_maximum_precision_amounts() {
     // Step 1: Place order with maximum precision values
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1579,7 +1579,7 @@ fun settlement_with_maximum_precision_amounts() {
     // Step 2: Test settlement with maximum precision
     scenario.next_tx(ALICE);
     {
-        let mut wrapper = scenario.take_shared<Wrapper>();
+        let mut wrapper = scenario.take_shared<Treasury>();
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
