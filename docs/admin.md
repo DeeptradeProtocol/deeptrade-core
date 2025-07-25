@@ -1,6 +1,6 @@
 # Admin Capabilities
 
-The `deeptrade` package is managed by an administrative entity that holds the `AdminCap`. To balance security, observability, and operational flexibility, we employ a two-tiered system for authorizing administrative actions. All of these actions are additionally protected by a onchain multisig enforcement layer, as detailed in our [Multisig](./multisig.md) document.
+The `deeptrade-core` package is managed by an administrative entity that holds the `AdminCap`. To balance security, observability, and operational flexibility, we employ a two-tiered system for authorizing administrative actions. All of these actions are additionally protected by a onchain multisig enforcement layer, as detailed in our [Multisig](./multisig.md) document.
 
 ## 1. Direct AdminCap Operations
 

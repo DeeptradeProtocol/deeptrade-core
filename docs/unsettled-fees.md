@@ -2,11 +2,11 @@
 
 ## Overview
 
-Our protocol charges fees for order execution, not order placement. This is achieved through dynamic fee calculation using an "unsettled fees" system.
+The Deeptrade protocol charges fees for order execution, not order placement. This is achieved through dynamic fee calculation using an "unsettled fees" system.
 
 ## How Dynamic Fee Calculation Works
 
-When a user places an order, we follow this process:
+When a user places an order, the protocol follows this process:
 
 1. **Place the order** in the DeepBook
 2. **Analyze the order execution**:
@@ -34,7 +34,7 @@ Users can settle fees when canceling orders using `cancel_order_and_settle_fees`
 - The system checks how much of the order was filled vs unfilled
 - Unsettled fees are split proportionally:
   - **Unfilled portion**: fees returned directly to the user
-  - **Filled portion**: fees remain with the wrapper (now "settled" and ready for protocol collection)
+  - **Filled portion**: fees remain with the protocol (now "settled" and ready for collection)
 
 ### 2. Protocol Collection Settlement
 
@@ -89,7 +89,7 @@ If 10% of the order executes immediately, the user pays taker fees for the execu
 
 ### 4. External Order Cancellation
 
-- **Risk**: If a user places an order through our platform but cancels it externally (e.g., on another platform that doesn't integrate the Deeptrade package), they lose the ability to claim unsettled fees.
+- **Risk**: If a user places an order through our platform but cancels it externally (e.g., on another platform that doesn't integrate the `deeptrade-core` package), they lose the ability to claim unsettled fees.
 - **Reason**: Once an order ceases to exist in the order book, there's no way to retrieve information about it
 
 ## Key Security Feature
