@@ -5,9 +5,9 @@
 ///
 /// User loyalty levels are fully determined by the protocol governance (admin).
 /// For detailed information about the loyalty program, see the docs/loyalty.md documentation.
-module deepbook_wrapper::loyalty;
+module deeptrade_core::loyalty;
 
-use deepbook_wrapper::admin::AdminCap;
+use deeptrade_core::admin::AdminCap;
 use multisig::multisig;
 use sui::event;
 use sui::table::{Self, Table};

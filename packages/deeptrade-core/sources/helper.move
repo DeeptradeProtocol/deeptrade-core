@@ -1,9 +1,9 @@
-module deepbook_wrapper::helper;
+module deeptrade_core::helper;
 
 use deepbook::constants::{live, partially_filled};
 use deepbook::pool::Pool;
-use deepbook_wrapper::math;
-use deepbook_wrapper::oracle;
+use deeptrade_core::math;
+use deeptrade_core::oracle;
 use pyth::price_info::PriceInfoObject;
 use std::type_name;
 use std::u64;

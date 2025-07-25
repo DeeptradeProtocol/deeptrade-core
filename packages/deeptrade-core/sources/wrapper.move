@@ -1,8 +1,8 @@
-module deepbook_wrapper::wrapper;
+module deeptrade_core::wrapper;
 
-use deepbook_wrapper::admin::AdminCap;
-use deepbook_wrapper::helper::current_version;
-use deepbook_wrapper::ticket::{
+use deeptrade_core::admin::AdminCap;
+use deeptrade_core::helper::current_version;
+use deeptrade_core::ticket::{
     AdminTicket,
     validate_ticket,
     destroy_ticket,

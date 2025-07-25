@@ -1,8 +1,8 @@
-module deepbook_wrapper::fee;
+module deeptrade_core::fee;
 
 use deepbook::constants::fee_penalty_multiplier;
 use deepbook::pool::Pool;
-use deepbook_wrapper::helper::{
+use deeptrade_core::helper::{
     calculate_deep_required,
     calculate_order_amount,
     calculate_deep_fee_coverage_discount_rate,
@@ -11,9 +11,9 @@ use deepbook_wrapper::helper::{
     hundred_percent,
     apply_discount
 };
-use deepbook_wrapper::loyalty::LoyaltyProgram;
-use deepbook_wrapper::math;
-use deepbook_wrapper::ticket::{
+use deeptrade_core::loyalty::LoyaltyProgram;
+use deeptrade_core::math;
+use deeptrade_core::ticket::{
     AdminTicket,
     validate_ticket,
     destroy_ticket,

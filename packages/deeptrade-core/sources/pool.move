@@ -1,16 +1,16 @@
-module deepbook_wrapper::pool;
+module deeptrade_core::pool;
 
 use deepbook::constants;
 use deepbook::pool;
 use deepbook::registry::Registry;
-use deepbook_wrapper::helper::transfer_if_nonzero;
-use deepbook_wrapper::ticket::{
+use deeptrade_core::helper::transfer_if_nonzero;
+use deeptrade_core::ticket::{
     AdminTicket,
     update_pool_creation_protocol_fee_ticket_type,
     validate_ticket,
     destroy_ticket
 };
-use deepbook_wrapper::wrapper::{Wrapper, join_protocol_fee};
+use deeptrade_core::wrapper::{Wrapper, join_protocol_fee};
 use sui::clock::Clock;
 use sui::coin::Coin;
 use sui::event;
