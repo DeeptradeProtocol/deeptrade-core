@@ -10,7 +10,7 @@ use deeptrade_core::unsettled_fees::{
     get_unsettled_fee_balance,
     get_unsettled_fee_order_params
 };
-use deeptrade_core::wrapper::{Self, Wrapper};
+use deeptrade_core::treasury::{Self, Wrapper};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::object::id_from_address;
@@ -519,7 +519,7 @@ public(package) fun setup_wrapper_test(owner: address): Scenario {
     let mut scenario = begin(owner);
     {
         let ctx = scenario.ctx();
-        wrapper::init_for_testing(ctx);
+        treasury::init_for_testing(ctx);
     };
     scenario
 }
