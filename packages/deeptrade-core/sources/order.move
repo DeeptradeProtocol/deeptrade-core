@@ -23,7 +23,7 @@ use deeptrade_core::helper::{
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::unsettled_fees::{add_unsettled_fee, settle_user_fees};
-use deeptrade_core::wrapper::{
+use deeptrade_core::treasury::{
     Wrapper,
     join_deep_reserves_coverage_fee,
     join_protocol_fee,

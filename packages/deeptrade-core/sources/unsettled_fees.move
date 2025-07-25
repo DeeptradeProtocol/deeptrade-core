@@ -5,7 +5,7 @@ use deepbook::constants::{live, partially_filled};
 use deepbook::order_info::OrderInfo;
 use deepbook::pool::Pool;
 use deeptrade_core::math;
-use deeptrade_core::wrapper::{Wrapper, join_protocol_fee};
+use deeptrade_core::treasury::{Wrapper, join_protocol_fee};
 use sui::balance::Balance;
 use sui::coin::{Self, Coin};
 use sui::event;
