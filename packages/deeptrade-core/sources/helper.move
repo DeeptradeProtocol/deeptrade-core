@@ -114,7 +114,7 @@ public(package) fun calculate_deep_fee_coverage_discount_rate(
     // If user covers 0 DEEP, they get 0 discount
     if (deep_covered_by_user == 0) return 0;
 
-    math::div(math::mul(max_deep_fee_coverage_discount_rate, deep_covered_by_user), deep_required)
+    math::mul_div(max_deep_fee_coverage_discount_rate, deep_covered_by_user, deep_required)
 }
 
 /// Calculate the taker and maker ratios for an order based on execution status.
