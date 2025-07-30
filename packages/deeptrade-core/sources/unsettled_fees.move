@@ -261,8 +261,9 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
         unsettled_fee_value
     } else {
         let not_executed_quantity = order_quantity - filled_quantity;
-        math::div(
-            math::mul(unsettled_fee_value, not_executed_quantity),
+        math::mul_div(
+            unsettled_fee_value,
+            not_executed_quantity,
             maker_quantity,
         )
     };
