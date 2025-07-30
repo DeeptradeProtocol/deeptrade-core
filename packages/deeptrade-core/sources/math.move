@@ -21,13 +21,6 @@ public(package) fun div(x: u64, y: u64): u64 {
 }
 
 /// Multiply x by y and divide by z.
-/// This function will round up the result.
-public(package) fun mul_div_round_up(x: u64, y: u64, z: u64): u64 {
-    let (round, result) = mul_div_internal(x, y, z);
-    result + round
-}
-
-/// Multiply x by y and divide by z.
 /// This function will round down the result.
 public(package) fun mul_div(x: u64, y: u64, z: u64): u64 {
     let (_, result) = mul_div_internal(x, y, z);
