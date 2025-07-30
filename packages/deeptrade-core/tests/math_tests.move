@@ -72,18 +72,16 @@ fun mul_div_by_zero_fails() {
 fun rounding_direction() {
     let x = 100;
     let y = 20;
-    let z_rem = 7; // 2000 / 7 = 285.71...
 
-    // Test rounding down
+    // Test case where result has a remainder, expecting rounding down.
+    // (100 * 20) / 7 = 2000 / 7 = 285.71... which should be 285.
+    let z_rem = 7;
     assert_eq!(math::mul_div(x, y, z_rem), 285);
 
-    // Test rounding up
-    assert_eq!(math::mul_div_round_up(x, y, z_rem), 286);
-
-    // Test case where result has no remainder
-    let z_no_rem = 5; // 2000 / 5 = 400
+    // Test case where result has no remainder.
+    // (100 * 20) / 5 = 2000 / 5 = 400.
+    let z_no_rem = 5;
     assert_eq!(math::mul_div(x, y, z_no_rem), 400);
-    assert_eq!(math::mul_div_round_up(x, y, z_no_rem), 400);
 }
 
 #[test]
@@ -110,7 +108,7 @@ fun documents_max_precision_loss() {
     let y1 = 10;
     let z1 = 5; // (100 * 10) / 5 = 200. Remainder is 0.
     let res1 = math::mul_div(x1, y1, z1);
-    let res1_up = math::mul_div_round_up(x1, y1, z1);
+    let res1_up = res1 + (if ((x1 as u128) * (y1 as u128) % (z1 as u128) != 0) 1 else 0);
     assert_eq!(res1, 200);
     assert_eq!(res1_up, 200); // No difference, no loss.
 
@@ -118,7 +116,7 @@ fun documents_max_precision_loss() {
     // (100 * 10) / 6 = 166.66...
     let z2 = 6;
     let res2 = math::mul_div(x1, y1, z2);
-    let res2_up = math::mul_div_round_up(x1, y1, z2);
+    let res2_up = res2 + (if ((x1 as u128) * (y1 as u128) % (z2 as u128) != 0) 1 else 0);
     assert_eq!(res2, 166);
     assert_eq!(res2_up, 167); // Difference is 1. Loss is ~0.66.
 
@@ -130,7 +128,7 @@ fun documents_max_precision_loss() {
     let y3 = 1;
     let z3 = 100;
     let res3 = math::mul_div(x3, y3, z3);
-    let res3_up = math::mul_div_round_up(x3, y3, z3);
+    let res3_up = res3 + (if ((x3 as u128) * (y3 as u128) % (z3 as u128) != 0) 1 else 0);
 
     // `mul_div` rounds down to 0. The loss is 0.99.
     assert_eq!(res3, 0);
