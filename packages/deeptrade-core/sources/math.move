@@ -1,4 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
+// Copyright (c) Deeptrade
 // SPDX-License-Identifier: Apache-2.0
 
 module deeptrade_core::math;
