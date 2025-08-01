@@ -60,7 +60,8 @@ public struct UnsettledFeeAdded<phantom CoinType> has copy, drop {
 
 public struct UserFeesSettled<phantom CoinType> has copy, drop {
     key: UnsettledFeeKey,
-    fee_value: u64,
+    returned_to_user: u64,
+    paid_to_protocol: u64,
     order_quantity: u64,
     maker_quantity: u64,
     filled_quantity: u64,
@@ -267,6 +268,7 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
             maker_quantity,
         )
     };
+    let paid_to_protocol = unsettled_fee_value - amount_to_settle;
 
     let fee_to_settle = unsettled_fee.balance.split(amount_to_settle);
 
@@ -277,7 +279,8 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
 
     event::emit(UserFeesSettled<FeeCoinType> {
         key: unsettled_fee_key,
-        fee_value: amount_to_settle,
+        returned_to_user: amount_to_settle,
+        paid_to_protocol,
         order_quantity,
         maker_quantity,
         filled_quantity,
