@@ -1,7 +1,7 @@
 module deeptrade_core::swap;
 
 use deepbook::pool::Pool;
-use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee};
+use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee, TradingFeeConfig};
 use deeptrade_core::treasury::{Treasury, join_protocol_fee};
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
@@ -28,6 +28,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 ///
 /// Parameters:
 /// - treasury: Treasury object holding protocol state and DEEP reserves
+/// - trading_fee_config: Trading fee configuration object
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_in: The base tokens being provided for the swap
 /// - min_quote_out: Minimum amount of quote tokens to receive (slippage protection)
@@ -45,6 +46,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// 4. Returns remaining base and received quote tokens
 public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     treasury: &mut Treasury,
+    trading_fee_config: &TradingFeeConfig,
     pool: &mut Pool<BaseToken, QuoteToken>,
     base_in: Coin<BaseToken>,
     min_quote_out: u64,
@@ -70,7 +72,9 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 
     // Apply Deeptrade protocol fees to the output
     let mut result_quote = quote_out;
-    let (taker_fee_rate, _, _) = pool.pool_trade_params();
+    let (taker_fee_rate, _) = trading_fee_config
+        .get_pool_fee_config(pool)
+        .input_coin_fee_type_rates();
     let fee_balance = charge_swap_fee(&mut result_quote, taker_fee_rate);
     let fee_amount = fee_balance.value();
     join_protocol_fee(treasury, fee_balance);
@@ -96,6 +100,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 ///
 /// Parameters:
 /// - treasury: Treasury object holding protocol state and DEEP reserves
+/// - trading_fee_config: Trading fee configuration object
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - quote_in: The quote tokens being provided for the swap
 /// - min_base_out: Minimum amount of base tokens to receive (slippage protection)
@@ -113,6 +118,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// 4. Returns received base and remaining quote tokens
 public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     treasury: &mut Treasury,
+    trading_fee_config: &TradingFeeConfig,
     pool: &mut Pool<BaseToken, QuoteToken>,
     quote_in: Coin<QuoteToken>,
     min_base_out: u64,
@@ -138,7 +144,9 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
 
     // Apply Deeptrade protocol fees to the output
     let mut result_base = base_out;
-    let (taker_fee_rate, _, _) = pool.pool_trade_params();
+    let (taker_fee_rate, _) = trading_fee_config
+        .get_pool_fee_config(pool)
+        .input_coin_fee_type_rates();
     let fee_balance = charge_swap_fee(&mut result_base, taker_fee_rate);
     let fee_amount = fee_balance.value();
     join_protocol_fee(treasury, fee_balance);
@@ -165,6 +173,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
 /// Uses input coin fee model instead of DEEP
 ///
 /// Parameters:
+/// - trading_fee_config: Trading fee configuration object
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_quantity: Amount of base tokens to swap (set to 0 if swapping quote)
 /// - quote_quantity: Amount of quote tokens to swap (set to 0 if swapping base)
@@ -181,6 +190,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
 /// 2. Applies Deeptrade protocol fees to the appropriate output amount based on swap direction
 /// 3. Returns final expected output quantities
 public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
+    trading_fee_config: &TradingFeeConfig,
     pool: &Pool<BaseToken, QuoteToken>,
     base_quantity: u64,
     quote_quantity: u64,
@@ -194,8 +204,13 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
         clock,
     );
 
+    // Get the taker fee rate for the pool
+    let (taker_fee_rate, _) = trading_fee_config
+        .get_pool_fee_config(pool)
+        .input_coin_fee_type_rates();
+
     let (base_out, quote_out) = apply_treasury_fees(
-        pool,
+        taker_fee_rate,
         base_out,
         quote_out,
         base_quantity,
@@ -220,7 +235,7 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// This function handles fee calculations for both base-to-quote and quote-to-base swaps.
 ///
 /// Parameters:
-/// - pool: The DeepBook liquidity pool for this trading pair
+/// - taker_fee_rate: The taker fee rate to apply to the output quantities
 /// - base_out: Mutable base token output quantity before fees
 /// - quote_out: Mutable quote token output quantity before fees
 /// - base_quantity: Input quantity of base tokens (0 if swapping quote)
@@ -230,21 +245,13 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// - (u64, u64): Tuple containing:
 ///   - Final base token output after fees
 ///   - Final quote token output after fees
-///
-/// Flow:
-/// 1. Gets the taker fee rate from the pool
-/// 2. Applies Deeptrade fee to the output quantities
-/// 3. Returns the final output quantities
-fun apply_treasury_fees<BaseToken, QuoteToken>(
-    pool: &Pool<BaseToken, QuoteToken>,
+fun apply_treasury_fees(
+    taker_fee_rate: u64,
     mut base_out: u64,
     mut quote_out: u64,
     base_quantity: u64,
     quote_quantity: u64,
 ): (u64, u64) {
-    // Get the taker fee rate from the pool
-    let (taker_fee_rate, _, _) = pool.pool_trade_params();
-
     // Apply our fee to the output quantities
     // If base_quantity > 0, we're swapping base for quote, so apply fee to quote_out
     // If quote_quantity > 0, we're swapping quote for base, so apply fee to base_out
