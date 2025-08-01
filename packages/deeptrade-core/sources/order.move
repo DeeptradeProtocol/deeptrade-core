@@ -117,6 +117,9 @@ public struct InputCoinDepositPlan has copy, drop {
 // === Events ===
 public struct TakerFeeCharged<phantom CoinType> has copy, drop {
     order_id: u128,
+    pool_id: ID,
+    balance_manager_id: ID,
+    client_order_id: u64,
     taker_fee: u64,
 }
 
@@ -1708,6 +1711,9 @@ fun execute_protocol_fee_plan<CoinType>(
 
         event::emit(TakerFeeCharged<CoinType> {
             order_id: order_info.order_id(),
+            pool_id: order_info.pool_id(),
+            balance_manager_id: order_info.balance_manager_id(),
+            client_order_id: order_info.client_order_id(),
             taker_fee: taker_fee_value,
         });
     } else {
