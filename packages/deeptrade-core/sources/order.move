@@ -35,6 +35,7 @@ use std::u64;
 use sui::balance;
 use sui::clock::Clock;
 use sui::coin::Coin;
+use sui::event;
 use sui::sui::SUI;
 use token::deep::DEEP;
 
@@ -111,6 +112,15 @@ public struct InputCoinDepositPlan has copy, drop {
     from_user_wallet: u64,
     /// Whether user has enough input coins for the order
     user_has_enough_input_coin: bool,
+}
+
+// === Events ===
+public struct TakerFeeCharged<phantom CoinType> has copy, drop {
+    pool_id: ID,
+    balance_manager_id: ID,
+    order_id: u128,
+    client_order_id: u64,
+    taker_fee: u64,
 }
 
 // === Public-Mutative Functions ===
@@ -1677,19 +1687,39 @@ fun execute_protocol_fee_plan<CoinType>(
     // Verify that the user has enough funds to cover the protocol fees
     assert!(fee_plan.user_covers_fee, EInsufficientFee);
 
-    // Collect taker fee from wallet if needed
+    let mut taker_fee = balance::zero<CoinType>();
+
+    // Join taker fee from wallet to total taker fee if needed
     if (fee_plan.taker_fee_from_wallet > 0) {
         let fee = coin.balance_mut().split(fee_plan.taker_fee_from_wallet);
-        join_protocol_fee(treasury, fee);
+        taker_fee.join(fee);
     };
 
-    // Collect taker fee from balance manager if needed
+    // Join taker fee from balance manager to total taker fee if needed
     if (fee_plan.taker_fee_from_balance_manager > 0) {
         let fee = balance_manager.withdraw<CoinType>(
             fee_plan.taker_fee_from_balance_manager,
             ctx,
         );
-        join_protocol_fee(treasury, fee.into_balance());
+        taker_fee.join(fee.into_balance());
+    };
+
+    // Collect taker fee and emit event if needed
+    let taker_fee_value = taker_fee.value();
+    if (taker_fee_value > 0) {
+        join_protocol_fee(treasury, taker_fee);
+
+        event::emit(TakerFeeCharged<CoinType> {
+            pool_id: order_info.pool_id(),
+            balance_manager_id: order_info.balance_manager_id(),
+            order_id: order_info.order_id(),
+            client_order_id: order_info.client_order_id(),
+            taker_fee: taker_fee_value,
+        });
+    } else {
+        // The taker fee is zero for fully maker orders (e.g., Post-Only, resting GTC),
+        // or when the taker fee rate is zero
+        taker_fee.destroy_zero();
     };
 
     let mut maker_fee = balance::zero<CoinType>();
@@ -1716,7 +1746,7 @@ fun execute_protocol_fee_plan<CoinType>(
             order_info,
         );
     } else {
-        // Maker fee can be zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
+        // Maker fee is zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
         // or when the order is filled on creation
         maker_fee.destroy_zero();
     }
