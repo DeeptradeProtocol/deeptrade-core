@@ -236,8 +236,8 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
 
     let mut unsettled_fee: UnsettledFee<FeeCoinType> = unsettled_fees.remove(unsettled_fee_key);
     let unsettled_fee_value = unsettled_fee.balance.value();
-    // Clean up unsettled fee if it has zero value. This should never happen because we don't
-    // add zero-value fees and we clean them up when they are fully settled.
+    // Clean up unsettled fee if it has zero value. This should never happen, because adding
+    // zero-value fees is restricted and fees are cleared on either user or protocol settlement.
     if (unsettled_fee_value == 0) {
         unsettled_fee.destroy_empty();
         return coin::zero(ctx)
