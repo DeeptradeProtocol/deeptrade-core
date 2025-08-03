@@ -10,6 +10,7 @@ use deepbook::pool_tests::{
     setup_pool_with_default_fees_and_reference_pool,
     place_limit_order
 };
+use deeptrade_core::treasury::{Self, Treasury};
 use deeptrade_core::unsettled_fees::{
     Self,
     add_unsettled_fee,
@@ -17,7 +18,6 @@ use deeptrade_core::unsettled_fees::{
     get_unsettled_fee_balance,
     settle_user_fees
 };
-use deeptrade_core::treasury::{Self, Treasury};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;
@@ -104,6 +104,17 @@ fun unfilled_order_returns_all_fees() {
         // Since the order is completely unfilled, we should get all fees back
         assert_eq!(settled_coin.value(), 1000u64);
 
+        // Verify the unsettled fee is destroyed
+        assert_eq!(
+            has_unsettled_fee(
+                &treasury,
+                object::id(&pool),
+                object::id(&balance_manager),
+                order_id,
+            ),
+            false,
+        );
+
         // Clean up
         destroy(settled_coin);
         return_shared(treasury);
@@ -188,6 +199,21 @@ fun partially_filled_order_returns_proportional_fees() {
         // Original order: 100 units, filled: 30 units, unfilled: 70 units
         // Proportional fees: 1000 * (70/100) = 700
         assert_eq!(settled_coin.value(), 700u64);
+
+        // Verify the unsettled fee is destroyed
+        assert_eq!(
+            has_unsettled_fee(
+                &treasury,
+                object::id(&pool),
+                object::id(&balance_manager),
+                order_id,
+            ),
+            false,
+        );
+
+        // Verify protocol fee was paid
+        let paid_to_protocol = treasury.get_protocol_fee_balance<SUI>();
+        assert_eq!(paid_to_protocol, 300u64);
 
         // Clean up
         destroy(settled_coin);

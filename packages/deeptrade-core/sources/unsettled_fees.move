@@ -202,14 +202,17 @@ public(package) fun add_unsettled_fee<CoinType>(
     });
 }
 
-/// Settle unsettled fees back to the user for unfilled portions of their order
+/// Settles fees for an order during cancellation, returning fees for the unfilled portion back
+/// to the user and paying fees for the filled portion to the protocol.
 ///
-/// Returns fees proportional to the unfilled portion of the user's order.
+/// By handling both the user refund and the protocol payment in a single transaction, it ensures
+/// the `UnsettledFee` object is destroyed, which provides a gas storage rebate to the user.
+///
 /// Only the balance manager owner can claim fees for their orders.
 ///
 /// Returns zero coin if no unsettled fees exist or balance is zero.
 ///
-/// See `docs/unsettled-fees.md` for detailed explanation of the unsettled fees system.
+/// See `docs/unsettled-fees.md` for a detailed explanation of the unsettled fees system.
 public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
     treasury: &mut Treasury,
     pool: &Pool<BaseToken, QuoteToken>,
@@ -231,22 +234,19 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
 
     if (!unsettled_fees.contains(unsettled_fee_key)) return coin::zero(ctx);
 
-    let unsettled_fee: &mut UnsettledFee<FeeCoinType> = unsettled_fees.borrow_mut(
-        unsettled_fee_key,
-    );
-    let order = pool.get_order(order_id);
+    let mut unsettled_fee: UnsettledFee<FeeCoinType> = unsettled_fees.remove(unsettled_fee_key);
     let unsettled_fee_value = unsettled_fee.balance.value();
-    let order_quantity = unsettled_fee.order_quantity;
-    let maker_quantity = unsettled_fee.maker_quantity;
-    let filled_quantity = order.filled_quantity();
-
-    // Clean up unsettled fee if it has zero value. This should never happen because we don't
-    // add zero-value fees and we clean them up when they are fully settled.
+    // Clean up unsettled fee if it has zero value. This should never happen, because adding
+    // zero-value fees is restricted and fees are cleared on either user or protocol settlement.
     if (unsettled_fee_value == 0) {
-        let unsettled_fee: UnsettledFee<FeeCoinType> = unsettled_fees.remove(unsettled_fee_key);
         unsettled_fee.destroy_empty();
         return coin::zero(ctx)
     };
+
+    let order = pool.get_order(order_id);
+    let order_quantity = unsettled_fee.order_quantity;
+    let maker_quantity = unsettled_fee.maker_quantity;
+    let filled_quantity = order.filled_quantity();
 
     // Sanity check: maker quantity must be greater than zero. If it's zero, the unsettled fee
     // should not have been added. We validate this during fee addition, so this should never occur.
@@ -257,7 +257,7 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
     // mechanism or DeepBook's order filling logic.
     assert!(filled_quantity < order_quantity, EFilledQuantityGreaterThanOrderQuantity);
 
-    let amount_to_settle = if (filled_quantity == 0) {
+    let return_to_user = if (filled_quantity == 0) {
         // If the order is completely unfilled, return all fees
         unsettled_fee_value
     } else {
@@ -268,25 +268,26 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
             maker_quantity,
         )
     };
-    let paid_to_protocol = unsettled_fee_value - amount_to_settle;
+    let pay_to_protocol = unsettled_fee_value - return_to_user;
 
-    let fee_to_settle = unsettled_fee.balance.split(amount_to_settle);
+    let return_to_user_balance = unsettled_fee.balance.split(return_to_user);
+    if (pay_to_protocol > 0)
+        join_protocol_fee(treasury, unsettled_fee.balance.split(pay_to_protocol));
 
-    if (unsettled_fee.balance.value() == 0) {
-        let unsettled_fee: UnsettledFee<FeeCoinType> = unsettled_fees.remove(unsettled_fee_key);
-        unsettled_fee.destroy_empty();
-    };
+    // The unsettled fee balance must now be zero, as the full amount has been split between
+    // the portion returned to the user and the portion paid to the protocol.
+    unsettled_fee.destroy_empty();
 
     event::emit(UserFeesSettled<FeeCoinType> {
         key: unsettled_fee_key,
-        returned_to_user: amount_to_settle,
-        paid_to_protocol,
+        returned_to_user: return_to_user,
+        paid_to_protocol: pay_to_protocol,
         order_quantity,
         maker_quantity,
         filled_quantity,
     });
 
-    fee_to_settle.into_coin(ctx)
+    return_to_user_balance.into_coin(ctx)
 }
 
 // === Private Functions ===

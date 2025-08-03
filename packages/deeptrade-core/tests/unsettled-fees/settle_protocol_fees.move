@@ -6,8 +6,8 @@ use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
 use deepbook::constants;
 use deepbook::pool::Pool;
 use deepbook::pool_tests::place_limit_order;
-use deeptrade_core::order::cancel_order_and_settle_fees;
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
+use deeptrade_core::treasury::Treasury;
 use deeptrade_core::unsettled_fees::{
     add_unsettled_fee,
     has_unsettled_fee,
@@ -15,13 +15,11 @@ use deeptrade_core::unsettled_fees::{
     settle_protocol_fee_and_record,
     start_protocol_fee_settlement
 };
-use deeptrade_core::treasury::Treasury;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;
 use sui::sui::SUI;
 use sui::test_scenario::{end, return_shared};
-use sui::test_utils::destroy;
 
 // === Constants ===
 const OWNER: address = @0x1;
@@ -342,123 +340,6 @@ fun protocol_ignores_live_partially_filled_order() {
         let (orders_count, total_settled) = receipt.finish_protocol_fee_settlement_for_testing();
         assert_eq!(orders_count, 0);
         assert_eq!(total_settled, 0);
-
-        return_shared(treasury);
-        return_shared(pool);
-        return_shared(balance_manager);
-    };
-
-    end(scenario);
-}
-
-#[test]
-/// Test protocol settlement after a user has already settled their portion.
-fun protocol_settles_remaining_fee_after_user_cancellation() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
-
-    // Step 1: Alice places an order and adds an unsettled fee.
-    scenario.next_tx(ALICE);
-    let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
-        let order_info = place_limit_order<SUI, USDC>(
-            ALICE,
-            pool_id,
-            balance_manager_id,
-            1,
-            constants::no_restriction(),
-            constants::self_matching_allowed(),
-            2 * constants::float_scaling(),
-            100 * constants::float_scaling(),
-            true,
-            true,
-            constants::max_u64(),
-            &mut scenario,
-        );
-        let fee_balance = balance::create_for_testing<SUI>(1000);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
-        let order_id = order_info.order_id();
-        return_shared(treasury);
-        order_id
-    };
-
-    // Step 2: Bob partially fills Alice's order (30/100 units).
-    scenario.next_tx(BOB);
-    {
-        let balance_manager_id_bob = create_acct_and_share_with_funds(
-            BOB,
-            1_000_000 * constants::float_scaling(),
-            &mut scenario,
-        );
-        place_limit_order<SUI, USDC>(
-            BOB,
-            pool_id,
-            balance_manager_id_bob,
-            2,
-            constants::no_restriction(),
-            constants::self_matching_allowed(),
-            2 * constants::float_scaling(),
-            30 * constants::float_scaling(),
-            false,
-            true,
-            constants::max_u64(),
-            &mut scenario,
-        );
-    };
-
-    // Step 3: Alice cancels the rest of her order and settles her portion of the fees.
-    scenario.next_tx(ALICE);
-    {
-        let mut treasury = scenario.take_shared<Treasury>();
-        let mut pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
-        let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
-        let clock = scenario.take_shared<Clock>();
-
-        let user_settled_fees = cancel_order_and_settle_fees<SUI, USDC, SUI>(
-            &mut treasury,
-            &mut pool,
-            &mut balance_manager,
-            order_id,
-            &clock,
-            scenario.ctx(),
-        );
-
-        // Alice should get 700 back (for the 70 unfilled units).
-        assert_eq!(user_settled_fees.value(), 700);
-        destroy(user_settled_fees);
-
-        // 300 should remain in the unsettled fee bag for the protocol.
-        assert_eq!(
-            get_unsettled_fee_balance<SUI>(&treasury, pool_id, balance_manager_id, order_id),
-            300,
-        );
-
-        return_shared(treasury);
-        return_shared(pool);
-        return_shared(balance_manager);
-        return_shared(clock);
-    };
-
-    // Step 4: The protocol now settles the remaining 300 units.
-    scenario.next_tx(OWNER);
-    {
-        let mut treasury = scenario.take_shared<Treasury>();
-        let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
-        let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
-        let mut receipt = start_protocol_fee_settlement<SUI>();
-
-        settle_protocol_fee_and_record(
-            &mut treasury,
-            &mut receipt,
-            &pool,
-            &balance_manager,
-            order_id,
-        );
-
-        let (_, total_settled) = receipt.finish_protocol_fee_settlement_for_testing();
-        assert_eq!(total_settled, 300);
-
-        // The unsettled fee should now be completely gone.
-        assert_eq!(has_unsettled_fee(&treasury, pool_id, balance_manager_id, order_id), false);
 
         return_shared(treasury);
         return_shared(pool);

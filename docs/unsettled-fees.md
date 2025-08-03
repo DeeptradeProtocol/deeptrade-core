@@ -29,20 +29,23 @@ Additionally, the system includes a **Loyalty Program** that provides additional
 
 ### 1. User Cancellation Settlement
 
-Users can settle fees when canceling orders using `cancel_order_and_settle_fees`:
+Users can settle fees when canceling orders using `cancel_order_and_settle_fees`. This action also pays the protocol for any filled portion of the order and destroys the on-chain `UnsettledFee` object, providing the user with a gas storage rebate.
 
-- The system checks how much of the order was filled vs unfilled
+The settlement logic is as follows:
+
+- The system checks how much of the order was filled versus unfilled.
 - Unsettled fees are split proportionally:
-  - **Unfilled portion**: fees returned directly to the user
-  - **Filled portion**: fees remain with the protocol (now "settled" and ready for collection)
+  - **Unfilled portion**: Fees are returned directly to the user.
+  - **Filled portion**: Fees are paid directly to the protocol's treasury.
 
 ### 2. Protocol Collection Settlement
 
-Anyone can call `settle_protocol_fee_and_record` for orders (this is a permissionless endpoint):
+The permissionless `settle_protocol_fee_and_record` function serves as a mechanism to settle fees for orders that are no longer live but haven't been settled by the user. Its primary use cases are:
 
-- The function checks if the order is still live in the DeepBook pool
-- If the order is no longer live (filled or cancelled), the entire remaining unsettled fee balance moves to the protocol's main fee vault
-- This ensures the protocol only claims fees from finalized orders
+- **Fully Filled Orders**: To collect fees after an order has been completely filled.
+- **Externally Cancelled Orders**: To collect fees for orders that were cancelled outside of the Deeptrade protocol's fee-settling functions. In this case, the entire unsettled fee is paid to the protocol.
+
+This ensures that all fees from finalized orders are eventually collected, even if the user does not manually settle them.
 
 ## Order Type Support
 
