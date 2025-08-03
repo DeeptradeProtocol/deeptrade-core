@@ -29,7 +29,7 @@ Additionally, the system includes a **Loyalty Program** that provides additional
 
 ### 1. User Cancellation Settlement
 
-When a user cancels an order via a function that integrates `settle_user_fees` (e.g., `cancel_order_and_settle_fees`), they can reclaim a portion of the unsettled fees. This action also pays the protocol for any filled portion of the order and destroys the on-chain `UnsettledFee` object, providing the user with a gas storage rebate.
+Users can settle fees when canceling orders using `cancel_order_and_settle_fees`. This action also pays the protocol for any filled portion of the order and destroys the on-chain `UnsettledFee` object, providing the user with a gas storage rebate.
 
 The settlement logic is as follows:
 
