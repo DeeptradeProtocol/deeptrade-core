@@ -42,7 +42,6 @@ public struct Treasury has key, store {
     deep_reserves: Balance<DEEP>,
     deep_reserves_coverage_fees: Bag,
     protocol_fees: Bag,
-    unsettled_fees: Bag,
 }
 
 /// Key struct for storing charged fees by coin type
@@ -93,7 +92,6 @@ fun init(ctx: &mut TxContext) {
         deep_reserves: balance::zero(),
         deep_reserves_coverage_fees: bag::new(ctx),
         protocol_fees: bag::new(ctx),
-        unsettled_fees: bag::new(ctx),
     };
 
     transfer::share_object(treasury);
@@ -382,13 +380,6 @@ public(package) fun split_deep_reserves(
 public(package) fun verify_version(treasury: &Treasury) {
     let package_version = current_version();
     assert!(treasury.allowed_versions.contains(&package_version), EPackageVersionNotEnabled);
-}
-
-public(package) fun unsettled_fees(treasury: &Treasury): &Bag { &treasury.unsettled_fees }
-
-public(package) fun unsettled_fees_mut(treasury: &mut Treasury): &mut Bag {
-    treasury.verify_version();
-    &mut treasury.unsettled_fees
 }
 
 // === Test Functions ===
