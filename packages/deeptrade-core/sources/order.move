@@ -10,6 +10,7 @@ use deeptrade_core::fee::{
     calculate_input_coin_deepbook_fee,
     calculate_deep_reserves_coverage_order_fee
 };
+use deeptrade_core::fees_manager::FeesManager;
 use deeptrade_core::helper::{
     calculate_deep_required,
     transfer_if_nonzero,
@@ -25,11 +26,9 @@ use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::treasury::{
     Treasury,
     join_deep_reserves_coverage_fee,
-    join_protocol_fee,
     deep_reserves,
     split_deep_reserves
 };
-use deeptrade_core::unsettled_fees::{add_unsettled_fee, settle_user_fees};
 use pyth::price_info::PriceInfoObject;
 use std::u64;
 use sui::balance;
@@ -164,6 +163,7 @@ public struct TakerFeeCharged<phantom CoinType> has copy, drop {
 /// - clock: System clock for timestamp verification
 public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -245,7 +245,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
     );
 
     charge_protocol_fees(
-        treasury,
+        fees_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -299,6 +299,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 /// - clock: System clock for timestamp verification
 public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -374,7 +375,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
     );
 
     charge_protocol_fees(
-        treasury,
+        fees_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -418,7 +419,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -435,8 +436,6 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
-    treasury.verify_version();
-
     // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
     // Verify the order expire timestamp is the max possible expire timestamp
     let max_expire_timestamp = constants::max_u64();
@@ -478,7 +477,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fees_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -519,7 +518,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for order book state
 public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -533,8 +532,6 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
-    treasury.verify_version();
-
     // Verify the self matching option is self matching allowed. Read more about self matching option
     // limitations in docs/unsettled-fees.md
     assert!(
@@ -574,7 +571,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fees_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -615,7 +612,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -632,8 +629,6 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
-    treasury.verify_version();
-
     // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
     // Verify the order expire timestamp is the max possible expire timestamp
     let max_expire_timestamp = constants::max_u64();
@@ -674,7 +669,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fees_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -712,7 +707,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_market_order_input_fee<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -726,8 +721,6 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
-    treasury.verify_version();
-
     // Verify the self matching option is self matching allowed. Read more about self matching option
     // limitations in docs/unsettled-fees.md
     assert!(
@@ -769,7 +762,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fees_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -796,20 +789,14 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 ///
 /// Returns the settled fees as a coin of the specified type
 public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
-    treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     pool: &mut Pool<BaseAsset, QuoteAsset>,
     balance_manager: &mut BalanceManager,
     order_id: u128,
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<UnsettledFeeCoinType> {
-    treasury.verify_version();
-
-    // Verify the caller owns the balance manager
-    assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
-
-    let settled_fees = settle_user_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
-        treasury,
+    let settled_fees = fees_manager.settle_user_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
         pool,
         balance_manager,
         order_id,
@@ -1229,7 +1216,7 @@ public(package) fun validate_fees_against_max(
 /// - discount_rate: Discount rate applied to fees
 /// - deep_fee_type: Whether using DEEP fee type rates (true) or input coin fee type rates (false)
 public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
@@ -1241,8 +1228,6 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     deep_fee_type: bool,
     ctx: &mut TxContext,
 ) {
-    treasury.verify_version();
-
     // Get the protocol fee rates for the pool
     let pool_protocol_fee_config = trading_fee_config.get_pool_fee_config(pool);
     let (protocol_taker_fee_rate, protocol_maker_fee_rate) = if (deep_fee_type) {
@@ -1277,7 +1262,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     // Execute protocol fee plan
     if (is_bid) {
         execute_protocol_fee_plan(
-            treasury,
+            fees_manager,
             balance_manager,
             &mut quote_coin,
             order_info,
@@ -1286,7 +1271,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
         );
     } else {
         execute_protocol_fee_plan(
-            treasury,
+            fees_manager,
             balance_manager,
             &mut base_coin,
             order_info,
@@ -1675,15 +1660,13 @@ fun execute_coverage_fee_plan(
 ///
 /// Aborts if the plan indicates the user has insufficient funds.
 fun execute_protocol_fee_plan<CoinType>(
-    treasury: &mut Treasury,
+    fees_manager: &mut FeesManager,
     balance_manager: &mut BalanceManager,
     coin: &mut Coin<CoinType>,
     order_info: &OrderInfo,
     fee_plan: &ProtocolFeePlan,
     ctx: &mut TxContext,
 ) {
-    treasury.verify_version();
-
     // Verify that the user has enough funds to cover the protocol fees
     assert!(fee_plan.user_covers_fee, EInsufficientFee);
 
@@ -1707,7 +1690,7 @@ fun execute_protocol_fee_plan<CoinType>(
     // Collect taker fee and emit event if needed
     let taker_fee_value = taker_fee.value();
     if (taker_fee_value > 0) {
-        join_protocol_fee(treasury, taker_fee);
+        fees_manager.add_to_protocol_unsettled_fees(taker_fee, ctx);
 
         event::emit(TakerFeeCharged<CoinType> {
             pool_id: order_info.pool_id(),
@@ -1740,10 +1723,10 @@ fun execute_protocol_fee_plan<CoinType>(
     };
 
     if (maker_fee.value() > 0) {
-        add_unsettled_fee(
-            treasury,
+        fees_manager.add_to_user_unsettled_fees(
             maker_fee,
             order_info,
+            ctx,
         );
     } else {
         // Maker fee is zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
