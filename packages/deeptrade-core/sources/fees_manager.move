@@ -32,6 +32,7 @@ const EProtocolUnsettledFeeNotEmpty: u64 = 9;
 const ESenderIsNotMultisig: u64 = 10;
 
 // === Structs ===
+/// A shared object that manages a user's fee-related operations. Required for trading
 public struct FeesManager has key, store {
     id: UID,
     owner: address,
@@ -39,17 +40,18 @@ public struct FeesManager has key, store {
     protocol_unsettled_fees: Bag,
 }
 
-/// Key struct for storing unsettled fees by pool, balance manager, and order id
+/// Key for storing a `UserUnsettledFee` in the `user_unsettled_fees` bag
 public struct UserUnsettledFeeKey has copy, drop, store {
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
 }
 
+/// Key for storing the protocol's unsettled fee `Balance` in the `protocol_unsettled_fees` bag
 public struct ProtocolUnsettledFeeKey<phantom CoinType> has copy, drop, store {}
 
-/// Unsettled fee for specific order
-/// See `docs/unsettled-fees.md` for detailed explanation of the unsettled fees system.
+/// Holds an order's unsettled maker fee
+/// See `docs/unsettled-fees.md` for a detailed explanation of the unsettled fees system
 public struct UserUnsettledFee<phantom CoinType> has store {
     /// Fee balance
     balance: Balance<CoinType>,
@@ -58,7 +60,7 @@ public struct UserUnsettledFee<phantom CoinType> has store {
     maker_quantity: u64,
 }
 
-/// A temporary receipt for aggregating batch fee settlement results
+/// A temporary receipt for aggregating fee settlement results during a batch process
 public struct FeeSettlementReceipt<phantom FeeCoinType> {
     orders_count: u64,
     total_fees_settled: u64,
@@ -92,6 +94,7 @@ public struct FeesManagerCreated has copy, drop {
 }
 
 // === Public-Mutative Functions ===
+/// Creates and shares a new `FeesManager` for the transaction sender
 public fun new(ctx: &mut TxContext) {
     let id = object::new(ctx);
     let owner = ctx.sender();
@@ -111,7 +114,7 @@ public fun new(ctx: &mut TxContext) {
     transfer::share_object(fees_manager);
 }
 
-/// Start the protocol fee settlement process for a specific coin by creating a FeeSettlementReceipt
+/// Creates a `FeeSettlementReceipt` to begin a batch fee settlement process
 public fun start_protocol_fee_settlement<FeeCoinType>(): FeeSettlementReceipt<FeeCoinType> {
     FeeSettlementReceipt {
         orders_count: 0,
@@ -119,13 +122,11 @@ public fun start_protocol_fee_settlement<FeeCoinType>(): FeeSettlementReceipt<Fe
     }
 }
 
-/// Settles remaining unsettled fees to the protocol for orders that are no longer live
-/// (i.e., cancelled or filled) and records the result in a `FeeSettlementReceipt`.
-/// See `docs/unsettled-fees.md` for a detailed explanation of the unsettled fees system.
+/// Settles a filled order's fee by transferring it to the protocol, recording it in a `FeeSettlementReceipt`.
 ///
-/// The function silently returns if:
-/// - The order is still live (i.e., present in the account's open orders).
-/// - No unsettled fees exist for the order.
+/// This is a permissionless function for collecting fees from completed orders. The fee object is
+/// left empty to allow the user to claim a storage rebate. Does nothing if the order is still live
+/// or has no unsettled fee.
 public fun settle_filled_order_fee_and_record<BaseToken, QuoteToken, FeeCoinType>(
     treasury: &mut Treasury,
     fees_manager: &mut FeesManager,
@@ -149,9 +150,11 @@ public fun settle_filled_order_fee_and_record<BaseToken, QuoteToken, FeeCoinType
 
     if (!fees_manager.user_unsettled_fees.contains(filled_order_fee_key)) return;
 
+    // We borrow the object to leave it empty, so the user can later claim a storage rebate
+    // via `claim_user_unsettled_fee_storage_rebate`
     let filled_order_fee: &mut UserUnsettledFee<FeeCoinType> = fees_manager
         .user_unsettled_fees
-        .borrow_mut(filled_order_fee_key); // Borrow mut instead of remove to let user claim storage rebates
+        .borrow_mut(filled_order_fee_key);
     let filled_order_fee_balance = filled_order_fee.balance.withdraw_all();
 
     // Update receipt with settled fee details
@@ -164,6 +167,11 @@ public fun settle_filled_order_fee_and_record<BaseToken, QuoteToken, FeeCoinType
     treasury.join_protocol_fee(filled_order_fee_balance);
 }
 
+/// Settles aggregated protocol fees for a coin type, transferring them to the treasury.
+///
+/// This is a permissionless function that records the result in a `FeeSettlementReceipt`.
+/// The fee balance is left empty to allow a storage rebate claim. Does nothing if no fee
+/// is found for the given coin type.
 public fun settle_protocol_fee_and_record<FeeCoinType>(
     treasury: &mut Treasury,
     fees_manager: &mut FeesManager,
@@ -174,9 +182,11 @@ public fun settle_protocol_fee_and_record<FeeCoinType>(
     let protocol_unsettled_fee_key = ProtocolUnsettledFeeKey<FeeCoinType> {};
     if (!fees_manager.protocol_unsettled_fees.contains(protocol_unsettled_fee_key)) return;
 
+    // We borrow the object to leave it empty, so the user can later claim a storage rebate
+    // via `claim_protocol_unsettled_fee_storage_rebate`
     let protocol_unsettled_fee: &mut Balance<FeeCoinType> = fees_manager
         .protocol_unsettled_fees
-        .borrow_mut(protocol_unsettled_fee_key); // Borrow mut instead of remove to let user claim storage rebates
+        .borrow_mut(protocol_unsettled_fee_key);
     let protocol_unsettled_fee_balance = protocol_unsettled_fee.withdraw_all();
 
     // Update receipt with settled fee details
@@ -188,7 +198,7 @@ public fun settle_protocol_fee_and_record<FeeCoinType>(
     treasury.join_protocol_fee(protocol_unsettled_fee_balance);
 }
 
-/// Finalize the protocol fee settlement process, emitting an event with the total settled amount
+/// Finalizes a batch fee settlement, emitting an event with the total settled amount
 public fun finish_protocol_fee_settlement<FeeCoinType>(receipt: FeeSettlementReceipt<FeeCoinType>) {
     if (receipt.total_fees_settled > 0) {
         event::emit(ProtocolFeesSettled<FeeCoinType> {
@@ -201,6 +211,10 @@ public fun finish_protocol_fee_settlement<FeeCoinType>(receipt: FeeSettlementRec
     let FeeSettlementReceipt { .. } = receipt;
 }
 
+/// Claims the storage rebate for a settled user fee by destroying the empty fee object.
+///
+/// Can only be called by the `FeesManager` owner after a fee has been collected via
+/// `settle_filled_order_fee_and_record`. Aborts if the fee object is not empty.
 public fun claim_user_unsettled_fee_storage_rebate<BaseToken, QuoteToken, FeeCoinType>(
     fees_manager: &mut FeesManager,
     pool: &Pool<BaseToken, QuoteToken>,
@@ -218,6 +232,10 @@ public fun claim_user_unsettled_fee_storage_rebate<BaseToken, QuoteToken, FeeCoi
     );
 }
 
+/// Allows a protocol admin to claim a user's unsettled fee storage rebate.
+///
+/// This is a protected maintenance function to clean up empty fee objects that users have
+/// not claimed. Aborts if the fee object is not empty.
 public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, FeeCoinType>(
     fees_manager: &mut FeesManager,
     pool: &Pool<BaseToken, QuoteToken>,
@@ -242,6 +260,10 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
     );
 }
 
+/// Claims the storage rebate for a settled protocol fee by destroying the empty balance.
+///
+/// Can only be called by the `FeesManager` owner after a fee has been collected via
+/// `settle_protocol_fee_and_record`. Aborts if the balance is not empty.
 public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
     fees_manager: &mut FeesManager,
     ctx: &mut TxContext,
@@ -251,6 +273,10 @@ public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
     claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager);
 }
 
+/// Allows a protocol admin to claim a protocol unsettled fee storage rebate.
+///
+/// This is a protected maintenance function to clean up empty fee balances that have not
+/// been claimed. Aborts if the balance is not empty.
 public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
     fees_manager: &mut FeesManager,
     _admin: &AdminCap,
@@ -268,18 +294,10 @@ public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
 }
 
 // === Public-Package Functions ===
-/// Add unsettled fee for a specific order
+/// Stores the potential maker fee for a new limit order in a `UserUnsettledFee` object.
 ///
-/// This function stores fees that will be settled later based on order execution outcome.
-/// It validates the order state and creates a new unsettled fee for the order.
-///
-/// Key validations:
-/// - Order must be live or partially filled (not cancelled/filled/expired)
-/// - Order must not be fully executed (must have remaining maker quantity)
-/// - Fee amount must be greater than zero
-/// - Order must not already have an unsettled fee (one-time addition only)
-///
-/// See `docs/unsettled-fees.md` for detailed explanation of the unsettled fees system.
+/// This fee is linked to the live order and settled later. Aborts if the order is invalid
+/// (e.g., not live, zero fee) or if an unsettled fee already exists for it.
 public(package) fun add_to_user_unsettled_fees<CoinType>(
     fees_manager: &mut FeesManager,
     fee: Balance<CoinType>,
@@ -334,6 +352,11 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
     });
 }
 
+/// Adds a given fee to the protocol's unsettled fees bag, aggregating it with any existing
+/// balance for the same coin type. This bag holds protocol-bound fees before they are
+/// collected by the treasury.
+///
+/// The transaction will abort if the caller is not the owner of the `FeesManager`.
 public(package) fun add_to_protocol_unsettled_fees<CoinType>(
     fees_manager: &mut FeesManager,
     fee: Balance<CoinType>,
@@ -355,17 +378,12 @@ public(package) fun add_to_protocol_unsettled_fees<CoinType>(
     };
 }
 
-/// Settles fees for an order during cancellation, returning fees for the unfilled portion back
-/// to the user and paying fees for the filled portion to the protocol.
+/// Settles a user's fee for an order during cancellation, splitting the fee between the user and protocol.
 ///
-/// By handling both the user refund and the protocol payment in a single transaction, it ensures
-/// the `UnsettledFee` object is destroyed, which provides a gas storage rebate to the user.
+/// The fee for the unfilled portion is refunded to the user, while the fee for the filled portion
+/// is paid to the protocol. Destroys the `UserUnsettledFee` object, granting a storage rebate to the caller.
 ///
-/// Only the balance manager owner can claim fees for their orders.
-///
-/// Returns zero coin if no unsettled fees exist or balance is zero.
-///
-/// See `docs/unsettled-fees.md` for a detailed explanation of the unsettled fees system.
+/// Returns the user's refund as a `Coin`. Aborts on invalid owner or if the order was fully filled.
 public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
     fees_manager: &mut FeesManager,
     pool: &Pool<BaseToken, QuoteToken>,
@@ -387,14 +405,6 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
         .user_unsettled_fees
         .remove(user_unsettled_fee_key);
     let user_unsettled_fee_value = user_unsettled_fee.balance.value();
-    // TODO: Does this really should never happen?
-    // Clean up unsettled fee if it has zero value. This should never happen, because adding
-    // zero-value fees is restricted and fees are cleared on either user or protocol settlement.
-    if (user_unsettled_fee_value == 0) {
-        user_unsettled_fee.destroy_empty();
-        return coin::zero(ctx)
-    };
-
     let order = pool.get_order(order_id);
     let order_quantity = user_unsettled_fee.order_quantity;
     let maker_quantity = user_unsettled_fee.maker_quantity;
@@ -454,6 +464,7 @@ fun destroy_empty<CoinType>(user_unsettled_fee: UserUnsettledFee<CoinType>) {
     balance.destroy_zero();
 }
 
+/// Core logic for claiming the storage rebate for a user's unsettled fee
 fun claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
     fees_manager: &mut FeesManager,
     pool: &Pool<BaseToken, QuoteToken>,
@@ -475,6 +486,7 @@ fun claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
     user_unsettled_fee.destroy_empty();
 }
 
+/// Core logic for claiming the storage rebate for a protocol's unsettled fee
 fun claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager: &mut FeesManager) {
     let protocol_unsettled_fee_key = ProtocolUnsettledFeeKey<FeeCoinType> {};
 
@@ -489,6 +501,7 @@ fun claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager: &mut Fee
     protocol_unsettled_fee.destroy_zero();
 }
 
+/// Validates that the transaction sender is the owner of the `FeesManager`. Aborts if not
 fun validate_owner(fees_manager: &FeesManager, ctx: &TxContext) {
     assert!(ctx.sender() == fees_manager.owner, EInvalidOwner);
 }
