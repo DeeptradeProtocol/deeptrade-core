@@ -14,7 +14,7 @@ use sui::coin::{Self, Coin};
 use sui::event;
 
 // === Errors ===
-/// Error when the caller is not the owner of the balance manager
+/// Error when the caller is not the owner of the fees manager
 const EInvalidOwner: u64 = 1;
 const EOrderNotLiveOrPartiallyFilled: u64 = 2;
 const EOrderFullyExecuted: u64 = 3;
@@ -210,7 +210,7 @@ public fun claim_user_unsettled_fee_storage_rebate<BaseToken, QuoteToken, FeeCoi
 ) {
     fees_manager.validate_owner(ctx);
 
-    claim_user_unsettled_fee_rebates_core<BaseToken, QuoteToken, FeeCoinType>(
+    claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
         fees_manager,
         pool,
         balance_manager,
@@ -234,7 +234,7 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
         ESenderIsNotMultisig,
     );
 
-    claim_user_unsettled_fee_rebates_core<BaseToken, QuoteToken, FeeCoinType>(
+    claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
         fees_manager,
         pool,
         balance_manager,
@@ -248,7 +248,7 @@ public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
 ) {
     fees_manager.validate_owner(ctx);
 
-    claim_protocol_unsettled_fee_rebates_core<FeeCoinType>(fees_manager);
+    claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager);
 }
 
 public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
@@ -264,7 +264,7 @@ public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
         ESenderIsNotMultisig,
     );
 
-    claim_protocol_unsettled_fee_rebates_core<FeeCoinType>(fees_manager);
+    claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager);
 }
 
 // === Public-Package Functions ===
@@ -454,7 +454,7 @@ fun destroy_empty<CoinType>(user_unsettled_fee: UserUnsettledFee<CoinType>) {
     balance.destroy_zero();
 }
 
-fun claim_user_unsettled_fee_rebates_core<BaseToken, QuoteToken, FeeCoinType>(
+fun claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
     fees_manager: &mut FeesManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
@@ -475,7 +475,7 @@ fun claim_user_unsettled_fee_rebates_core<BaseToken, QuoteToken, FeeCoinType>(
     user_unsettled_fee.destroy_empty();
 }
 
-fun claim_protocol_unsettled_fee_rebates_core<FeeCoinType>(fees_manager: &mut FeesManager) {
+fun claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager: &mut FeesManager) {
     let protocol_unsettled_fee_key = ProtocolUnsettledFeeKey<FeeCoinType> {};
 
     if (!fees_manager.protocol_unsettled_fees.contains(protocol_unsettled_fee_key)) return;
