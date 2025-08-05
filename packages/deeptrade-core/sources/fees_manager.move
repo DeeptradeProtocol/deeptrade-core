@@ -549,6 +549,23 @@ public fun get_user_unsettled_fee_order_params<CoinType>(
     (user_unsettled_fee.order_quantity, user_unsettled_fee.maker_quantity)
 }
 
+/// Check if a protocol's unsettled fee exists for a specific coin type
+#[test_only]
+public fun has_protocol_unsettled_fee<FeeCoinType>(fees_manager: &FeesManager): bool {
+    let key = ProtocolUnsettledFeeKey<FeeCoinType> {};
+    fees_manager.protocol_unsettled_fees.contains(key)
+}
+
+/// Get the protocol's unsettled fee balance for a specific coin type
+#[test_only]
+public fun get_protocol_unsettled_fee_balance<FeeCoinType>(fees_manager: &FeesManager): u64 {
+    let key = ProtocolUnsettledFeeKey<FeeCoinType> {};
+    let protocol_unsettled_fee: &Balance<FeeCoinType> = fees_manager
+        .protocol_unsettled_fees
+        .borrow(key);
+    protocol_unsettled_fee.value()
+}
+
 /// Finalize the protocol fee settlement process and return the result for testing
 #[test_only]
 public fun finish_protocol_fee_settlement_for_testing<FeeCoinType>(
