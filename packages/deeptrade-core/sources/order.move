@@ -1608,7 +1608,7 @@ fun execute_deep_plan(
 
     // Take DEEP from treasury reserves if needed
     if (deep_plan.from_deep_reserves > 0) {
-        let reserve_payment = split_deep_reserves(treasury, deep_plan.from_deep_reserves, ctx);
+        let reserve_payment = treasury.split_deep_reserves(deep_plan.from_deep_reserves, ctx);
         balance_manager.deposit(reserve_payment, ctx);
     };
 }
@@ -1639,7 +1639,7 @@ fun execute_coverage_fee_plan(
     // Collect coverage fee from wallet if needed
     if (fee_plan.from_wallet > 0) {
         let fee = sui_coin.balance_mut().split(fee_plan.from_wallet);
-        join_deep_reserves_coverage_fee(treasury, fee);
+        treasury.join_deep_reserves_coverage_fee(fee);
     };
 
     // Collect coverage fee from balance manager if needed
@@ -1648,7 +1648,7 @@ fun execute_coverage_fee_plan(
             fee_plan.from_balance_manager,
             ctx,
         );
-        join_deep_reserves_coverage_fee(treasury, fee.into_balance());
+        treasury.join_deep_reserves_coverage_fee(fee.into_balance());
     };
 }
 
