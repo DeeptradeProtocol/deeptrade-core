@@ -10,19 +10,13 @@ use deepbook::pool_tests::{
     setup_pool_with_default_fees_and_reference_pool,
     place_limit_order
 };
-use deeptrade_core::treasury::{Self, Treasury};
-use deeptrade_core::unsettled_fees::{
-    Self,
-    add_unsettled_fee,
-    has_unsettled_fee,
-    get_unsettled_fee_balance,
-    settle_user_fees
-};
+use deeptrade_core::fees_manager::{Self, FeesManager, settle_user_fees};
+use deeptrade_core::treasury;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;
 use sui::sui::SUI;
-use sui::test_scenario::{Scenario, begin, end, return_shared};
+use sui::test_scenario::{Self, Scenario, begin, end, return_shared};
 use sui::test_utils::destroy;
 use token::deep::DEEP;
 
@@ -32,12 +26,12 @@ const ALICE: address = @0xAAAA;
 
 #[test]
 fun unfilled_order_returns_all_fees() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -58,12 +52,11 @@ fun unfilled_order_returns_all_fees() {
         // Add unsettled fees to this order
         let fee_amount = 1000u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         // Verify the fee was added
         assert_eq!(
-            has_unsettled_fee(
-                &treasury,
+            fees_manager.has_user_unsettled_fee(
                 order_info.pool_id(),
                 order_info.balance_manager_id(),
                 order_info.order_id(),
@@ -71,8 +64,7 @@ fun unfilled_order_returns_all_fees() {
             true,
         );
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(
-                &treasury,
+            fees_manager.get_user_unsettled_fee_balance<SUI>(
                 order_info.pool_id(),
                 order_info.balance_manager_id(),
                 order_info.order_id(),
@@ -81,20 +73,19 @@ fun unfilled_order_returns_all_fees() {
         );
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: Test settle_user_fees
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees - this should return fees since order is unfilled
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -106,8 +97,7 @@ fun unfilled_order_returns_all_fees() {
 
         // Verify the unsettled fee is destroyed
         assert_eq!(
-            has_unsettled_fee(
-                &treasury,
+            fees_manager.has_user_unsettled_fee(
                 object::id(&pool),
                 object::id(&balance_manager),
                 order_id,
@@ -117,7 +107,7 @@ fun unfilled_order_returns_all_fees() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -127,12 +117,12 @@ fun unfilled_order_returns_all_fees() {
 
 #[test]
 fun partially_filled_order_returns_proportional_fees() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a buy order for 100 units at price 2.0
         let order_info = place_limit_order<SUI, USDC>(
@@ -153,10 +143,10 @@ fun partially_filled_order_returns_proportional_fees() {
         // Add unsettled fees to this order
         let fee_amount = 1000u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -183,13 +173,12 @@ fun partially_filled_order_returns_proportional_fees() {
     // Step 3: Test settle_user_fees
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees - this should return proportional fees for unfilled portion
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -202,8 +191,7 @@ fun partially_filled_order_returns_proportional_fees() {
 
         // Verify the unsettled fee is destroyed
         assert_eq!(
-            has_unsettled_fee(
-                &treasury,
+            fees_manager.has_user_unsettled_fee(
                 object::id(&pool),
                 object::id(&balance_manager),
                 order_id,
@@ -211,13 +199,13 @@ fun partially_filled_order_returns_proportional_fees() {
             false,
         );
 
-        // Verify protocol fee was paid
-        let paid_to_protocol = treasury.get_protocol_fee_balance<SUI>();
-        assert_eq!(paid_to_protocol, 300u64);
+        // Verify protocol fee was moved into `protocol_unsettled_fees` bag
+        assert_eq!(fees_manager.has_protocol_unsettled_fee<SUI>(), true);
+        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 300);
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -232,12 +220,12 @@ fun fully_filled_order_keeps_unsettled_fees() {
     // 2. The unsettled fees remain in the treasury
     // 3. Since the order was fully executed, all fees belong to the protocol
     // 4. Users cannot settle fees on filled orders
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a buy order for 100 units at price 2.0
         let order_info = place_limit_order<SUI, USDC>(
@@ -258,10 +246,10 @@ fun fully_filled_order_keeps_unsettled_fees() {
         // Add unsettled fees to this order
         let fee_amount = 1000u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -288,7 +276,7 @@ fun fully_filled_order_keeps_unsettled_fees() {
     // Step 3: Verify behavior with fully filled order
     scenario.next_tx(ALICE);
     {
-        let treasury = scenario.take_shared<Treasury>();
+        let fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -298,8 +286,7 @@ fun fully_filled_order_keeps_unsettled_fees() {
 
         // Verify the unsettled fee still exists
         assert_eq!(
-            has_unsettled_fee(
-                &treasury,
+            fees_manager.has_user_unsettled_fee(
                 object::id(&pool),
                 object::id(&balance_manager),
                 order_id,
@@ -309,8 +296,7 @@ fun fully_filled_order_keeps_unsettled_fees() {
 
         // Verify the unsettled fee amount is unchanged (1000u64)
         assert_eq!(
-            get_unsettled_fee_balance<SUI>(
-                &treasury,
+            fees_manager.get_user_unsettled_fee_balance<SUI>(
                 object::id(&pool),
                 object::id(&balance_manager),
                 order_id,
@@ -319,7 +305,7 @@ fun fully_filled_order_keeps_unsettled_fees() {
         );
 
         // Clean up
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -331,12 +317,12 @@ fun fully_filled_order_keeps_unsettled_fees() {
 fun settle_user_fees_fails_on_filled_order() {
     // This test verifies that users cannot settle fees on filled orders
     // because the order no longer exists in the order book (get_order fails)
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a buy order for 100 units at price 2.0
         let order_info = place_limit_order<SUI, USDC>(
@@ -357,10 +343,10 @@ fun settle_user_fees_fails_on_filled_order() {
         // Add unsettled fees to this order
         let fee_amount = 1000u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -387,13 +373,12 @@ fun settle_user_fees_fails_on_filled_order() {
     // Step 3: Attempt to settle fees on filled order - this should fail
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // This should fail because the order no longer exists in the order book
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -402,7 +387,7 @@ fun settle_user_fees_fails_on_filled_order() {
 
         // The code below is never reached (test aborts above), but needed for compiler
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -412,7 +397,7 @@ fun settle_user_fees_fails_on_filled_order() {
 
 #[test]
 fun order_with_no_unsettled_fees_returns_zero() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order without adding any unsettled fees
     scenario.next_tx(ALICE);
@@ -440,13 +425,12 @@ fun order_with_no_unsettled_fees_returns_zero() {
     // Step 2: Test settle_user_fees
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees - this should return 0 fees since no fees were added
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -458,7 +442,7 @@ fun order_with_no_unsettled_fees_returns_zero() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -468,12 +452,12 @@ fun order_with_no_unsettled_fees_returns_zero() {
 
 #[test]
 fun multiple_fee_types_settled_separately() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place three separate orders with different fee types
     scenario.next_tx(ALICE);
     let (sui_order_id, usdc_order_id, deep_order_id) = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place first order for SUI fees
         let sui_order_info = place_limit_order<SUI, USDC>(
@@ -528,28 +512,27 @@ fun multiple_fee_types_settled_separately() {
         let usdc_fee_balance = balance::create_for_testing<USDC>(500u64);
         let deep_fee_balance = balance::create_for_testing<DEEP>(750u64);
 
-        add_unsettled_fee(&mut treasury, sui_fee_balance, &sui_order_info);
-        add_unsettled_fee(&mut treasury, usdc_fee_balance, &usdc_order_info);
-        add_unsettled_fee(&mut treasury, deep_fee_balance, &deep_order_info);
+        fees_manager.add_to_user_unsettled_fees(sui_fee_balance, &sui_order_info, scenario.ctx());
+        fees_manager.add_to_user_unsettled_fees(usdc_fee_balance, &usdc_order_info, scenario.ctx());
+        fees_manager.add_to_user_unsettled_fees(deep_fee_balance, &deep_order_info, scenario.ctx());
 
         let sui_order_id = sui_order_info.order_id();
         let usdc_order_id = usdc_order_info.order_id();
         let deep_order_id = deep_order_info.order_id();
 
-        return_shared(treasury);
+        return_shared(fees_manager);
         (sui_order_id, usdc_order_id, deep_order_id)
     };
 
     // Step 2: Test settle_user_fees for each fee type on different orders
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees for SUI fees
-        let sui_settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let sui_settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             sui_order_id,
@@ -558,8 +541,7 @@ fun multiple_fee_types_settled_separately() {
         assert_eq!(sui_settled_coin.value(), 1000u64);
 
         // Test settle_user_fees for USDC fees
-        let usdc_settled_coin = settle_user_fees<SUI, USDC, USDC>(
-            &mut treasury,
+        let usdc_settled_coin = fees_manager.settle_user_fees<SUI, USDC, USDC>(
             &pool,
             &balance_manager,
             usdc_order_id,
@@ -568,8 +550,7 @@ fun multiple_fee_types_settled_separately() {
         assert_eq!(usdc_settled_coin.value(), 500u64);
 
         // Test settle_user_fees for DEEP fees
-        let deep_settled_coin = settle_user_fees<SUI, USDC, DEEP>(
-            &mut treasury,
+        let deep_settled_coin = fees_manager.settle_user_fees<SUI, USDC, DEEP>(
             &pool,
             &balance_manager,
             deep_order_id,
@@ -581,7 +562,7 @@ fun multiple_fee_types_settled_separately() {
         destroy(sui_settled_coin);
         destroy(usdc_settled_coin);
         destroy(deep_settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -593,11 +574,11 @@ fun multiple_fee_types_settled_separately() {
 fun settle_fees_on_invalid_order_id_returns_zero() {
     // This test verifies that settle_user_fees gracefully handles completely invalid order IDs
     // by returning zero coins (defensive design - no unsettled fees = no settlement)
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -605,8 +586,7 @@ fun settle_fees_on_invalid_order_id_returns_zero() {
         let invalid_order_id = 999999u128;
 
         // This should return zero coin gracefully (no unsettled fees exist for this ID)
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             invalid_order_id,
@@ -618,7 +598,7 @@ fun settle_fees_on_invalid_order_id_returns_zero() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -630,7 +610,7 @@ fun settle_fees_on_invalid_order_id_returns_zero() {
 fun settle_fees_on_nonexistent_order_returns_zero() {
     // This test verifies that settle_user_fees gracefully handles valid-format order IDs
     // that don't have unsettled fees by returning zero coins
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place one order to understand the ID format
     scenario.next_tx(ALICE);
@@ -657,7 +637,7 @@ fun settle_fees_on_nonexistent_order_returns_zero() {
     // Step 2: Try to settle fees on a non-existent order with similar ID format
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -665,8 +645,7 @@ fun settle_fees_on_nonexistent_order_returns_zero() {
         let nonexistent_order_id = existing_order_id + 12345u128;
 
         // This should return zero coin gracefully (no unsettled fees for this order)
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             nonexistent_order_id,
@@ -678,7 +657,7 @@ fun settle_fees_on_nonexistent_order_returns_zero() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -691,12 +670,12 @@ fun settle_fees_on_nonexistent_order_returns_zero() {
 #[test]
 fun minimal_fee_amount_precision() {
     // Tests precision with very small fee amounts (1-2 units)
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order and add minimal unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -717,23 +696,22 @@ fun minimal_fee_amount_precision() {
         // Add minimal unsettled fees
         let fee_amount = 1u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: Test settle_user_fees with minimal amount
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees - should return the minimal fee amount
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -745,7 +723,7 @@ fun minimal_fee_amount_precision() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -756,12 +734,12 @@ fun minimal_fee_amount_precision() {
 #[test]
 fun large_fee_amount_precision() {
     // Tests precision with very large fee amounts (near maximum values)
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order and add large unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -782,23 +760,22 @@ fun large_fee_amount_precision() {
         // Add large unsettled fees (use a very large but safe value)
         let fee_amount = 999999999999u64; // Close to u64 max but safe for testing
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: Test settle_user_fees with large amount
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees - should return the large fee amount
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -810,7 +787,7 @@ fun large_fee_amount_precision() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -821,12 +798,12 @@ fun large_fee_amount_precision() {
 #[test]
 fun rounding_behavior_with_odd_quantities() {
     // Tests rounding behavior when calculating proportional fees with odd numbers
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a buy order for 101 units (odd number)
         let order_info = place_limit_order<SUI, USDC>(
@@ -847,10 +824,10 @@ fun rounding_behavior_with_odd_quantities() {
         // Add unsettled fees (odd amount)
         let fee_amount = 1001u64; // Odd fee amount
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -877,13 +854,12 @@ fun rounding_behavior_with_odd_quantities() {
     // Step 3: Test settle_user_fees with odd number calculations
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees - should handle odd number rounding correctly
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -897,7 +873,7 @@ fun rounding_behavior_with_odd_quantities() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -908,12 +884,12 @@ fun rounding_behavior_with_odd_quantities() {
 #[test]
 fun rounding_behavior_with_even_quantities() {
     // Tests rounding behavior when calculating proportional fees with even numbers
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a buy order for 100 units (even number)
         let order_info = place_limit_order<SUI, USDC>(
@@ -934,10 +910,10 @@ fun rounding_behavior_with_even_quantities() {
         // Add unsettled fees (even amount)
         let fee_amount = 1000u64; // Even fee amount
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -964,13 +940,12 @@ fun rounding_behavior_with_even_quantities() {
     // Step 3: Test settle_user_fees with even number calculations
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees - should handle even number calculations perfectly
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -983,7 +958,7 @@ fun rounding_behavior_with_even_quantities() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -994,12 +969,12 @@ fun rounding_behavior_with_even_quantities() {
 #[test]
 fun very_small_order_quantities() {
     // Tests behavior with minimal order sizes (1-2 units)
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order with minimal quantity
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a buy order for 2 units (minimal viable quantity)
         let order_info = place_limit_order<SUI, USDC>(
@@ -1020,10 +995,10 @@ fun very_small_order_quantities() {
         // Add unsettled fees
         let fee_amount = 100u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -1050,13 +1025,12 @@ fun very_small_order_quantities() {
     // Step 3: Test settle_user_fees with minimal quantities
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1069,7 +1043,7 @@ fun very_small_order_quantities() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1080,12 +1054,12 @@ fun very_small_order_quantities() {
 #[test]
 fun precise_proportional_calculations() {
     // Tests edge cases in proportional fee calculations with specific ratios
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place original order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a buy order for 1000 units
         let order_info = place_limit_order<SUI, USDC>(
@@ -1106,10 +1080,10 @@ fun precise_proportional_calculations() {
         // Add unsettled fees
         let fee_amount = 999u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -1136,13 +1110,12 @@ fun precise_proportional_calculations() {
     // Step 3: Test settle_user_fees with precise proportional calculations
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1155,7 +1128,7 @@ fun precise_proportional_calculations() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1165,12 +1138,12 @@ fun precise_proportional_calculations() {
 
 #[test]
 fun boundary_value_testing() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order and add large unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         // Place a limit order
         let order_info = place_limit_order<SUI, USDC>(
@@ -1191,23 +1164,22 @@ fun boundary_value_testing() {
         // Add very large unsettled fees
         let fee_amount = 10_000_000_000_000u64; // 10 trillion fee amount
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: Test settle_user_fees with large values
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Test settle_user_fees with large values (tests near overflow boundary)
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1219,7 +1191,7 @@ fun boundary_value_testing() {
 
         // Clean up
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1227,14 +1199,14 @@ fun boundary_value_testing() {
     end(scenario);
 }
 
-#[test, expected_failure(abort_code = unsettled_fees::EInvalidOwner)]
+#[test, expected_failure(abort_code = fees_manager::EInvalidOwner)]
 fun unauthorized_user_cannot_settle_fees() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: ALICE places order and adds unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1253,23 +1225,22 @@ fun unauthorized_user_cannot_settle_fees() {
 
         let fee_amount = 1000u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: OWNER (different user) tries to settle ALICE's fees - should fail
     scenario.next_tx(OWNER);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // This should fail with EInvalidOwner since OWNER != ALICE
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1277,7 +1248,7 @@ fun unauthorized_user_cannot_settle_fees() {
         );
 
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1287,12 +1258,12 @@ fun unauthorized_user_cannot_settle_fees() {
 
 #[test]
 fun repeated_settlement_attempts_return_zero() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1311,22 +1282,21 @@ fun repeated_settlement_attempts_return_zero() {
 
         let fee_amount = 1000u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: First settlement - should return fees
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1337,7 +1307,7 @@ fun repeated_settlement_attempts_return_zero() {
         assert_eq!(settled_coin.value(), 1000u64);
 
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1345,12 +1315,11 @@ fun repeated_settlement_attempts_return_zero() {
     // Step 3: Second settlement - should return zero
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1361,7 +1330,7 @@ fun repeated_settlement_attempts_return_zero() {
         assert_eq!(settled_coin.value(), 0u64);
 
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1371,12 +1340,12 @@ fun repeated_settlement_attempts_return_zero() {
 
 #[test]
 fun settlement_with_minimal_maker_quantity() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place very small order and add relatively large fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1396,22 +1365,21 @@ fun settlement_with_minimal_maker_quantity() {
         // Add large fees relative to the small order
         let fee_amount = 1000000u64; // 1M fee units for 1 unit order
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: Test settlement with minimal maker quantity
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1423,7 +1391,7 @@ fun settlement_with_minimal_maker_quantity() {
         assert_eq!(settled_coin.value(), 1000000u64);
 
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1433,12 +1401,12 @@ fun settlement_with_minimal_maker_quantity() {
 
 #[test, expected_failure(abort_code = deepbook::big_vector::ENotFound)]
 fun user_loses_fees_when_cancelling_order_directly() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order and add unsettled fees
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1457,10 +1425,10 @@ fun user_loses_fees_when_cancelling_order_directly() {
 
         let fee_amount = 1000u64;
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
@@ -1483,14 +1451,13 @@ fun user_loses_fees_when_cancelling_order_directly() {
     // Step 3: Try to settle fees after direct cancellation
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         // Design: When users cancel orders directly (bypassing treasury), they lose their fees
         // The protocol will settle these fees later via settle_protocol_fee_and_record
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1501,7 +1468,7 @@ fun user_loses_fees_when_cancelling_order_directly() {
         // User cannot recover fees after direct cancellation - they are lost
         // The 1000u64 in unsettled fees remain in treasury until protocol settles them
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1511,12 +1478,12 @@ fun user_loses_fees_when_cancelling_order_directly() {
 
 #[test]
 fun settlement_with_different_fee_coin_type() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Test settlement with USDC fees (different from SUI)
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1536,22 +1503,21 @@ fun settlement_with_different_fee_coin_type() {
         // Add USDC fees instead of SUI
         let fee_amount = 500u64;
         let fee_balance = balance::create_for_testing<USDC>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Test settlement with USDC fee coin type
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
-        let settled_coin = settle_user_fees<SUI, USDC, USDC>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, USDC>(
             &pool,
             &balance_manager,
             order_id,
@@ -1561,7 +1527,7 @@ fun settlement_with_different_fee_coin_type() {
         assert_eq!(settled_coin.value(), 500u64);
         destroy(settled_coin);
 
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1571,12 +1537,12 @@ fun settlement_with_different_fee_coin_type() {
 
 #[test]
 fun settlement_with_maximum_precision_amounts() {
-    let (mut scenario, pool_id, balance_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
 
     // Step 1: Place order with maximum precision values
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
 
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
@@ -1595,22 +1561,21 @@ fun settlement_with_maximum_precision_amounts() {
 
         let fee_amount = 999_999_999_000u64; // Near maximum safe value
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
-        add_unsettled_fee(&mut treasury, fee_balance, &order_info);
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(treasury);
+        return_shared(fees_manager);
         order_id
     };
 
     // Step 2: Test settlement with maximum precision
     scenario.next_tx(ALICE);
     {
-        let mut treasury = scenario.take_shared<Treasury>();
+        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
-        let settled_coin = settle_user_fees<SUI, USDC, SUI>(
-            &mut treasury,
+        let settled_coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -1621,7 +1586,7 @@ fun settlement_with_maximum_precision_amounts() {
         assert_eq!(settled_coin.value(), 999_999_999_000u64);
 
         destroy(settled_coin);
-        return_shared(treasury);
+        return_shared(fees_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -1639,7 +1604,8 @@ fun settlement_with_maximum_precision_amounts() {
 /// - Creates deepbook registry and clock
 /// - Creates funded balance manager for ALICE
 /// - Creates SUI/USDC pool with reference DEEP pricing
-public(package) fun setup_test_environment(): (Scenario, ID, ID) {
+/// - Creates FeesManager for ALICE
+public(package) fun setup_test_environment(): (Scenario, ID, ID, ID) {
     let mut scenario = begin(OWNER);
 
     // Setup treasury
@@ -1662,5 +1628,14 @@ public(package) fun setup_test_environment(): (Scenario, ID, ID) {
         &mut scenario,
     );
 
-    (scenario, pool_id, balance_manager_id)
+    // Setup fees manager
+    scenario.next_tx(ALICE);
+    {
+        fees_manager::new(scenario.ctx());
+    };
+
+    scenario.next_tx(ALICE);
+    let fees_manager_id = test_scenario::most_recent_id_shared<FeesManager>().extract();
+
+    (scenario, pool_id, balance_manager_id, fees_manager_id)
 }
