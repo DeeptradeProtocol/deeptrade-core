@@ -138,6 +138,7 @@ public struct TakerFeeCharged<phantom CoinType> has copy, drop {
 ///
 /// Parameters:
 /// - treasury: The Deeptrade treasury instance managing the order process
+/// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -276,6 +277,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 ///
 /// Parameters:
 /// - treasury: The Deeptrade treasury instance managing the order process
+/// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -403,7 +405,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// to be used.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to add protocol fees to
+/// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -505,7 +507,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// to be used.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to add protocol fees to
+/// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -596,7 +598,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance managing the order process
+/// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -694,7 +696,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance managing the order process
+/// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -781,7 +783,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 /// Cancels an order and settles any associated with the order unsettled fees
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance
+/// - fees_manager: User's fees manager for settling fees
 /// - pool: The trading pool where the order was placed
 /// - balance_manager: User's balance manager
 /// - order_id: ID of the order to cancel
@@ -1205,7 +1207,7 @@ public(package) fun validate_fees_against_max(
 /// from user's wallet and balance manager according to the protocol fee plan
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance
+/// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - pool: The trading pool where the order was placed
 /// - balance_manager: User's balance manager
