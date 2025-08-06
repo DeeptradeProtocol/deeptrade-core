@@ -74,6 +74,12 @@ public struct FeeSettlementReceipt<phantom FeeCoinType> {
     total_fees_settled: u64,
 }
 
+/// A hot potato object ensuring a newly created `FeesManager` is shared. It is returned by `new`
+/// and must be consumed by the corresponding share function
+public struct FeesManagerShareTicket {
+    fees_manager_id: ID,
+}
+
 // === Events ===
 public struct UserUnsettledFeeAdded<phantom CoinType> has copy, drop {
     key: UserUnsettledFeeKey,
@@ -103,8 +109,10 @@ public struct FeesManagerCreated has copy, drop {
 }
 
 // === Public-Mutative Functions ===
-/// Creates and shares a new `FeesManager`, returning its `FeesManagerOwnerCap` and `ID`
-public fun new(ctx: &mut TxContext): (FeesManagerOwnerCap, ID) {
+/// Creates an unshared `FeesManager`, `FeesManagerOwnerCap`, and `FeesManagerShareTicket`.
+/// The manager and ticket must be passed to `share_fees_manager` to finalize creation and enforce
+/// the object sharing policy.
+public fun new(ctx: &mut TxContext): (FeesManager, FeesManagerOwnerCap, FeesManagerShareTicket) {
     let owner = ctx.sender();
 
     let fees_manager_uid = object::new(ctx);
@@ -124,15 +132,25 @@ public fun new(ctx: &mut TxContext): (FeesManagerOwnerCap, ID) {
         protocol_unsettled_fees: bag::new(ctx),
     };
 
+    let ticket = FeesManagerShareTicket {
+        fees_manager_id,
+    };
+
     event::emit(FeesManagerCreated {
         fees_manager_id,
         fees_manager_owner_cap_id,
         owner,
     });
 
-    transfer::share_object(fees_manager);
+    (fees_manager, owner_cap, ticket)
+}
 
-    (owner_cap, fees_manager_id)
+/// Shares the `FeesManager` object, consuming the `FeesManagerShareTicket` to enforce the policy
+public fun share_fees_manager(fees_manager: FeesManager, ticket: FeesManagerShareTicket) {
+    assert!(fees_manager.id.to_inner() == ticket.fees_manager_id, EInvalidOwner);
+
+    let FeesManagerShareTicket { .. } = ticket;
+    transfer::share_object(fees_manager);
 }
 
 /// Creates a `FeeSettlementReceipt` to begin a batch fee settlement process
