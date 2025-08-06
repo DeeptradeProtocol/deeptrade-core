@@ -1631,7 +1631,9 @@ public(package) fun setup_test_environment(): (Scenario, ID, ID, ID) {
     // Setup fees manager
     scenario.next_tx(ALICE);
     {
-        fees_manager::new(scenario.ctx());
+        let (fees_manager, owner_cap, ticket) = fees_manager::new(scenario.ctx());
+        fees_manager.share_fees_manager(ticket);
+        transfer::public_transfer(owner_cap, ALICE);
     };
 
     scenario.next_tx(ALICE);
