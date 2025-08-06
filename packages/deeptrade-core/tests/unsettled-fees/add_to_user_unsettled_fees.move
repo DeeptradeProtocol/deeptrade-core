@@ -14,6 +14,7 @@ use token::deep::DEEP;
 // === Constants ===
 const OWNER: address = @0x1;
 const ALICE: address = @0xAAAA;
+const UNAUTHORIZED: address = @0xDEADBEEF;
 
 #[test]
 fun live_order_success() {
@@ -575,6 +576,36 @@ fun expired_order_fails() {
         );
 
         // Should fail for expired order
+        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+
+        test_scenario::return_shared(fees_manager);
+    };
+
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = fees_manager::EInvalidOwner)]
+fun add_with_unauthorized_user_fails() {
+    let mut scenario = setup_fees_manager_test(OWNER);
+    let pool_id = id_from_address(@0x1);
+    let balance_manager_id = id_from_address(ALICE);
+    let order_id = 12345u128;
+    let fee_amount = 1000u64;
+
+    scenario.next_tx(UNAUTHORIZED);
+    {
+        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let fee_balance = balance::create_for_testing<SUI>(fee_amount);
+        let order_info = create_live_order_info(
+            pool_id,
+            balance_manager_id,
+            order_id,
+            ALICE,
+            1000000, // price
+            100, // original_quantity
+            50, // executed_quantity
+        );
+
         fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         test_scenario::return_shared(fees_manager);
