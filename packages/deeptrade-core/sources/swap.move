@@ -220,8 +220,8 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
     let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
     let (base_out, quote_out) = apply_treasury_fees(
-        discount_rate,
         taker_fee_rate,
+        discount_rate,
         base_out,
         quote_out,
         base_quantity,
