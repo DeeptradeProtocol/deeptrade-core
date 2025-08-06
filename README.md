@@ -115,6 +115,10 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 3. Run `examples/treasury/admin-withdraw-protocol-fee.ts` to withdraw all protocol fees (protocol fees charged in SUI, pool creation fees charged in DEEP).
 4. Run `examples/treasury/withdraw-all-deep-reserves.ts` to withdraw all DEEP coins from reserves.
 
+## Development notes
+
+1. Use `sui move build --lint` for linting - enables additional linting checks beyond the default linters
+
 ## Development Tools
 
 ### Lines of Code Analysis
