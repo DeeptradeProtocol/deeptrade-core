@@ -40,6 +40,14 @@ public struct FeesManager has key, store {
     protocol_unsettled_fees: Bag,
 }
 
+/// A capability object that links a user to their `FeesManager`.
+/// This object is owned by the user, making their shared `FeesManager` discoverable.
+/// It does not grant any special permissions but serves as a pointer to the `fees_manager_id`.
+public struct FeesManagerOwnerCap has key, store {
+    id: UID,
+    fees_manager_id: ID,
+}
+
 /// Key for storing a `UserUnsettledFee` in the `user_unsettled_fees` bag
 public struct UserUnsettledFeeKey has copy, drop, store {
     pool_id: ID,
@@ -90,28 +98,37 @@ public struct ProtocolFeesSettled<phantom FeeCoinType> has copy, drop {
 
 public struct FeesManagerCreated has copy, drop {
     fees_manager_id: ID,
+    fees_manager_owner_cap_id: ID,
     owner: address,
 }
 
 // === Public-Mutative Functions ===
-/// Creates and shares a new `FeesManager` for the transaction sender
-public fun new(ctx: &mut TxContext) {
-    let id = object::new(ctx);
+/// Creates a new shared `FeesManager` and returns a corresponding `FeesManagerOwnerCap`
+public fun new(ctx: &mut TxContext): FeesManagerOwnerCap {
+    let fees_manager_id = object::new(ctx);
+    let fees_manager_owner_cap_id = object::new(ctx);
     let owner = ctx.sender();
 
     event::emit(FeesManagerCreated {
-        fees_manager_id: id.to_inner(),
+        fees_manager_id: fees_manager_id.to_inner(),
+        fees_manager_owner_cap_id: fees_manager_owner_cap_id.to_inner(),
         owner,
     });
 
+    let owner_cap = FeesManagerOwnerCap {
+        id: fees_manager_owner_cap_id,
+        fees_manager_id: fees_manager_id.to_inner(),
+    };
+
     let fees_manager = FeesManager {
-        id,
+        id: fees_manager_id,
         owner,
         user_unsettled_fees: bag::new(ctx),
         protocol_unsettled_fees: bag::new(ctx),
     };
 
     transfer::share_object(fees_manager);
+    owner_cap
 }
 
 /// Creates a `FeeSettlementReceipt` to begin a batch fee settlement process
