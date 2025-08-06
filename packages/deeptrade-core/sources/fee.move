@@ -533,10 +533,12 @@ public(package) fun calculate_fee_by_rate(amount: u64, fee_rate: u64): u64 {
 public(package) fun charge_swap_fee<CoinType>(
     coin: &mut Coin<CoinType>,
     fee_bps: u64,
+    discount_rate: u64,
 ): Balance<CoinType> {
     let coin_balance = coin.balance_mut();
     let coin_value = coin_balance.value();
-    let fee = calculate_fee_by_rate(coin_value, fee_bps);
+    let mut fee = calculate_fee_by_rate(coin_value, fee_bps);
+    fee = apply_discount(fee, discount_rate);
 
     assert!(coin_value >= fee, EInsufficientCoinBalance);
 
