@@ -209,6 +209,17 @@ fun protocol_settles_fee_on_user_cancelled_order() {
 
         let (_, total_settled) = receipt.finish_protocol_fee_settlement_for_testing();
         assert_eq!(total_settled, 1000);
+        assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 1000);
+
+        // Verify the unsettled fee is now empty but still exists for future storage rebate claim
+        assert_eq!(
+            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            true,
+        );
+        assert_eq!(
+            fees_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
+            0,
+        );
 
         return_shared(treasury);
         return_shared(fees_manager);
@@ -272,10 +283,14 @@ fun protocol_ignores_live_unfilled_order() {
         assert_eq!(orders_count, 0);
         assert_eq!(total_settled, 0);
 
-        // Verify the unsettled fee is still there.
+        // Verify the unsettled fee is still there and has previous balance
         assert_eq!(
             fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
             true,
+        );
+        assert_eq!(
+            fees_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
+            1000,
         );
 
         return_shared(treasury);
@@ -362,6 +377,16 @@ fun protocol_ignores_live_partially_filled_order() {
         let (orders_count, total_settled) = receipt.finish_protocol_fee_settlement_for_testing();
         assert_eq!(orders_count, 0);
         assert_eq!(total_settled, 0);
+
+        // Verify the unsettled fee is still there and has previous balance
+        assert_eq!(
+            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            true,
+        );
+        assert_eq!(
+            fees_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
+            1000,
+        );
 
         return_shared(treasury);
         return_shared(fees_manager);
@@ -532,6 +557,20 @@ fun protocol_settles_batch_of_fees_correctly() {
         // Should have settled fees for filled (A) and cancelled (B) orders.
         assert_eq!(orders_count, 2);
         assert_eq!(total_settled, 1500); // 1000 from A + 500 from B
+
+        // Verify unsettled fee for filled order A is now empty but still exists for future storage rebate claim
+        assert_eq!(
+            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_a_id),
+            true,
+        );
+        assert_eq!(
+            fees_manager.get_user_unsettled_fee_balance<SUI>(
+                pool_id,
+                balance_manager_id,
+                order_a_id,
+            ),
+            0,
+        );
 
         // Verify unsettled fee for live order C is untouched.
         assert_eq!(
