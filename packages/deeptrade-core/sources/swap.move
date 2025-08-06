@@ -31,6 +31,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// Parameters:
 /// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_in: The base tokens being provided for the swap
 /// - min_quote_out: Minimum amount of quote tokens to receive (slippage protection)
@@ -103,8 +104,8 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 ///
 /// Parameters:
 /// - fees_manager: User's fees manager for collecting protocol fees
-/// - loyalty_program: The loyalty program for fee discounts
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - quote_in: The quote tokens being provided for the swap
 /// - min_base_out: Minimum amount of base tokens to receive (slippage protection)
@@ -122,8 +123,8 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// 4. Returns received base and remaining quote tokens
 public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     fees_manager: &mut FeesManager,
-    loyalty_program: &LoyaltyProgram,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     quote_in: Coin<QuoteToken>,
     min_base_out: u64,
