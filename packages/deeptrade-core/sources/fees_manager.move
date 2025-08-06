@@ -76,9 +76,7 @@ public struct FeeSettlementReceipt<phantom FeeCoinType> {
 
 /// A hot potato object ensuring a newly created `FeesManager` is shared. It is returned by `new`
 /// and must be consumed by the corresponding share function
-public struct FeesManagerShareTicket {
-    fees_manager_id: ID,
-}
+public struct FeesManagerShareTicket { fees_manager_id: ID }
 
 // === Events ===
 public struct UserUnsettledFeeAdded<phantom CoinType> has copy, drop {
