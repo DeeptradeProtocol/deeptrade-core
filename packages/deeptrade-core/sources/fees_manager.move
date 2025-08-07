@@ -185,6 +185,7 @@ public fun settle_filled_order_fee_and_record<BaseToken, QuoteToken, FeeCoinType
         order_id,
     };
 
+    // No unsettled fee exists if the fee was already settled or never added
     if (!fees_manager.user_unsettled_fees.contains(filled_order_fee_key)) return;
 
     // We borrow the object to leave it empty, so the user can later claim a storage rebate
@@ -391,7 +392,7 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
 
 /// Adds a given fee to the protocol's unsettled fees bag, aggregating it with any existing
 /// balance for the same coin type. This bag holds protocol-bound fees before they are
-/// collected by the treasury.
+/// settled into the treasury by the `settle_protocol_fee_and_record` function.
 ///
 /// The transaction will abort if the caller is not the owner of the `FeesManager`.
 public(package) fun add_to_protocol_unsettled_fees<CoinType>(
@@ -436,6 +437,7 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
         order_id,
     };
 
+    // No unsettled fee exists if the fee was already settled or never added
     if (!fees_manager.user_unsettled_fees.contains(user_unsettled_fee_key)) return coin::zero(ctx);
 
     let mut user_unsettled_fee: UserUnsettledFee<FeeCoinType> = fees_manager
