@@ -14,11 +14,15 @@ For operations that are considered lower-risk or require immediate execution for
 - **Loyalty Program Management** (`loyalty.move`):
   - `add_loyalty_level` / `remove_loyalty_level`: Manages the available loyalty tiers.
   - `grant_user_level` / `revoke_user_level`: Assigns or removes loyalty tiers for specific users.
+- **Fees Management** (`fees_manager.move`):
+  - `claim_user_unsettled_fee_storage_rebate_admin`: Claims storage rebate for a user's settled fee.
+  - `claim_protocol_unsettled_fee_storage_rebate_admin`: Claims storage rebate for a settled protocol fee.
 
 ### Design Motivation
 
 - **Emergency Response:** Versioning functions do not use a timelock to allow for rapid response in case of a critical bug or an issue with a dependency like the DeepBook protocol. This agility is crucial to protect the protocol and its users, as detailed in our [Versioning Strategy](./versioning.md).
 - **Operational Flexibility:** The loyalty program is designed to be managed dynamically. We consider these operations to be low-risk, as the primary impact is on user fee discounts rather than a direct risk to locked funds. This flexibility allows us to manage the program efficiently without the delay of a timelock.
+- **System Maintenance:** Administrative functions for claiming storage rebates are low-risk cleanup operations. They do not move user or protocol funds but instead recover storage costs from objects that are no longer in use. A timelock for such routine maintenance would add unnecessary overhead.
 
 ---
 
