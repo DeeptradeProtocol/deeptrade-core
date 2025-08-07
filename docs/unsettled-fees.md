@@ -71,7 +71,7 @@ The system is designed to handle fees correctly for various order types supporte
 ### Examples
 
 **Market Order (IOC)**:
-If 75% of the order executes, the user pays taker fees for that executed portion. The remaining 25% is automatically cancelled. No `UserUnsettledFee` is created.
+If 75% of the order executes, the user pays taker fees for that executed portion right away. The remaining 25% is automatically cancelled. No `UserUnsettledFee` is created.
 
 **FOK Order**:
 The order is either 100% filled (paying only taker fees) or completely rejected. No `UserUnsettledFee` is created in either case.
