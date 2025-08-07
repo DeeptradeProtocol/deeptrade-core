@@ -27,12 +27,12 @@ const BOB: address = @0xBBBB;
 #[test]
 /// Test that the protocol can settle fees from a fully filled order.
 fun protocol_settles_fee_on_fully_filled_order() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places a buy order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -85,7 +85,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
     // Step 3: Verify the order is no longer live and the unsettled fee still exists.
     scenario.next_tx(ALICE);
     {
-        let fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -104,7 +104,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
     scenario.next_tx(OWNER); // Protocol action
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
@@ -147,12 +147,12 @@ fun protocol_settles_fee_on_fully_filled_order() {
 #[test]
 /// Test that the protocol can settle a fee from a user-cancelled order.
 fun protocol_settles_fee_on_user_cancelled_order() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places an order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -193,7 +193,7 @@ fun protocol_settles_fee_on_user_cancelled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
@@ -233,12 +233,12 @@ fun protocol_settles_fee_on_user_cancelled_order() {
 #[test]
 /// Test that the protocol ignores live, unfilled orders.
 fun protocol_ignores_live_unfilled_order() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places an order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -264,7 +264,7 @@ fun protocol_ignores_live_unfilled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
@@ -305,12 +305,12 @@ fun protocol_ignores_live_unfilled_order() {
 #[test]
 /// Test that the protocol ignores live, partially filled orders.
 fun protocol_ignores_live_partially_filled_order() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places an order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -360,7 +360,7 @@ fun protocol_ignores_live_partially_filled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
@@ -400,12 +400,12 @@ fun protocol_ignores_live_partially_filled_order() {
 #[test]
 /// Test the batch settlement of multiple fees.
 fun protocol_settles_batch_of_fees_correctly() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // === Order A: To be fully filled ===
     scenario.next_tx(ALICE);
     let order_a_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -430,7 +430,7 @@ fun protocol_settles_batch_of_fees_correctly() {
     // === Order B: To be cancelled ===
     scenario.next_tx(ALICE);
     let order_b_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -455,7 +455,7 @@ fun protocol_settles_batch_of_fees_correctly() {
     // === Order C: To remain live ===
     scenario.next_tx(ALICE);
     let order_c_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -520,7 +520,7 @@ fun protocol_settles_batch_of_fees_correctly() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -598,7 +598,7 @@ fun protocol_settles_batch_of_fees_correctly() {
 #[test]
 /// Test that the protocol ignores orders with no unsettled fees.
 fun protocol_ignores_order_with_no_unsettled_fees() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places an order but NO unsettled fee is added.
     scenario.next_tx(ALICE);
@@ -640,7 +640,7 @@ fun protocol_ignores_order_with_no_unsettled_fees() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();

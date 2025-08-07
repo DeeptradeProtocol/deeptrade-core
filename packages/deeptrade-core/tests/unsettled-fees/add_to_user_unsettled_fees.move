@@ -18,7 +18,7 @@ const UNAUTHORIZED: address = @0xDEADBEEF;
 
 #[test]
 fun live_order_success() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -80,7 +80,7 @@ fun live_order_success() {
 
 #[test]
 fun partially_filled_order_success() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -142,7 +142,7 @@ fun partially_filled_order_success() {
 
 #[test, expected_failure(abort_code = fee_manager::EUserUnsettledFeeAlreadyExists)]
 fun join_existing_fee_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -191,7 +191,7 @@ fun join_existing_fee_fails() {
 
 #[test, expected_failure(abort_code = fee_manager::EOrderNotLiveOrPartiallyFilled)]
 fun cancelled_order_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -222,7 +222,7 @@ fun cancelled_order_fails() {
 
 #[test, expected_failure(abort_code = fee_manager::EOrderFullyExecuted)]
 fun fully_executed_order_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -253,7 +253,7 @@ fun fully_executed_order_fails() {
 
 #[test, expected_failure(abort_code = fee_manager::EZeroUserUnsettledFee)]
 fun zero_fee_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -283,7 +283,7 @@ fun zero_fee_fails() {
 
 #[test]
 fun different_coin_types() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
 
     scenario.next_tx(OWNER);
     {
@@ -394,7 +394,7 @@ fun different_coin_types() {
 
 #[test]
 fun cross_pool_scenarios() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
 
     scenario.next_tx(OWNER);
     {
@@ -524,7 +524,7 @@ fun cross_pool_scenarios() {
 
 #[test, expected_failure(abort_code = fee_manager::EOrderNotLiveOrPartiallyFilled)]
 fun filled_order_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -555,7 +555,7 @@ fun filled_order_fails() {
 
 #[test, expected_failure(abort_code = fee_manager::EOrderNotLiveOrPartiallyFilled)]
 fun expired_order_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -586,7 +586,7 @@ fun expired_order_fails() {
 
 #[test, expected_failure(abort_code = fee_manager::EInvalidOwner)]
 fun add_with_unauthorized_user_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let pool_id = id_from_address(@0x1);
     let balance_manager_id = id_from_address(ALICE);
     let order_id = 12345u128;
@@ -615,11 +615,11 @@ fun add_with_unauthorized_user_fails() {
 }
 
 /// Setup a test scenario with an initialized fees manager
-public(package) fun setup_fees_manager_test(owner: address): Scenario {
+public(package) fun setup_fee_manager_test(owner: address): Scenario {
     let mut scenario = test_scenario::begin(owner);
     {
         let (fee_manager, owner_cap, ticket) = fee_manager::new(scenario.ctx());
-        fee_manager.share_fees_manager(ticket);
+        fee_manager.share_fee_manager(ticket);
         transfer::public_transfer(owner_cap, owner);
     };
     scenario

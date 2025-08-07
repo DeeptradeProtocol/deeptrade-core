@@ -26,12 +26,12 @@ const BOB: address = @0xBBBB;
 #[test]
 /// Test settling a single existing protocol fee.
 fun settle_single_fee() {
-    let (mut scenario, _, _, fees_manager_id) = setup_test_environment();
+    let (mut scenario, _, _, fee_manager_id) = setup_test_environment();
 
     // Step 1: Add a protocol unsettled fee to the FeeManager.
     scenario.next_tx(ALICE);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let fee_balance = balance::create_for_testing<SUI>(1000);
         fee_manager.add_to_protocol_unsettled_fees(fee_balance, scenario.ctx());
 
@@ -43,7 +43,7 @@ fun settle_single_fee() {
     scenario.next_tx(OWNER); // Can be any address
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
@@ -74,12 +74,12 @@ fun settle_single_fee() {
 #[test]
 /// Test attempting to settle a fee when none exists.
 fun settle_non_existent_fee() {
-    let (mut scenario, _, _, fees_manager_id) = setup_test_environment();
+    let (mut scenario, _, _, fee_manager_id) = setup_test_environment();
 
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         // Verify no fee exists initially
@@ -108,12 +108,12 @@ fun settle_non_existent_fee() {
 #[test]
 /// Test settling a fee that is already zero.
 fun settle_zero_fee() {
-    let (mut scenario, _, _, fees_manager_id) = setup_test_environment();
+    let (mut scenario, _, _, fee_manager_id) = setup_test_environment();
 
     // Step 1: Add and then settle a protocol fee, leaving an empty balance object.
     scenario.next_tx(ALICE);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let fee_balance = balance::create_for_testing<SUI>(1000);
         fee_manager.add_to_protocol_unsettled_fees(fee_balance, scenario.ctx());
         return_shared(fee_manager);
@@ -122,7 +122,7 @@ fun settle_zero_fee() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
         settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
         let (_, total_settled) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
@@ -136,7 +136,7 @@ fun settle_zero_fee() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         // Verify fee exists but is zero
@@ -165,12 +165,12 @@ fun settle_zero_fee() {
 #[test]
 /// Test settling fees for multiple coin types.
 fun settle_multiple_coin_types() {
-    let (mut scenario, _, _, fees_manager_id) = setup_test_environment();
+    let (mut scenario, _, _, fee_manager_id) = setup_test_environment();
 
     // Step 1: Add protocol unsettled fees for SUI and USDC.
     scenario.next_tx(ALICE);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
 
         let sui_fee = balance::create_for_testing<SUI>(1000);
         fee_manager.add_to_protocol_unsettled_fees(sui_fee, scenario.ctx());
@@ -188,7 +188,7 @@ fun settle_multiple_coin_types() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
 
         // Settle SUI
         let mut sui_receipt = start_protocol_fee_settlement<SUI>();
@@ -224,12 +224,12 @@ fun settle_multiple_coin_types() {
 #[test]
 /// Test settlement from a real-world scenario: user cancels a partially filled order.
 fun settle_fee_from_partially_filled_cancelled_order() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places a buy order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -281,7 +281,7 @@ fun settle_fee_from_partially_filled_cancelled_order() {
     // filled portion (30%) to the protocol's unsettled fees.
     scenario.next_tx(ALICE);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let mut pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let mut balance_manager = scenario.take_shared_by_id<
             deepbook::balance_manager::BalanceManager,
@@ -324,7 +324,7 @@ fun settle_fee_from_partially_filled_cancelled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);

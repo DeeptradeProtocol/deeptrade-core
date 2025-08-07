@@ -38,14 +38,14 @@ fun owner_claims_rebate_successfully() {
         mut scenario,
         pool_id,
         balance_manager_id,
-        fees_manager_id,
+        fee_manager_id,
         order_id,
     ) = setup_filled_order_for_rebate();
 
     // Claim the storage rebate as the fee manager owner
     scenario.next_tx(ALICE);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
@@ -78,14 +78,14 @@ fun unauthorized_user_claim_fails() {
         mut scenario,
         pool_id,
         balance_manager_id,
-        fees_manager_id,
+        fee_manager_id,
         order_id,
     ) = setup_filled_order_for_rebate();
 
     // Attempt to claim as an unrelated user
     scenario.next_tx(UNRELATED_USER);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
@@ -108,12 +108,12 @@ fun unauthorized_user_claim_fails() {
 #[test, expected_failure(abort_code = deeptrade_core::fee_manager::EUserUnsettledFeeNotEmpty)]
 /// Test that claiming a rebate for a non-empty (unsettled) fee fails.
 fun claim_for_unsettled_fee_fails() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places an order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = deepbook::pool_tests::place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -138,7 +138,7 @@ fun claim_for_unsettled_fee_fails() {
     // Step 2: Attempt to claim the rebate without settling the fee first.
     scenario.next_tx(ALICE);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
@@ -161,14 +161,14 @@ fun claim_for_unsettled_fee_fails() {
 #[test]
 /// Test that claiming a rebate for an order with no unsettled fee does nothing.
 fun claim_for_non_existent_fee_is_noop() {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Some arbitrary order ID that does not have an unsettled fee.
     let order_id = 12345;
 
     scenario.next_tx(ALICE);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
@@ -202,14 +202,14 @@ fun admin_claims_rebate_successfully() {
         mut scenario,
         pool_id,
         balance_manager_id,
-        fees_manager_id,
+        fee_manager_id,
         order_id,
     ) = setup_filled_order_for_rebate();
 
     let multisig_address = get_test_multisig_address();
     scenario.next_tx(multisig_address);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
@@ -248,14 +248,14 @@ fun non_multisig_admin_claim_fails() {
         mut scenario,
         pool_id,
         balance_manager_id,
-        fees_manager_id,
+        fee_manager_id,
         order_id,
     ) = setup_filled_order_for_rebate();
 
     // Attempt to claim as a regular user, not the multisig admin
     scenario.next_tx(UNRELATED_USER);
     {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
@@ -283,12 +283,12 @@ fun non_multisig_admin_claim_fails() {
 
 #[test_only]
 public(package) fun setup_filled_order_for_rebate(): (Scenario, ID, ID, ID, u128) {
-    let (mut scenario, pool_id, balance_manager_id, fees_manager_id) = setup_test_environment();
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
     // Step 1: Alice places a buy order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let order_info = deepbook::pool_tests::place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -341,7 +341,7 @@ public(package) fun setup_filled_order_for_rebate(): (Scenario, ID, ID, ID, u128
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
@@ -373,5 +373,5 @@ public(package) fun setup_filled_order_for_rebate(): (Scenario, ID, ID, ID, u128
         return_shared(balance_manager);
     };
 
-    (scenario, pool_id, balance_manager_id, fees_manager_id, order_id)
+    (scenario, pool_id, balance_manager_id, fee_manager_id, order_id)
 }

@@ -1,7 +1,7 @@
 #[test_only]
 module deeptrade_core::add_to_protocol_unsettled_fees_tests;
 
-use deeptrade_core::add_to_user_unsettled_fees_tests::setup_fees_manager_test;
+use deeptrade_core::add_to_user_unsettled_fees_tests::setup_fee_manager_test;
 use deeptrade_core::fee_manager::FeeManager;
 use std::unit_test::assert_eq;
 use sui::balance;
@@ -15,7 +15,7 @@ const UNAUTHORIZED: address = @0xDEADBEEF;
 
 #[test]
 fun add_fee_for_new_coin_type_success() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let fee_amount = 1000u64;
 
     scenario.next_tx(OWNER);
@@ -41,7 +41,7 @@ fun add_fee_for_new_coin_type_success() {
 
 #[test]
 fun aggregate_fees_for_existing_coin_type_success() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let fee_amount_1 = 1000u64;
     let fee_amount_2 = 500u64;
     let expected_total_fee = fee_amount_1 + fee_amount_2;
@@ -71,7 +71,7 @@ fun aggregate_fees_for_existing_coin_type_success() {
 
 #[test]
 fun handle_zero_value_fee_gracefully() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
 
     scenario.next_tx(OWNER);
     {
@@ -95,7 +95,7 @@ fun handle_zero_value_fee_gracefully() {
 
 #[test]
 fun handle_multiple_distinct_coin_types_correctly() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
     let sui_fee_amount = 1000u64;
     let deep_fee_amount = 500u64;
 
@@ -130,7 +130,7 @@ fun handle_multiple_distinct_coin_types_correctly() {
 
 #[test, expected_failure(abort_code = deeptrade_core::fee_manager::EInvalidOwner)]
 fun add_with_unauthorized_user_fails() {
-    let mut scenario = setup_fees_manager_test(OWNER);
+    let mut scenario = setup_fee_manager_test(OWNER);
 
     scenario.next_tx(UNAUTHORIZED);
     {

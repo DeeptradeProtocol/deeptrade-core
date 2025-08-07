@@ -14,7 +14,7 @@ const EInsufficientOutputAmount: u64 = 1;
 
 // === Events ===
 public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop {
-    fees_manager_id: ID,
+    fee_manager_id: ID,
     pool_id: ID,
     base_to_quote: bool,
     input_amount: u64,
@@ -86,7 +86,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     validate_minimum_output(&result_quote, min_quote_out);
 
     event::emit(SwapExecuted<BaseToken, QuoteToken> {
-        fees_manager_id: object::id(fee_manager),
+        fee_manager_id: object::id(fee_manager),
         pool_id: object::id(pool),
         base_to_quote: true,
         input_amount: base_quantity,
@@ -160,7 +160,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     validate_minimum_output(&result_base, min_base_out);
 
     event::emit(SwapExecuted<BaseToken, QuoteToken> {
-        fees_manager_id: object::id(fee_manager),
+        fee_manager_id: object::id(fee_manager),
         pool_id: object::id(pool),
         base_to_quote: false,
         input_amount: quote_quantity,
