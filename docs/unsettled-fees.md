@@ -4,17 +4,17 @@
 
 The Deeptrade protocol charges fees for order execution, not for order placement. This is achieved through a dynamic system that holds unsettled fees for live orders and settles them based on the final outcome. This ensures that users only pay for the portion of their orders that actually execute.
 
-## Design Motivation: The FeesManager
+## Design Motivation: The FeeManager
 
-To handle fee management at scale, the protocol introduces a dedicated `FeesManager` object for each user. This design is a direct solution to the challenge of **shared object congestion** on the Sui network, a scenario where too many transactions attempting to modify the same object can lead to performance bottlenecks and transaction failures.
+To handle fee management at scale, the protocol introduces a dedicated `FeeManager` object for each user. This design is a direct solution to the challenge of **shared object congestion** on the Sui network, a scenario where too many transactions attempting to modify the same object can lead to performance bottlenecks and transaction failures.
 
 A more naive approach would be to store all unsettled fee data within the single, global `Treasury` object. However, this would mean that every trade from every user would need to write to the same object, creating a significant point of contention. As the official Sui documentation advises, developers should "avoid using a single shared object if possible" to prevent this exact problem ([Object-Based Local Fee Markets](https://docs.sui.io/guides/developer/advanced/local-fee-markets)).
 
-By giving each user their own `FeesManager`, the system elegantly sidesteps this issue. Instead of a single "hot" object, fee operations are distributed and parallelized across many user-specific objects. This architecture is fundamental to ensuring the protocol remains fast, reliable, and scalable, even under heavy trading volume, as detailed in Sui's approach to [congestion control](https://blog.sui.io/shared-object-congestion-control/).
+By giving each user their own `FeeManager`, the system elegantly sidesteps this issue. Instead of a single "hot" object, fee operations are distributed and parallelized across many user-specific objects. This architecture is fundamental to ensuring the protocol remains fast, reliable, and scalable, even under heavy trading volume, as detailed in Sui's approach to [congestion control](https://blog.sui.io/shared-object-congestion-control/).
 
-## The `FeesManager` Structure
+## The `FeeManager` Structure
 
-All protocol fee operations are managed through the `FeesManager` object. This object has two primary fields for managing fees, both of which are implemented as Sui `Bag` objects:
+All protocol fee operations are managed through the `FeeManager` object. This object has two primary fields for managing fees, both of which are implemented as Sui `Bag` objects:
 
 1.  **`user_unsettled_fees`**: This field holds `UserUnsettledFee` structs, each created for the **maker portion** of a limit order (the part that rests in the order book). A struct persists in this bag even after its order is filled, until it is processed by a settlement function.
 
@@ -52,7 +52,7 @@ When an order is completed (e.g., fully filled) or cancelled externally, the fee
 
 The permissionless settlement functions (Path B) intentionally leave empty structs and values in the bags. This is a crucial design choice that separates fee settlement from storage rebate claims.
 
-- The user who owns the `FeesManager` has the primary right to reclaim their initial storage deposit by calling one of the `claim_*_storage_rebate` functions. This action destroys the now-empty structs, returning the storage fee to the user.
+- The user who owns the `FeeManager` has the primary right to reclaim their initial storage deposit by calling one of the `claim_*_storage_rebate` functions. This action destroys the now-empty structs, returning the storage fee to the user.
 
 - For the long-term health and economic sustainability of the protocol, a protocol admin may also perform this cleanup. At a large scale, with potentially millions of users, the gas cost of settling countless small protocol fees can exceed the value of the fees themselves. Reclaiming the storage fees from abandoned structs helps subsidize these essential maintenance operations. This ensures that the fee settlement system remains efficient and economically viable for the protocol, which benefits all users by keeping the platform running smoothly.
 
