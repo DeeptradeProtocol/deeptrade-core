@@ -5,7 +5,7 @@ use deepbook::balance_manager_tests::{create_acct_and_share_with_funds, USDC};
 use deepbook::constants;
 use deepbook::pool::Pool;
 use deepbook::pool_tests::place_limit_order;
-use deeptrade_core::fees_manager::{
+use deeptrade_core::fee_manager::{
     Self,
     FeeManager,
     settle_protocol_fee_and_record,
@@ -31,27 +31,27 @@ fun settle_single_fee() {
     // Step 1: Add a protocol unsettled fee to the FeeManager.
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let fee_balance = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_protocol_unsettled_fees(fee_balance, scenario.ctx());
+        fee_manager.add_to_protocol_unsettled_fees(fee_balance, scenario.ctx());
 
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 1000);
-        return_shared(fees_manager);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<SUI>(), 1000);
+        return_shared(fee_manager);
     };
 
     // Step 2: Settle the protocol fee.
     scenario.next_tx(OWNER); // Can be any address
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
-        settle_protocol_fee_and_record(&mut treasury, &mut fees_manager, &mut receipt);
+        settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
 
         let (
             orders_count,
             total_settled,
-        ) = fees_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        ) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
 
         // settle_protocol_fee_and_record does not increment orders_count
         assert_eq!(orders_count, 0);
@@ -61,11 +61,11 @@ fun settle_single_fee() {
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 1000);
 
         // Verify the unsettled fee is now empty but still exists for storage rebate claim
-        assert_eq!(fees_manager.has_protocol_unsettled_fee<SUI>(), true);
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
+        assert_eq!(fee_manager.has_protocol_unsettled_fee<SUI>(), true);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
     };
 
     end(scenario);
@@ -79,27 +79,27 @@ fun settle_non_existent_fee() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         // Verify no fee exists initially
-        assert_eq!(fees_manager.has_protocol_unsettled_fee<SUI>(), false);
+        assert_eq!(fee_manager.has_protocol_unsettled_fee<SUI>(), false);
 
-        settle_protocol_fee_and_record(&mut treasury, &mut fees_manager, &mut receipt);
+        settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
 
         let (
             orders_count,
             total_settled,
-        ) = fees_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        ) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
         assert_eq!(orders_count, 0);
         assert_eq!(total_settled, 0);
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 0);
 
         // Verify no fee was created
-        assert_eq!(fees_manager.has_protocol_unsettled_fee<SUI>(), false);
+        assert_eq!(fee_manager.has_protocol_unsettled_fee<SUI>(), false);
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
     };
 
     end(scenario);
@@ -113,42 +113,42 @@ fun settle_zero_fee() {
     // Step 1: Add and then settle a protocol fee, leaving an empty balance object.
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let fee_balance = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_protocol_unsettled_fees(fee_balance, scenario.ctx());
-        return_shared(fees_manager);
+        fee_manager.add_to_protocol_unsettled_fees(fee_balance, scenario.ctx());
+        return_shared(fee_manager);
     };
 
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
-        settle_protocol_fee_and_record(&mut treasury, &mut fees_manager, &mut receipt);
-        let (_, total_settled) = fees_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
+        let (_, total_settled) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
         assert_eq!(total_settled, 1000);
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 1000);
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
     };
 
     // Step 2: Attempt to settle the same fee again, which is now zero.
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         // Verify fee exists but is zero
-        assert_eq!(fees_manager.has_protocol_unsettled_fee<SUI>(), true);
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
+        assert_eq!(fee_manager.has_protocol_unsettled_fee<SUI>(), true);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
 
-        settle_protocol_fee_and_record(&mut treasury, &mut fees_manager, &mut receipt);
+        settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
 
         let (
             orders_count,
             total_settled,
-        ) = fees_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        ) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
         assert_eq!(orders_count, 0);
         assert_eq!(total_settled, 0);
 
@@ -156,7 +156,7 @@ fun settle_zero_fee() {
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 1000);
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
     };
 
     end(scenario);
@@ -170,36 +170,36 @@ fun settle_multiple_coin_types() {
     // Step 1: Add protocol unsettled fees for SUI and USDC.
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
 
         let sui_fee = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_protocol_unsettled_fees(sui_fee, scenario.ctx());
+        fee_manager.add_to_protocol_unsettled_fees(sui_fee, scenario.ctx());
 
         let usdc_fee = balance::create_for_testing<USDC>(2500);
-        fees_manager.add_to_protocol_unsettled_fees(usdc_fee, scenario.ctx());
+        fee_manager.add_to_protocol_unsettled_fees(usdc_fee, scenario.ctx());
 
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 1000);
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<USDC>(), 2500);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<SUI>(), 1000);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<USDC>(), 2500);
 
-        return_shared(fees_manager);
+        return_shared(fee_manager);
     };
 
     // Step 2: Settle both fees.
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
 
         // Settle SUI
         let mut sui_receipt = start_protocol_fee_settlement<SUI>();
-        settle_protocol_fee_and_record(&mut treasury, &mut fees_manager, &mut sui_receipt);
-        let (_, sui_total) = fees_manager::finish_protocol_fee_settlement_for_testing(sui_receipt);
+        settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut sui_receipt);
+        let (_, sui_total) = fee_manager::finish_protocol_fee_settlement_for_testing(sui_receipt);
         assert_eq!(sui_total, 1000);
 
         // Settle USDC
         let mut usdc_receipt = start_protocol_fee_settlement<USDC>();
-        settle_protocol_fee_and_record(&mut treasury, &mut fees_manager, &mut usdc_receipt);
-        let (_, usdc_total) = fees_manager::finish_protocol_fee_settlement_for_testing(
+        settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut usdc_receipt);
+        let (_, usdc_total) = fee_manager::finish_protocol_fee_settlement_for_testing(
             usdc_receipt,
         );
         assert_eq!(usdc_total, 2500);
@@ -209,13 +209,13 @@ fun settle_multiple_coin_types() {
         assert_eq!(treasury.get_protocol_fee_balance<USDC>(), 2500);
 
         // Verify unsettled fees are empty but still exist for storage rebate claim
-        assert_eq!(fees_manager.has_protocol_unsettled_fee<SUI>(), true);
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
-        assert_eq!(fees_manager.has_protocol_unsettled_fee<USDC>(), true);
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<USDC>(), 0);
+        assert_eq!(fee_manager.has_protocol_unsettled_fee<SUI>(), true);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
+        assert_eq!(fee_manager.has_protocol_unsettled_fee<USDC>(), true);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<USDC>(), 0);
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
     };
 
     end(scenario);
@@ -229,7 +229,7 @@ fun settle_fee_from_partially_filled_cancelled_order() {
     // Step 1: Alice places a buy order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -246,10 +246,10 @@ fun settle_fee_from_partially_filled_cancelled_order() {
         );
 
         let fee_balance = balance::create_for_testing<SUI>(1000); // Fee for 100 quantity
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
@@ -281,7 +281,7 @@ fun settle_fee_from_partially_filled_cancelled_order() {
     // filled portion (30%) to the protocol's unsettled fees.
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let mut pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let mut balance_manager = scenario.take_shared_by_id<
             deepbook::balance_manager::BalanceManager,
@@ -291,7 +291,7 @@ fun settle_fee_from_partially_filled_cancelled_order() {
 
         // This call splits the unsettled fee, returning the unfilled portion to the user
         // and adding the filled portion to the protocol's unsettled fees.
-        let coin = fees_manager.settle_user_fees<SUI, USDC, SUI>(
+        let coin = fee_manager.settle_user_fees<SUI, USDC, SUI>(
             &pool,
             &balance_manager,
             order_id,
@@ -307,14 +307,14 @@ fun settle_fee_from_partially_filled_cancelled_order() {
         coin.burn_for_testing();
 
         // The 300 should now be in the protocol unsettled fees bag.
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 300);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<SUI>(), 300);
 
         // Cancel the order on DeepBook
         let clock = scenario.take_shared();
         let trade_proof = balance_manager.generate_proof_as_owner(scenario.ctx());
         pool.cancel_order(&mut balance_manager, &trade_proof, order_id, &clock, scenario.ctx());
 
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
         return_shared(clock);
@@ -324,21 +324,21 @@ fun settle_fee_from_partially_filled_cancelled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
-        settle_protocol_fee_and_record(&mut treasury, &mut fees_manager, &mut receipt);
+        settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
 
-        let (_, total_settled) = fees_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        let (_, total_settled) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
         assert_eq!(total_settled, 300);
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 300);
 
         // Verify unsettled fees are empty but still exist for storage rebate claim
-        assert_eq!(fees_manager.has_protocol_unsettled_fee<SUI>(), true);
-        assert_eq!(fees_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
+        assert_eq!(fee_manager.has_protocol_unsettled_fee<SUI>(), true);
+        assert_eq!(fee_manager.get_protocol_unsettled_fee_balance<SUI>(), 0);
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
     };
 
     end(scenario);

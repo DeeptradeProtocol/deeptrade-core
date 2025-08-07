@@ -14,7 +14,7 @@ For operations that are considered lower-risk or require immediate execution for
 - **Loyalty Program Management** (`loyalty.move`):
   - `add_loyalty_level` / `remove_loyalty_level`: Manages the available loyalty tiers.
   - `grant_user_level` / `revoke_user_level`: Assigns or removes loyalty tiers for specific users.
-- **Fees Management** (`fees_manager.move`):
+- **Fees Management** (`fee_manager.move`):
   - `claim_user_unsettled_fee_storage_rebate_admin`: Claims storage rebate for a user's settled fee.
   - `claim_protocol_unsettled_fee_storage_rebate_admin`: Claims storage rebate for a settled protocol fee.
 

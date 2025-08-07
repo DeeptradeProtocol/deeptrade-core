@@ -6,7 +6,7 @@ use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
 use deepbook::constants;
 use deepbook::pool::Pool;
 use deepbook::pool_tests::place_limit_order;
-use deeptrade_core::fees_manager::{
+use deeptrade_core::fee_manager::{
     FeeManager,
     settle_filled_order_fee_and_record,
     start_protocol_fee_settlement
@@ -32,7 +32,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
     // Step 1: Alice places a buy order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -49,10 +49,10 @@ fun protocol_settles_fee_on_fully_filled_order() {
         );
 
         let fee_balance = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
@@ -85,17 +85,17 @@ fun protocol_settles_fee_on_fully_filled_order() {
     // Step 3: Verify the order is no longer live and the unsettled fee still exists.
     scenario.next_tx(ALICE);
     {
-        let fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         assert_eq!(pool.account_open_orders(&balance_manager).contains(&order_id), false);
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
             true,
         );
 
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -104,14 +104,14 @@ fun protocol_settles_fee_on_fully_filled_order() {
     scenario.next_tx(OWNER); // Protocol action
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -124,11 +124,11 @@ fun protocol_settles_fee_on_fully_filled_order() {
 
         // Verify the unsettled fee is now empty but still exists for future storage rebate claim
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
             true,
         );
         assert_eq!(
-            fees_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
+            fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             0,
         );
 
@@ -136,7 +136,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 1000);
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -152,7 +152,7 @@ fun protocol_settles_fee_on_user_cancelled_order() {
     // Step 1: Alice places an order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -168,9 +168,9 @@ fun protocol_settles_fee_on_user_cancelled_order() {
             &mut scenario,
         );
         let fee_balance = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
@@ -193,14 +193,14 @@ fun protocol_settles_fee_on_user_cancelled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -213,16 +213,16 @@ fun protocol_settles_fee_on_user_cancelled_order() {
 
         // Verify the unsettled fee is now empty but still exists for future storage rebate claim
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
             true,
         );
         assert_eq!(
-            fees_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
+            fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             0,
         );
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -238,7 +238,7 @@ fun protocol_ignores_live_unfilled_order() {
     // Step 1: Alice places an order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -254,9 +254,9 @@ fun protocol_ignores_live_unfilled_order() {
             &mut scenario,
         );
         let fee_balance = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
@@ -264,7 +264,7 @@ fun protocol_ignores_live_unfilled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
@@ -272,7 +272,7 @@ fun protocol_ignores_live_unfilled_order() {
         // This should do nothing because the order is live.
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -285,16 +285,16 @@ fun protocol_ignores_live_unfilled_order() {
 
         // Verify the unsettled fee is still there and has previous balance
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
             true,
         );
         assert_eq!(
-            fees_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
+            fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             1000,
         );
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -310,7 +310,7 @@ fun protocol_ignores_live_partially_filled_order() {
     // Step 1: Alice places an order and adds an unsettled fee.
     scenario.next_tx(ALICE);
     let order_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -326,9 +326,9 @@ fun protocol_ignores_live_partially_filled_order() {
             &mut scenario,
         );
         let fee_balance = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
@@ -360,14 +360,14 @@ fun protocol_ignores_live_partially_filled_order() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -380,16 +380,16 @@ fun protocol_ignores_live_partially_filled_order() {
 
         // Verify the unsettled fee is still there and has previous balance
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
             true,
         );
         assert_eq!(
-            fees_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
+            fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             1000,
         );
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -405,7 +405,7 @@ fun protocol_settles_batch_of_fees_correctly() {
     // === Order A: To be fully filled ===
     scenario.next_tx(ALICE);
     let order_a_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -421,16 +421,16 @@ fun protocol_settles_batch_of_fees_correctly() {
             &mut scenario,
         );
         let fee_balance = balance::create_for_testing<SUI>(1000);
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
     // === Order B: To be cancelled ===
     scenario.next_tx(ALICE);
     let order_b_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -446,16 +446,16 @@ fun protocol_settles_batch_of_fees_correctly() {
             &mut scenario,
         );
         let fee_balance = balance::create_for_testing<SUI>(500);
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
     // === Order C: To remain live ===
     scenario.next_tx(ALICE);
     let order_c_id = {
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let order_info = place_limit_order<SUI, USDC>(
             ALICE,
             pool_id,
@@ -471,9 +471,9 @@ fun protocol_settles_batch_of_fees_correctly() {
             &mut scenario,
         );
         let fee_balance = balance::create_for_testing<SUI>(2000);
-        fees_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
         let order_id = order_info.order_id();
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         order_id
     };
 
@@ -520,7 +520,7 @@ fun protocol_settles_batch_of_fees_correctly() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
@@ -529,7 +529,7 @@ fun protocol_settles_batch_of_fees_correctly() {
         // Settle all three orders
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -537,7 +537,7 @@ fun protocol_settles_batch_of_fees_correctly() {
         ); // Filled
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -545,7 +545,7 @@ fun protocol_settles_batch_of_fees_correctly() {
         ); // Cancelled
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -560,11 +560,11 @@ fun protocol_settles_batch_of_fees_correctly() {
 
         // Verify unsettled fee for filled order A is now empty but still exists for future storage rebate claim
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_a_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_a_id),
             true,
         );
         assert_eq!(
-            fees_manager.get_user_unsettled_fee_balance<SUI>(
+            fee_manager.get_user_unsettled_fee_balance<SUI>(
                 pool_id,
                 balance_manager_id,
                 order_a_id,
@@ -574,11 +574,11 @@ fun protocol_settles_batch_of_fees_correctly() {
 
         // Verify unsettled fee for live order C is untouched.
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_c_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_c_id),
             true,
         );
         assert_eq!(
-            fees_manager.get_user_unsettled_fee_balance<SUI>(
+            fee_manager.get_user_unsettled_fee_balance<SUI>(
                 pool_id,
                 balance_manager_id,
                 order_c_id,
@@ -587,7 +587,7 @@ fun protocol_settles_batch_of_fees_correctly() {
         );
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
@@ -640,7 +640,7 @@ fun protocol_ignores_order_with_no_unsettled_fees() {
     scenario.next_tx(OWNER);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
@@ -648,7 +648,7 @@ fun protocol_ignores_order_with_no_unsettled_fees() {
         // This should do nothing because there are no unsettled fees for this order.
         settle_filled_order_fee_and_record(
             &mut treasury,
-            &mut fees_manager,
+            &mut fee_manager,
             &mut receipt,
             &pool,
             &balance_manager,
@@ -661,7 +661,7 @@ fun protocol_ignores_order_with_no_unsettled_fees() {
 
         // Verify no unsettled fee exists for this order.
         assert_eq!(
-            fees_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
             false,
         );
 
@@ -669,7 +669,7 @@ fun protocol_ignores_order_with_no_unsettled_fees() {
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 0);
 
         return_shared(treasury);
-        return_shared(fees_manager);
+        return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
     };
