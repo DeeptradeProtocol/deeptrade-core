@@ -43,7 +43,7 @@ public struct FeeManager has key {
 /// A capability object that links a user to their `FeeManager`.
 /// This object is owned by the user, making their shared `FeeManager` discoverable.
 /// It does not grant any special permissions but serves as a pointer to the `fee_manager_id`.
-public struct FeesManagerOwnerCap has key, store {
+public struct FeeManagerOwnerCap has key, store {
     id: UID,
     fee_manager_id: ID,
 }
@@ -76,7 +76,7 @@ public struct FeeSettlementReceipt<phantom FeeCoinType> {
 
 /// A hot potato object ensuring a newly created `FeeManager` is shared. It is returned by `new`
 /// and must be consumed by the corresponding share function
-public struct FeesManagerShareTicket { fee_manager_id: ID }
+public struct FeeManagerShareTicket { fee_manager_id: ID }
 
 // === Events ===
 public struct UserUnsettledFeeAdded<phantom CoinType> has copy, drop {
@@ -100,17 +100,17 @@ public struct ProtocolFeesSettled<phantom FeeCoinType> has copy, drop {
     total_fees_settled: u64,
 }
 
-public struct FeesManagerCreated has copy, drop {
+public struct FeeManagerCreated has copy, drop {
     fee_manager_id: ID,
     fee_manager_owner_cap_id: ID,
     owner: address,
 }
 
 // === Public-Mutative Functions ===
-/// Creates an unshared `FeeManager`, `FeesManagerOwnerCap`, and `FeesManagerShareTicket`.
+/// Creates an unshared `FeeManager`, `FeeManagerOwnerCap`, and `FeeManagerShareTicket`.
 /// The manager and ticket must be passed to `share_fee_manager` to finalize creation and enforce
 /// the object sharing policy.
-public fun new(ctx: &mut TxContext): (FeeManager, FeesManagerOwnerCap, FeesManagerShareTicket) {
+public fun new(ctx: &mut TxContext): (FeeManager, FeeManagerOwnerCap, FeeManagerShareTicket) {
     let owner = ctx.sender();
 
     let fee_manager_uid = object::new(ctx);
@@ -118,7 +118,7 @@ public fun new(ctx: &mut TxContext): (FeeManager, FeesManagerOwnerCap, FeesManag
     let fee_manager_id = fee_manager_uid.to_inner();
     let fee_manager_owner_cap_id = fee_manager_owner_cap_uid.to_inner();
 
-    let owner_cap = FeesManagerOwnerCap {
+    let owner_cap = FeeManagerOwnerCap {
         id: fee_manager_owner_cap_uid,
         fee_manager_id,
     };
@@ -130,11 +130,11 @@ public fun new(ctx: &mut TxContext): (FeeManager, FeesManagerOwnerCap, FeesManag
         protocol_unsettled_fees: bag::new(ctx),
     };
 
-    let ticket = FeesManagerShareTicket {
+    let ticket = FeeManagerShareTicket {
         fee_manager_id,
     };
 
-    event::emit(FeesManagerCreated {
+    event::emit(FeeManagerCreated {
         fee_manager_id,
         fee_manager_owner_cap_id,
         owner,
@@ -143,11 +143,11 @@ public fun new(ctx: &mut TxContext): (FeeManager, FeesManagerOwnerCap, FeesManag
     (fee_manager, owner_cap, ticket)
 }
 
-/// Shares the `FeeManager` object, consuming the `FeesManagerShareTicket` to enforce the policy
-public fun share_fee_manager(fee_manager: FeeManager, ticket: FeesManagerShareTicket) {
+/// Shares the `FeeManager` object, consuming the `FeeManagerShareTicket` to enforce the policy
+public fun share_fee_manager(fee_manager: FeeManager, ticket: FeeManagerShareTicket) {
     assert!(fee_manager.id.to_inner() == ticket.fee_manager_id, EInvalidOwner);
 
-    let FeesManagerShareTicket { .. } = ticket;
+    let FeeManagerShareTicket { .. } = ticket;
     transfer::share_object(fee_manager);
 }
 
