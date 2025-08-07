@@ -230,7 +230,7 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
 
     let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
-    let (base_out, quote_out) = calculate_protocol_swap_fee(
+    let (base_out, quote_out) = apply_protocol_swap_fee(
         taker_fee_rate,
         discount_rate,
         base_out,
@@ -277,8 +277,8 @@ fun charge_protocol_swap_fee<CoinType>(
     coin_balance.split(fee)
 }
 
-/// Calculates Deeptrade protocol fees for the output quantities from a DeepBook swap.
-/// Handles fee calculations for both base-to-quote and quote-to-base swaps.
+/// Calculates and applies Deeptrade protocol fee to the output quantity from a DeepBook swap.
+/// Handles fee calculation and application for both base-to-quote and quote-to-base swaps.
 ///
 /// Parameters:
 /// - taker_fee_rate: The taker fee rate to apply to the output quantities
@@ -292,7 +292,7 @@ fun charge_protocol_swap_fee<CoinType>(
 /// - (u64, u64): Tuple containing:
 ///   - Final base token output after fees
 ///   - Final quote token output after fees
-fun calculate_protocol_swap_fee(
+fun apply_protocol_swap_fee(
     taker_fee_rate: u64,
     discount_rate: u64,
     mut base_out: u64,
@@ -300,7 +300,7 @@ fun calculate_protocol_swap_fee(
     base_quantity: u64,
     quote_quantity: u64,
 ): (u64, u64) {
-    // Apply our fee to the output quantities
+    // Apply protocol fee to the output quantity
     // If base_quantity > 0, we're swapping base for quote, so apply fee to quote_out
     // If quote_quantity > 0, we're swapping quote for base, so apply fee to base_out
     if (base_quantity > 0) {
