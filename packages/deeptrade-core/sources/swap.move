@@ -245,7 +245,6 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 }
 
 /// Charges Deeptrade protocol swap fees on a coin and returns the fee amount as a Balance.
-/// Allows collecting fees directly from a coin during swap.
 ///
 /// Parameters:
 /// - coin: The coin to charge fee from
