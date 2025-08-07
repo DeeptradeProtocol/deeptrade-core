@@ -2,23 +2,31 @@
 
 ## Overview
 
-The Deeptrade protocol charges fees for order execution, not for order placement. This is achieved through a dynamic system that holds potential fees for live orders and settles them based on the final outcome. This ensures that users only pay for the portion of their orders that actually execute.
+The Deeptrade protocol charges fees for order execution, not for order placement. This is achieved through a dynamic system that holds unsettled fees for live orders and settles them based on the final outcome. This ensures that users only pay for the portion of their orders that actually execute.
 
-## The Two Unsettled Fee Pools
+## Design Motivation: The FeesManager
 
-All protocol fee operations are managed through the `FeesManager` object, which contains two distinct fee pools stored in Sui `Bag` objects:
+To handle fee management at scale, the protocol introduces a dedicated `FeesManager` object for each user. This design is a direct solution to the challenge of **shared object congestion** on the Sui network, a scenario where too many transactions attempting to modify the same object can lead to performance bottlenecks and transaction failures.
 
-1.  **`user_unsettled_fees`**: This pool holds `UserUnsettledFee` objects, each created for the **maker portion** of a limit order (the part that rests on the book). An object persists in this pool even after its order is filled, until it is processed by a settlement function.
+A more naive approach would be to store all unsettled fee data within the single, global `Treasury` object. However, this would mean that every trade from every user would need to write to the same object, creating a significant point of contention. As the official Sui documentation advises, developers should "avoid using a single shared object if possible" to prevent this exact problem ([Object-Based Local Fee Markets](https://docs.sui.io/guides/developer/advanced/local-fee-markets)).
 
-2.  **`protocol_unsettled_fees`**: This pool aggregates all fees that have been earned by the protocol but not yet transferred to the treasury. This includes taker fees, the protocol's share of maker fees from partially filled orders, and any other protocol-bound fees. It holds `Balance` objects, one for each coin type.
+By giving each user their own `FeesManager`, the system elegantly sidesteps this issue. Instead of a single "hot" object, fee operations are distributed and parallelized across many user-specific objects. This architecture is fundamental to ensuring the protocol remains fast, reliable, and scalable, even under heavy trading volume, as detailed in Sui's approach to [congestion control](https://blog.sui.io/shared-object-congestion-control/).
+
+## The `FeesManager` Structure
+
+All protocol fee operations are managed through the `FeesManager` object. This object has two primary fields for managing fees, both of which are implemented as Sui `Bag` objects:
+
+1.  **`user_unsettled_fees`**: This field holds `UserUnsettledFee` structs, each created for the **maker portion** of a limit order (the part that rests in the order book). A struct persists in this bag even after its order is filled, until it is processed by a settlement function.
+
+2.  **`protocol_unsettled_fees`**: This field aggregates all fees that have been earned by the protocol but not yet transferred to the treasury. This includes taker fees, the protocol's share of maker fees from partially filled orders, and fees charged from swaps. It holds `Balance` values, one for each coin type.
 
 ## The Fee Lifecycle
 
-A fee moves through several stages from its creation to its final collection in the treasury.
+A fee moves through several stages from its creation to its final settlement in the treasury.
 
 ### 1. Fee Creation
 
-When a user places a limit order, any portion that rests on the book is its "maker portion". The potential maker fee is calculated for this portion and stored as a `UserUnsettledFee` object in the `user_unsettled_fees` bag.
+When a user places a limit order, any portion that rests in the order book is its "maker portion". The maker fee is calculated for this portion and stored as a `UserUnsettledFee` struct in the `user_unsettled_fees` bag.
 
 ### 2. Settlement
 
@@ -29,35 +37,36 @@ Settlement happens in one of two ways, depending on how the order is finalized.
 If a user cancels their own order, the associated `UserUnsettledFee` is settled immediately and completely. The logic is as follows:
 
 - The fee for the **unfilled portion** of the order is returned directly to the user as a `Coin`.
-- The fee for the **filled portion** is moved into the `protocol_unsettled_fees` bag for later collection.
-- The original `UserUnsettledFee` object is destroyed, granting the user an immediate gas storage rebate.
+- The fee for the **filled portion** is moved into the `protocol_unsettled_fees` bag for later settlement.
+- The original `UserUnsettledFee` struct is destroyed, granting the user an immediate gas storage rebate.
 
-#### Path B: Order Completion or Protocol-Side Collection
+#### Path B: Order Completion or Protocol-Side Settlement
 
 When an order is completed (e.g., fully filled) or cancelled externally, the fees can be settled permissionlessly by anyone through a batch process.
 
-1.  **Settle Filled Order Fees**: Anyone can call `settle_filled_order_fee_and_record` for any finalized order. This function drains the entire fee from the `UserUnsettledFee` object and sends it directly to the protocol treasury. It intentionally leaves the now-empty `UserUnsettledFee` object in the bag.
+1.  **Settle Filled Order Fees**: Anyone can call `settle_filled_order_fee_and_record` for any finalized order. This function withdraws the entire fee from the `UserUnsettledFee` struct and sends it directly to the protocol treasury. It intentionally leaves the now-empty `UserUnsettledFee` struct in the bag.
 
-2.  **Settle Protocol Fees**: Anyone can call `settle_protocol_fee_and_record`. This function drains the aggregated balances from the `protocol_unsettled_fees` bag and sends them to the treasury. It also leaves empty `Balance` objects in the bag.
+2.  **Settle Protocol Fees**: Anyone can call `settle_protocol_fee_and_record`. This function withdraws the aggregated balances from the `protocol_unsettled_fees` bag and sends them to the treasury. It also leaves empty `Balance` values in the bag.
 
 ### 3. Storage Rebate Claims
 
-The permissionless settlement functions (Path B) intentionally leave empty objects in the bags. This is a crucial design choice that separates fee collection from storage rebate claims.
+The permissionless settlement functions (Path B) intentionally leave empty structs and values in the bags. This is a crucial design choice that separates fee settlement from storage rebate claims.
 
-- The original owner of the `FeesManager` (or a protocol admin) must call one of the `claim_*_storage_rebate` functions to destroy these empty objects and reclaim the initial storage deposit.
-- This two-step process separates permissionless fee collection from permissioned rebate claims. It allows anyone to help settle protocol fees, while ensuring that only the rightful owner of the `FeesManager` can claim the storage rebate for the object they initially paid to create.
+- The user who owns the `FeesManager` has the primary right to reclaim their initial storage deposit by calling one of the `claim_*_storage_rebate` functions. This action destroys the now-empty structs, returning the storage fee to the user.
+
+- For the long-term health and economic sustainability of the protocol, a protocol admin may also perform this cleanup. At a large scale, with potentially millions of users, the gas cost of settling countless small protocol fees can exceed the value of the fees themselves. Reclaiming the storage fees from abandoned structs helps subsidize these essential maintenance operations. This ensures that the fee settlement system remains efficient and economically viable for the protocol, which benefits all users by keeping the platform running smoothly.
 
 ## Order Type Support
 
 The system is designed to handle fees correctly for various order types supported by DeepBook:
 
-- **Immediate-Or-Cancel (IOC)**: An IOC order executes as much as it can immediately (the taker portion) and cancels the rest. It does not rest on the book, so it **does not generate** a `UserUnsettledFee`.
+- **Immediate-Or-Cancel (IOC)**: An IOC order executes as much as it can immediately (the taker portion) and cancels the rest. It does not rest in the book, so it **does not generate** a `UserUnsettledFee`.
 
 - **Fill-Or-Kill (FOK)**: An FOK order must be filled entirely and immediately (as a taker). If it cannot be fully filled, the entire order is rejected. Like IOC, it **does not generate** a `UserUnsettledFee`.
 
 - **Post-Only**: This order type is designed to only be a maker. If any part of the order would execute immediately as a taker, the entire order is rejected. Therefore, it **always generates** a `UserUnsettledFee` for the full order amount.
 
-- **Good-Til-Cancelled (GTC)**: This is the most complex case. A GTC order can be partially taker (if it crosses the spread on placement) and partially maker (the remainder that rests on the book). A `UserUnsettledFee` is created **only for the maker portion**.
+- **Good-Til-Cancelled (GTC)**: This is the most complex case. A GTC order can be fully taker and fully maker, partially taker (if it crosses the spread on placement) and partially maker (the remainder that rests in the book). A `UserUnsettledFee` is created **only for the maker portion**.
 
 ### Examples
 
@@ -71,7 +80,7 @@ The order is either 100% filled (paying only taker fees) or completely rejected.
 The order either remains entirely in the order book or is rejected. If placed successfully, a `UserUnsettledFee` is created for 100% of the order amount.
 
 **GTC Order**:
-If 10% of the order executes immediately, the user pays taker fees for that 10% portion. A `UserUnsettledFee` is created for the remaining 90% maker portion that rests on the order book.
+If 10% of the order executes immediately, the user pays taker fees for that 10% portion. A `UserUnsettledFee` is created for the remaining 90% maker portion that rests in the order book.
 
 ## Protocol Fee Discounts
 
