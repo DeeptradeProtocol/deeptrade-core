@@ -618,7 +618,8 @@ fun add_with_unauthorized_user_fails() {
 public(package) fun setup_fees_manager_test(owner: address): Scenario {
     let mut scenario = test_scenario::begin(owner);
     {
-        let (owner_cap, _) = fees_manager::new(scenario.ctx());
+        let (fees_manager, owner_cap, ticket) = fees_manager::new(scenario.ctx());
+        fees_manager.share_fees_manager(ticket);
         transfer::public_transfer(owner_cap, owner);
     };
     scenario
