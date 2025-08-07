@@ -1628,7 +1628,7 @@ public(package) fun setup_test_environment(): (Scenario, ID, ID, ID) {
         &mut scenario,
     );
 
-    // Setup fees manager
+    // Setup fee manager
     scenario.next_tx(ALICE);
     {
         let (fee_manager, owner_cap, ticket) = fee_manager::new(scenario.ctx());

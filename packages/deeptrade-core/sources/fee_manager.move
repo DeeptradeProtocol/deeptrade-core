@@ -14,7 +14,7 @@ use sui::coin::{Self, Coin};
 use sui::event;
 
 // === Errors ===
-/// Error when the caller is not the owner of the fees manager
+/// Error when the caller is not the owner of the fee manager
 const EInvalidOwner: u64 = 1;
 const EOrderNotLiveOrPartiallyFilled: u64 = 2;
 const EOrderFullyExecuted: u64 = 3;

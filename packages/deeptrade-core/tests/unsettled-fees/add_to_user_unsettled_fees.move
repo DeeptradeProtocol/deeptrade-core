@@ -614,7 +614,7 @@ fun add_with_unauthorized_user_fails() {
     scenario.end();
 }
 
-/// Setup a test scenario with an initialized fees manager
+/// Setup a test scenario with an initialized fee manager
 public(package) fun setup_fee_manager_test(owner: address): Scenario {
     let mut scenario = test_scenario::begin(owner);
     {
