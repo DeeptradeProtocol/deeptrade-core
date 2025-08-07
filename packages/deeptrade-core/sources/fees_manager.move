@@ -81,7 +81,7 @@ public struct FeesManagerShareTicket { fees_manager_id: ID }
 // === Events ===
 public struct UserUnsettledFeeAdded<phantom CoinType> has copy, drop {
     key: UserUnsettledFeeKey,
-    fee_value: u64,
+    unsettled_fee_value: u64,
     order_quantity: u64,
     maker_quantity: u64,
 }
@@ -384,7 +384,7 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
 
     event::emit(UserUnsettledFeeAdded<CoinType> {
         key: user_unsettled_fee_key,
-        fee_value,
+        unsettled_fee_value: fee_value,
         order_quantity,
         maker_quantity,
     });
