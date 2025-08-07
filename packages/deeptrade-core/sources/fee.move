@@ -22,9 +22,7 @@ use deeptrade_core::ticket::{
 };
 use pyth::price_info::PriceInfoObject;
 use std::u64;
-use sui::balance::Balance;
 use sui::clock::Clock;
-use sui::coin::Coin;
 use sui::event;
 use sui::table::{Self, Table};
 
@@ -36,7 +34,6 @@ const EInvalidDiscountPrecision: u64 = 4;
 const EDiscountOutOfRange: u64 = 5;
 const EInvalidRatioSum: u64 = 6;
 const EZeroOrderAmount: u64 = 7;
-const EInsufficientCoinBalance: u64 = 8;
 
 // === Constants ===
 /// The multiple that fee rates must adhere to, aligned with DeepBook (0.01 bps = 0.0001%)
@@ -519,30 +516,6 @@ public(package) fun calculate_input_coin_deepbook_fee(amount: u64, taker_fee: u6
 /// - u64: The calculated fee amount
 public(package) fun calculate_fee_by_rate(amount: u64, fee_rate: u64): u64 {
     math::mul(amount, fee_rate)
-}
-
-/// Charges a swap fee on a coin and returns the fee amount as a Balance.
-/// Allows collecting fees directly from a coin during swap operations.
-///
-/// Parameters:
-/// - coin: The coin to charge fee from
-/// - fee_bps: The fee rate in billionths
-///
-/// Returns:
-/// - Balance<CoinType>: The fee amount as a Balance object
-public(package) fun charge_swap_fee<CoinType>(
-    coin: &mut Coin<CoinType>,
-    fee_bps: u64,
-    discount_rate: u64,
-): Balance<CoinType> {
-    let coin_balance = coin.balance_mut();
-    let coin_value = coin_balance.value();
-    let mut fee = calculate_fee_by_rate(coin_value, fee_bps);
-    fee = apply_discount(fee, discount_rate);
-
-    assert!(coin_value >= fee, EInsufficientCoinBalance);
-
-    coin_balance.split(fee)
 }
 
 // === Private Functions ===

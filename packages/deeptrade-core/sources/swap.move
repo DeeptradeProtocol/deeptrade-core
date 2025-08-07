@@ -1,10 +1,11 @@
 module deeptrade_core::swap;
 
 use deepbook::pool::Pool;
-use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee, TradingFeeConfig};
+use deeptrade_core::fee::{calculate_fee_by_rate, TradingFeeConfig};
 use deeptrade_core::fees_manager::FeesManager;
 use deeptrade_core::helper::apply_discount;
 use deeptrade_core::loyalty::LoyaltyProgram;
+use sui::balance::Balance;
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event;
@@ -12,6 +13,7 @@ use sui::event;
 // === Errors ===
 /// Error when the final output amount is below the user's specified minimum
 const EInsufficientOutputAmount: u64 = 1;
+const EInsufficientCoinBalance: u64 = 2;
 
 // === Events ===
 public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop {
@@ -79,7 +81,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
         .input_coin_fee_type_rates();
 
     let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
-    let fee_balance = charge_swap_fee(&mut result_quote, taker_fee_rate, discount_rate);
+    let fee_balance = charge_protocol_swap_fee(&mut result_quote, taker_fee_rate, discount_rate);
     let fee_amount = fee_balance.value();
     fees_manager.add_to_protocol_unsettled_fees(fee_balance, ctx);
 
@@ -152,7 +154,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
         .get_pool_fee_config(pool)
         .input_coin_fee_type_rates();
     let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
-    let fee_balance = charge_swap_fee(&mut result_base, taker_fee_rate, discount_rate);
+    let fee_balance = charge_protocol_swap_fee(&mut result_base, taker_fee_rate, discount_rate);
     let fee_amount = fee_balance.value();
     fees_manager.add_to_protocol_unsettled_fees(fee_balance, ctx);
 
@@ -219,7 +221,7 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
 
     let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
 
-    let (base_out, quote_out) = apply_treasury_fees(
+    let (base_out, quote_out) = calculate_protocol_swap_fee(
         taker_fee_rate,
         discount_rate,
         base_out,
@@ -242,8 +244,32 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
     assert!(coin.value() >= minimum, EInsufficientOutputAmount);
 }
 
-/// Applies Deeptrade protocol fees to the output quantities from a DeepBook swap operation.
-/// This function handles fee calculations for both base-to-quote and quote-to-base swaps.
+/// Charges Deeptrade protocol swap fees on a coin and returns the fee amount as a Balance.
+/// Allows collecting fees directly from a coin during swap.
+///
+/// Parameters:
+/// - coin: The coin to charge fee from
+/// - fee_bps: The fee rate in billionths
+///
+/// Returns:
+/// - Balance<CoinType>: The fee amount as a Balance object
+fun charge_protocol_swap_fee<CoinType>(
+    coin: &mut Coin<CoinType>,
+    fee_bps: u64,
+    discount_rate: u64,
+): Balance<CoinType> {
+    let coin_balance = coin.balance_mut();
+    let coin_value = coin_balance.value();
+    let mut fee = calculate_fee_by_rate(coin_value, fee_bps);
+    fee = apply_discount(fee, discount_rate);
+
+    assert!(coin_value >= fee, EInsufficientCoinBalance);
+
+    coin_balance.split(fee)
+}
+
+/// Calculates Deeptrade protocol fees for the output quantities from a DeepBook swap.
+/// Handles fee calculations for both base-to-quote and quote-to-base swaps.
 ///
 /// Parameters:
 /// - taker_fee_rate: The taker fee rate to apply to the output quantities
@@ -257,7 +283,7 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// - (u64, u64): Tuple containing:
 ///   - Final base token output after fees
 ///   - Final quote token output after fees
-fun apply_treasury_fees(
+fun calculate_protocol_swap_fee(
     taker_fee_rate: u64,
     discount_rate: u64,
     mut base_out: u64,
