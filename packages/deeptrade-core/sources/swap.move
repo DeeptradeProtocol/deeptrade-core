@@ -2,7 +2,7 @@ module deeptrade_core::swap;
 
 use deepbook::pool::Pool;
 use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee, TradingFeeConfig};
-use deeptrade_core::fees_manager::FeesManager;
+use deeptrade_core::fees_manager::FeeManager;
 use deeptrade_core::treasury::Treasury;
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
@@ -48,7 +48,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// 4. Returns remaining base and received quote tokens
 public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     treasury: &Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     pool: &mut Pool<BaseToken, QuoteToken>,
     base_in: Coin<BaseToken>,
@@ -122,7 +122,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// 4. Returns received base and remaining quote tokens
 public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     treasury: &Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     pool: &mut Pool<BaseToken, QuoteToken>,
     quote_in: Coin<QuoteToken>,

@@ -3,7 +3,7 @@ module deeptrade_core::claim_protocol_unsettled_fee_storage_rebate_tests;
 
 use deepbook::balance_manager_tests::USDC;
 use deeptrade_core::fees_manager::{
-    FeesManager,
+    FeeManager,
     claim_protocol_unsettled_fee_storage_rebate,
     claim_protocol_unsettled_fee_storage_rebate_admin,
     settle_protocol_fee_and_record,
@@ -39,7 +39,7 @@ fun owner_claims_rebate_successfully() {
     // Claim the storage rebate as the fee manager owner
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         claim_protocol_unsettled_fee_storage_rebate<SUI>(&mut fees_manager, scenario.ctx());
 
         // Verify the unsettled fee object has been destroyed
@@ -59,7 +59,7 @@ fun unauthorized_user_claim_fails() {
     // Attempt to claim as an unrelated user
     scenario.next_tx(UNRELATED_USER);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         claim_protocol_unsettled_fee_storage_rebate<SUI>(&mut fees_manager, scenario.ctx());
         return_shared(fees_manager);
     };
@@ -75,7 +75,7 @@ fun claim_for_unsettled_fee_fails() {
     // Step 1: Add a protocol fee, but do not settle it.
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let fee_balance = balance::create_for_testing<SUI>(1000);
         fees_manager.add_to_protocol_unsettled_fees(
             fee_balance,
@@ -87,7 +87,7 @@ fun claim_for_unsettled_fee_fails() {
     // Step 2: Attempt to claim the rebate without settling the fee first.
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         claim_protocol_unsettled_fee_storage_rebate<SUI>(&mut fees_manager, scenario.ctx());
         return_shared(fees_manager);
     };
@@ -102,7 +102,7 @@ fun claim_for_non_existent_fee_is_noop() {
 
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
 
         // Verify that the fee does not exist for USDC.
         assert_eq!(fees_manager.has_protocol_unsettled_fee<USDC>(), false);
@@ -130,7 +130,7 @@ fun admin_claims_rebate_successfully() {
     let multisig_address = get_test_multisig_address();
     scenario.next_tx(multisig_address);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         claim_protocol_unsettled_fee_storage_rebate_admin<SUI>(
@@ -160,7 +160,7 @@ fun non_multisig_admin_claim_fails() {
     // Attempt to claim as a regular user, not the multisig admin
     scenario.next_tx(UNRELATED_USER);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         claim_protocol_unsettled_fee_storage_rebate_admin<SUI>(
@@ -188,7 +188,7 @@ public(package) fun setup_protocol_fee_for_rebate(): (Scenario, ID) {
     // Step 1: Add a fee to the protocol's unsettled fees.
     scenario.next_tx(ALICE);
     {
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let fee_balance = balance::create_for_testing<SUI>(1000);
         fees_manager.add_to_protocol_unsettled_fees(
             fee_balance,
@@ -202,7 +202,7 @@ public(package) fun setup_protocol_fee_for_rebate(): (Scenario, ID) {
     scenario.next_tx(BOB);
     {
         let mut treasury = scenario.take_shared<Treasury>();
-        let mut fees_manager = scenario.take_shared_by_id<FeesManager>(fees_manager_id);
+        let mut fees_manager = scenario.take_shared_by_id<FeeManager>(fees_manager_id);
         let mut receipt = start_protocol_fee_settlement<SUI>();
 
         settle_protocol_fee_and_record<SUI>(

@@ -3,7 +3,7 @@ module deeptrade_core::add_to_user_unsettled_fees_tests;
 
 use deepbook::constants;
 use deepbook::order_info::{Self, OrderInfo};
-use deeptrade_core::fees_manager::{Self, FeesManager};
+use deeptrade_core::fees_manager::{Self, FeeManager};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::object::id_from_address;
@@ -29,7 +29,7 @@ fun live_order_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_live_order_info(
             pool_id,
@@ -91,7 +91,7 @@ fun partially_filled_order_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_partially_filled_order_info(
             pool_id,
@@ -153,7 +153,7 @@ fun join_existing_fee_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let ctx = scenario.ctx();
         let order_info = create_live_order_info(
             pool_id,
@@ -199,7 +199,7 @@ fun cancelled_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_cancelled_order_info(
             pool_id,
@@ -230,7 +230,7 @@ fun fully_executed_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_live_order_info(
             pool_id,
@@ -260,7 +260,7 @@ fun zero_fee_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(0); // zero fee
         let order_info = create_live_order_info(
             pool_id,
@@ -287,7 +287,7 @@ fun different_coin_types() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let ctx = scenario.ctx();
 
         let pool_id = id_from_address(@0x1);
@@ -398,7 +398,7 @@ fun cross_pool_scenarios() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let ctx = scenario.ctx();
 
         let pool_id_1 = id_from_address(@0x1);
@@ -532,7 +532,7 @@ fun filled_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_filled_order_info(
             pool_id,
@@ -563,7 +563,7 @@ fun expired_order_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_expired_order_info(
             pool_id,
@@ -594,7 +594,7 @@ fun add_with_unauthorized_user_fails() {
 
     scenario.next_tx(UNAUTHORIZED);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
         let order_info = create_live_order_info(
             pool_id,

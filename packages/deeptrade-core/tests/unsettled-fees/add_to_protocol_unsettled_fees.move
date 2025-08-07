@@ -2,7 +2,7 @@
 module deeptrade_core::add_to_protocol_unsettled_fees_tests;
 
 use deeptrade_core::add_to_user_unsettled_fees_tests::setup_fees_manager_test;
-use deeptrade_core::fees_manager::FeesManager;
+use deeptrade_core::fees_manager::FeeManager;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::sui::SUI;
@@ -20,7 +20,7 @@ fun add_fee_for_new_coin_type_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(fee_amount);
 
         // Verify fee doesn't exist before adding
@@ -48,7 +48,7 @@ fun aggregate_fees_for_existing_coin_type_success() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let ctx = scenario.ctx();
         let fee_balance_1 = balance::create_for_testing<SUI>(fee_amount_1);
         let fee_balance_2 = balance::create_for_testing<SUI>(fee_amount_2);
@@ -75,7 +75,7 @@ fun handle_zero_value_fee_gracefully() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(0);
 
         // Verify fee doesn't exist
@@ -101,7 +101,7 @@ fun handle_multiple_distinct_coin_types_correctly() {
 
     scenario.next_tx(OWNER);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let ctx = scenario.ctx();
         let sui_fee = balance::create_for_testing<SUI>(sui_fee_amount);
         let deep_fee = balance::create_for_testing<DEEP>(deep_fee_amount);
@@ -134,7 +134,7 @@ fun add_with_unauthorized_user_fails() {
 
     scenario.next_tx(UNAUTHORIZED);
     {
-        let mut fees_manager = scenario.take_shared<FeesManager>();
+        let mut fees_manager = scenario.take_shared<FeeManager>();
         let fee_balance = balance::create_for_testing<SUI>(1000);
 
         fees_manager.add_to_protocol_unsettled_fees(fee_balance, scenario.ctx());

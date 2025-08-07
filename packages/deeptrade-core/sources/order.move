@@ -10,7 +10,7 @@ use deeptrade_core::fee::{
     calculate_input_coin_deepbook_fee,
     calculate_deep_reserves_coverage_order_fee
 };
-use deeptrade_core::fees_manager::FeesManager;
+use deeptrade_core::fees_manager::FeeManager;
 use deeptrade_core::helper::{
     calculate_deep_required,
     transfer_if_nonzero,
@@ -164,7 +164,7 @@ public struct TakerFeeCharged<phantom CoinType> has copy, drop {
 /// - clock: System clock for timestamp verification
 public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     treasury: &mut Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -301,7 +301,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 /// - clock: System clock for timestamp verification
 public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     treasury: &mut Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -423,7 +423,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     treasury: &Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -526,7 +526,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// - clock: System clock for order book state
 public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
     treasury: &Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -624,7 +624,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     treasury: &Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -723,7 +723,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// - clock: System clock for timestamp verification
 public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     treasury: &Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -809,7 +809,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 /// Returns the settled fees as a coin of the specified type
 public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
     treasury: &Treasury,
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     pool: &mut Pool<BaseAsset, QuoteAsset>,
     balance_manager: &mut BalanceManager,
     order_id: u128,
@@ -1239,7 +1239,7 @@ public(package) fun validate_fees_against_max(
 /// - discount_rate: Discount rate applied to fees
 /// - deep_fee_type: Whether using DEEP fee type rates (true) or input coin fee type rates (false)
 public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
@@ -1683,7 +1683,7 @@ fun execute_coverage_fee_plan(
 ///
 /// Aborts if the plan indicates the user has insufficient funds.
 fun execute_protocol_fee_plan<CoinType>(
-    fees_manager: &mut FeesManager,
+    fees_manager: &mut FeeManager,
     balance_manager: &mut BalanceManager,
     coin: &mut Coin<CoinType>,
     order_info: &OrderInfo,
