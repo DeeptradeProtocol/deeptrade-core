@@ -258,6 +258,7 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// Parameters:
 /// - coin: The coin to charge fee from
 /// - fee_bps: The fee rate in billionths
+/// - discount_rate: The discount rate to apply to the calculated fees
 ///
 /// Returns:
 /// - Balance<CoinType>: The fee amount as a Balance object
