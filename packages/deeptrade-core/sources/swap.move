@@ -3,6 +3,7 @@ module deeptrade_core::swap;
 use deepbook::pool::Pool;
 use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee, TradingFeeConfig};
 use deeptrade_core::fees_manager::FeesManager;
+use deeptrade_core::treasury::Treasury;
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event;
@@ -27,6 +28,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// Swaps a specific amount of base tokens for quote tokens using input fee model.
 ///
 /// Parameters:
+/// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - pool: The DeepBook liquidity pool for this trading pair
@@ -45,6 +47,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns remaining base and received quote tokens
 public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
+    treasury: &Treasury,
     fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -54,6 +57,8 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (Coin<BaseToken>, Coin<QuoteToken>) {
+    treasury.verify_version();
+
     let base_quantity = base_in.value();
 
     // Execute swap through DeepBook's native swap function with input fee model
@@ -97,6 +102,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// Swaps a specific amount of quote tokens for base tokens using input fee model.
 ///
 /// Parameters:
+/// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - pool: The DeepBook liquidity pool for this trading pair
@@ -115,6 +121,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns received base and remaining quote tokens
 public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
+    treasury: &Treasury,
     fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -124,6 +131,8 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (Coin<BaseToken>, Coin<QuoteToken>) {
+    treasury.verify_version();
+
     let quote_quantity = quote_in.value();
 
     // Execute swap through DeepBook's native swap function with input fee model

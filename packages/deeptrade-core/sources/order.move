@@ -405,6 +405,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// to be used.
 ///
 /// Parameters:
+/// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
@@ -421,6 +422,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
+    treasury: &Treasury,
     fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
@@ -438,6 +440,8 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
+    treasury.verify_version();
+
     // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
     // Verify the order expire timestamp is the max possible expire timestamp
     let max_expire_timestamp = constants::max_u64();
@@ -507,6 +511,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// to be used.
 ///
 /// Parameters:
+/// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
@@ -520,6 +525,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for order book state
 public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
+    treasury: &Treasury,
     fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
@@ -534,6 +540,8 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
+    treasury.verify_version();
+
     // Verify the self matching option is self matching allowed. Read more about self matching option
     // limitations in docs/unsettled-fees.md
     assert!(
@@ -598,6 +606,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
+/// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
@@ -614,6 +623,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
+    treasury: &Treasury,
     fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
@@ -631,6 +641,8 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
+    treasury.verify_version();
+
     // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
     // Verify the order expire timestamp is the max possible expire timestamp
     let max_expire_timestamp = constants::max_u64();
@@ -696,6 +708,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
+/// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fees_manager: User's fees manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
@@ -709,6 +722,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_market_order_input_fee<BaseToken, QuoteToken>(
+    treasury: &Treasury,
     fees_manager: &mut FeesManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
@@ -723,6 +737,8 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     clock: &Clock,
     ctx: &mut TxContext,
 ): (OrderInfo) {
+    treasury.verify_version();
+
     // Verify the self matching option is self matching allowed. Read more about self matching option
     // limitations in docs/unsettled-fees.md
     assert!(
@@ -783,6 +799,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 /// Cancels an order and settles any associated with the order unsettled fees
 ///
 /// Parameters:
+/// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fees_manager: User's fees manager for settling fees
 /// - pool: The trading pool where the order was placed
 /// - balance_manager: User's balance manager
@@ -791,6 +808,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 ///
 /// Returns the settled fees as a coin of the specified type
 public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
+    treasury: &Treasury,
     fees_manager: &mut FeesManager,
     pool: &mut Pool<BaseAsset, QuoteAsset>,
     balance_manager: &mut BalanceManager,
@@ -798,6 +816,8 @@ public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinT
     clock: &Clock,
     ctx: &mut TxContext,
 ): Coin<UnsettledFeeCoinType> {
+    treasury.verify_version();
+
     let settled_fees = fees_manager.settle_user_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
         pool,
         balance_manager,
