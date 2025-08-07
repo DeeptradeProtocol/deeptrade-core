@@ -825,6 +825,7 @@ public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinT
         ctx,
     );
 
+    // Proof generation requires the transaction sender to be the balance manager owner
     let trade_proof = balance_manager.generate_proof_as_owner(ctx);
     pool.cancel_order(balance_manager, &trade_proof, order_id, clock, ctx);
 
