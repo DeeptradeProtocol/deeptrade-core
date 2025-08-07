@@ -112,5 +112,6 @@ Additionally, the system includes a **Loyalty Program** that provides additional
 
 ### 4. External Order Cancellation
 
-- **Risk**: If a user cancels an order directly on DeepBook without using the `deeptrade-core` settlement functions, they forfeit any potential refund from their unsettled maker fee.
-- **Reason**: The `settle_user_fees` function, which calculates the user's refund, must be called _before_ an order is cancelled. If an order is cancelled externally, this function can no longer be used. The only remaining way to process the fee is through the permissionless `settle_filled_order_fee_and_record` function, which sends the entire fee amount to the protocol.
+- **Limitation**: To receive the user‑owed maker fee for the unfilled portion (returned as a `Coin<FeeCoinType>`), an order should be cancelled using a protocol function that settles fees in the same step (for example, `cancel_order_and_settle_fees`). If an order is cancelled on an external platform that doesn’t run this function, the user‑owed amount cannot be settled afterwards.
+
+- **Reason**: Settlement requires the order’s final fill state. After an external cancellation, the order is removed from the book and this state is no longer accessible to the protocol, so the unfilled portion cannot be computed or returned.
