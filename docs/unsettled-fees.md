@@ -6,7 +6,7 @@ The Deeptrade protocol charges fees for order execution, not for order placement
 
 ## The Two Unsettled Fee Pools
 
-All protocol fee operations are managed through the `FeesManager` object, which contains two distinct fee pools stored in Sui `Bag` objects:
+All protocol fee operations are managed through the `FeeManager` object, which contains two distinct fee pools stored in Sui `Bag` objects:
 
 1.  **`user_unsettled_fees`**: This pool holds `UserUnsettledFee` objects, each created for the **maker portion** of a limit order (the part that rests on the book). An object persists in this pool even after its order is filled, until it is processed by a settlement function.
 
@@ -44,8 +44,8 @@ When an order is completed (e.g., fully filled) or cancelled externally, the fee
 
 The permissionless settlement functions (Path B) intentionally leave empty objects in the bags. This is a crucial design choice that separates fee collection from storage rebate claims.
 
-- The original owner of the `FeesManager` (or a protocol admin) must call one of the `claim_*_storage_rebate` functions to destroy these empty objects and reclaim the initial storage deposit.
-- This two-step process separates permissionless fee collection from permissioned rebate claims. It allows anyone to help settle protocol fees, while ensuring that only the rightful owner of the `FeesManager` can claim the storage rebate for the object they initially paid to create.
+- The original owner of the `FeeManager` (or a protocol admin) must call one of the `claim_*_storage_rebate` functions to destroy these empty objects and reclaim the initial storage deposit.
+- This two-step process separates permissionless fee collection from permissioned rebate claims. It allows anyone to help settle protocol fees, while ensuring that only the rightful owner of the `FeeManager` can claim the storage rebate for the object they initially paid to create.
 
 ## Order Type Support
 

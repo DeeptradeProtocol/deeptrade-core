@@ -1,4 +1,4 @@
-module deeptrade_core::fees_manager;
+module deeptrade_core::fee_manager;
 
 use deepbook::balance_manager::BalanceManager;
 use deepbook::constants::{live, partially_filled};
@@ -14,7 +14,7 @@ use sui::coin::{Self, Coin};
 use sui::event;
 
 // === Errors ===
-/// Error when the caller is not the owner of the fees manager
+/// Error when the caller is not the owner of the fee manager
 const EInvalidOwner: u64 = 1;
 const EOrderNotLiveOrPartiallyFilled: u64 = 2;
 const EOrderFullyExecuted: u64 = 3;
@@ -33,19 +33,19 @@ const ESenderIsNotMultisig: u64 = 10;
 
 // === Structs ===
 /// A shared object that manages a user's fee-related operations. Required for trading
-public struct FeesManager has key {
+public struct FeeManager has key {
     id: UID,
     owner: address,
     user_unsettled_fees: Bag,
     protocol_unsettled_fees: Bag,
 }
 
-/// A capability object that links a user to their `FeesManager`.
-/// This object is owned by the user, making their shared `FeesManager` discoverable.
-/// It does not grant any special permissions but serves as a pointer to the `fees_manager_id`.
-public struct FeesManagerOwnerCap has key, store {
+/// A capability object that links a user to their `FeeManager`.
+/// This object is owned by the user, making their shared `FeeManager` discoverable.
+/// It does not grant any special permissions but serves as a pointer to the `fee_manager_id`.
+public struct FeeManagerOwnerCap has key, store {
     id: UID,
-    fees_manager_id: ID,
+    fee_manager_id: ID,
 }
 
 /// Key for storing a `UserUnsettledFee` in the `user_unsettled_fees` bag
@@ -74,14 +74,14 @@ public struct FeeSettlementReceipt<phantom FeeCoinType> {
     total_fees_settled: u64,
 }
 
-/// A hot potato object ensuring a newly created `FeesManager` is shared. It is returned by `new`
+/// A hot potato object ensuring a newly created `FeeManager` is shared. It is returned by `new`
 /// and must be consumed by the corresponding share function
-public struct FeesManagerShareTicket { fees_manager_id: ID }
+public struct FeeManagerShareTicket { fee_manager_id: ID }
 
 // === Events ===
 public struct UserUnsettledFeeAdded<phantom CoinType> has copy, drop {
     key: UserUnsettledFeeKey,
-    fee_value: u64,
+    unsettled_fee_value: u64,
     order_quantity: u64,
     maker_quantity: u64,
 }
@@ -100,55 +100,55 @@ public struct ProtocolFeesSettled<phantom FeeCoinType> has copy, drop {
     total_fees_settled: u64,
 }
 
-public struct FeesManagerCreated has copy, drop {
-    fees_manager_id: ID,
-    fees_manager_owner_cap_id: ID,
+public struct FeeManagerCreated has copy, drop {
+    fee_manager_id: ID,
+    fee_manager_owner_cap_id: ID,
     owner: address,
 }
 
 // === Public-Mutative Functions ===
-/// Creates an unshared `FeesManager`, `FeesManagerOwnerCap`, and `FeesManagerShareTicket`.
-/// The manager and ticket must be passed to `share_fees_manager` to finalize creation and enforce
+/// Creates an unshared `FeeManager`, `FeeManagerOwnerCap`, and `FeeManagerShareTicket`.
+/// The manager and ticket must be passed to `share_fee_manager` to finalize creation and enforce
 /// the object sharing policy.
-public fun new(ctx: &mut TxContext): (FeesManager, FeesManagerOwnerCap, FeesManagerShareTicket) {
+public fun new(ctx: &mut TxContext): (FeeManager, FeeManagerOwnerCap, FeeManagerShareTicket) {
     let owner = ctx.sender();
 
-    let fees_manager_uid = object::new(ctx);
-    let fees_manager_owner_cap_uid = object::new(ctx);
-    let fees_manager_id = fees_manager_uid.to_inner();
-    let fees_manager_owner_cap_id = fees_manager_owner_cap_uid.to_inner();
+    let fee_manager_uid = object::new(ctx);
+    let fee_manager_owner_cap_uid = object::new(ctx);
+    let fee_manager_id = fee_manager_uid.to_inner();
+    let fee_manager_owner_cap_id = fee_manager_owner_cap_uid.to_inner();
 
-    let owner_cap = FeesManagerOwnerCap {
-        id: fees_manager_owner_cap_uid,
-        fees_manager_id,
+    let owner_cap = FeeManagerOwnerCap {
+        id: fee_manager_owner_cap_uid,
+        fee_manager_id,
     };
 
-    let fees_manager = FeesManager {
-        id: fees_manager_uid,
+    let fee_manager = FeeManager {
+        id: fee_manager_uid,
         owner,
         user_unsettled_fees: bag::new(ctx),
         protocol_unsettled_fees: bag::new(ctx),
     };
 
-    let ticket = FeesManagerShareTicket {
-        fees_manager_id,
+    let ticket = FeeManagerShareTicket {
+        fee_manager_id,
     };
 
-    event::emit(FeesManagerCreated {
-        fees_manager_id,
-        fees_manager_owner_cap_id,
+    event::emit(FeeManagerCreated {
+        fee_manager_id,
+        fee_manager_owner_cap_id,
         owner,
     });
 
-    (fees_manager, owner_cap, ticket)
+    (fee_manager, owner_cap, ticket)
 }
 
-/// Shares the `FeesManager` object, consuming the `FeesManagerShareTicket` to enforce the policy
-public fun share_fees_manager(fees_manager: FeesManager, ticket: FeesManagerShareTicket) {
-    assert!(fees_manager.id.to_inner() == ticket.fees_manager_id, EInvalidOwner);
+/// Shares the `FeeManager` object, consuming the `FeeManagerShareTicket` to enforce the policy
+public fun share_fee_manager(fee_manager: FeeManager, ticket: FeeManagerShareTicket) {
+    assert!(fee_manager.id.to_inner() == ticket.fee_manager_id, EInvalidOwner);
 
-    let FeesManagerShareTicket { .. } = ticket;
-    transfer::share_object(fees_manager);
+    let FeeManagerShareTicket { .. } = ticket;
+    transfer::share_object(fee_manager);
 }
 
 /// Creates a `FeeSettlementReceipt` to begin a batch fee settlement process
@@ -166,7 +166,7 @@ public fun start_protocol_fee_settlement<FeeCoinType>(): FeeSettlementReceipt<Fe
 /// or has no unsettled fee.
 public fun settle_filled_order_fee_and_record<BaseToken, QuoteToken, FeeCoinType>(
     treasury: &mut Treasury,
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     receipt: &mut FeeSettlementReceipt<FeeCoinType>,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
@@ -185,11 +185,12 @@ public fun settle_filled_order_fee_and_record<BaseToken, QuoteToken, FeeCoinType
         order_id,
     };
 
-    if (!fees_manager.user_unsettled_fees.contains(filled_order_fee_key)) return;
+    // No unsettled fee exists if the fee was already settled or never added
+    if (!fee_manager.user_unsettled_fees.contains(filled_order_fee_key)) return;
 
     // We borrow the object to leave it empty, so the user can later claim a storage rebate
     // via `claim_user_unsettled_fee_storage_rebate`
-    let filled_order_fee: &mut UserUnsettledFee<FeeCoinType> = fees_manager
+    let filled_order_fee: &mut UserUnsettledFee<FeeCoinType> = fee_manager
         .user_unsettled_fees
         .borrow_mut(filled_order_fee_key);
     let filled_order_fee_balance = filled_order_fee.balance.withdraw_all();
@@ -211,17 +212,17 @@ public fun settle_filled_order_fee_and_record<BaseToken, QuoteToken, FeeCoinType
 /// is found for the given coin type.
 public fun settle_protocol_fee_and_record<FeeCoinType>(
     treasury: &mut Treasury,
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     receipt: &mut FeeSettlementReceipt<FeeCoinType>,
 ) {
     treasury.verify_version();
 
     let protocol_unsettled_fee_key = ProtocolUnsettledFeeKey<FeeCoinType> {};
-    if (!fees_manager.protocol_unsettled_fees.contains(protocol_unsettled_fee_key)) return;
+    if (!fee_manager.protocol_unsettled_fees.contains(protocol_unsettled_fee_key)) return;
 
     // We borrow the object to leave it empty, so the user can later claim a storage rebate
     // via `claim_protocol_unsettled_fee_storage_rebate`
-    let protocol_unsettled_fee: &mut Balance<FeeCoinType> = fees_manager
+    let protocol_unsettled_fee: &mut Balance<FeeCoinType> = fee_manager
         .protocol_unsettled_fees
         .borrow_mut(protocol_unsettled_fee_key);
     let protocol_unsettled_fee_balance = protocol_unsettled_fee.withdraw_all();
@@ -250,19 +251,19 @@ public fun finish_protocol_fee_settlement<FeeCoinType>(receipt: FeeSettlementRec
 
 /// Claims the storage rebate for a settled user fee by destroying the empty fee object.
 ///
-/// Can only be called by the `FeesManager` owner after a fee has been collected via
+/// Can only be called by the `FeeManager` owner after a fee has been collected via
 /// `settle_filled_order_fee_and_record`. Aborts if the fee object is not empty.
 public fun claim_user_unsettled_fee_storage_rebate<BaseToken, QuoteToken, FeeCoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     order_id: u128,
     ctx: &mut TxContext,
 ) {
-    fees_manager.validate_owner(ctx);
+    fee_manager.validate_owner(ctx);
 
     claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
-        fees_manager,
+        fee_manager,
         pool,
         balance_manager,
         order_id,
@@ -274,7 +275,7 @@ public fun claim_user_unsettled_fee_storage_rebate<BaseToken, QuoteToken, FeeCoi
 /// This is a protected maintenance function to clean up empty fee objects that users have
 /// not claimed. Aborts if the fee object is not empty.
 public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, FeeCoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     _admin: &AdminCap,
@@ -290,7 +291,7 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
     );
 
     claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
-        fees_manager,
+        fee_manager,
         pool,
         balance_manager,
         order_id,
@@ -299,15 +300,15 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
 
 /// Claims the storage rebate for a settled protocol fee by destroying the empty balance.
 ///
-/// Can only be called by the `FeesManager` owner after a fee has been collected via
+/// Can only be called by the `FeeManager` owner after a fee has been collected via
 /// `settle_protocol_fee_and_record`. Aborts if the balance is not empty.
 public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     ctx: &mut TxContext,
 ) {
-    fees_manager.validate_owner(ctx);
+    fee_manager.validate_owner(ctx);
 
-    claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager);
+    claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
 }
 
 /// Allows a protocol admin to claim a protocol unsettled fee storage rebate.
@@ -315,7 +316,7 @@ public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
 /// This is a protected maintenance function to clean up empty fee balances that have not
 /// been claimed. Aborts if the balance is not empty.
 public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     _admin: &AdminCap,
     pks: vector<vector<u8>>,
     weights: vector<u8>,
@@ -327,7 +328,7 @@ public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
         ESenderIsNotMultisig,
     );
 
-    claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager);
+    claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
 }
 
 // === Public-Package Functions ===
@@ -336,12 +337,12 @@ public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
 /// This fee is linked to the live order and settled later. Aborts if the order is invalid
 /// (e.g., not live, zero fee) or if an unsettled fee already exists for it.
 public(package) fun add_to_user_unsettled_fees<CoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     fee: Balance<CoinType>,
     order_info: &OrderInfo,
     ctx: &TxContext,
 ) {
-    fees_manager.validate_owner(ctx);
+    fee_manager.validate_owner(ctx);
 
     // Order must be live or partially filled to have unsettled fee
     let order_status = order_info.status();
@@ -369,7 +370,7 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
 
     // Verify the order doesn't have an unsettled fee yet
     assert!(
-        !fees_manager.user_unsettled_fees.contains(user_unsettled_fee_key),
+        !fee_manager.user_unsettled_fees.contains(user_unsettled_fee_key),
         EUserUnsettledFeeAlreadyExists,
     );
 
@@ -379,11 +380,11 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
         order_quantity,
         maker_quantity,
     };
-    fees_manager.user_unsettled_fees.add(user_unsettled_fee_key, user_unsettled_fee);
+    fee_manager.user_unsettled_fees.add(user_unsettled_fee_key, user_unsettled_fee);
 
     event::emit(UserUnsettledFeeAdded<CoinType> {
         key: user_unsettled_fee_key,
-        fee_value,
+        unsettled_fee_value: fee_value,
         order_quantity,
         maker_quantity,
     });
@@ -391,15 +392,15 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
 
 /// Adds a given fee to the protocol's unsettled fees bag, aggregating it with any existing
 /// balance for the same coin type. This bag holds protocol-bound fees before they are
-/// collected by the treasury.
+/// settled into the treasury by the `settle_protocol_fee_and_record` function.
 ///
-/// The transaction will abort if the caller is not the owner of the `FeesManager`.
+/// The transaction will abort if the caller is not the owner of the `FeeManager`.
 public(package) fun add_to_protocol_unsettled_fees<CoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     fee: Balance<CoinType>,
     ctx: &TxContext,
 ) {
-    fees_manager.validate_owner(ctx);
+    fee_manager.validate_owner(ctx);
 
     if (fee.value() == 0) {
         fee.destroy_zero();
@@ -407,11 +408,11 @@ public(package) fun add_to_protocol_unsettled_fees<CoinType>(
     };
 
     let key = ProtocolUnsettledFeeKey<CoinType> {};
-    if (fees_manager.protocol_unsettled_fees.contains(key)) {
-        let balance: &mut Balance<CoinType> = fees_manager.protocol_unsettled_fees.borrow_mut(key);
+    if (fee_manager.protocol_unsettled_fees.contains(key)) {
+        let balance: &mut Balance<CoinType> = fee_manager.protocol_unsettled_fees.borrow_mut(key);
         balance.join(fee);
     } else {
-        fees_manager.protocol_unsettled_fees.add(key, fee);
+        fee_manager.protocol_unsettled_fees.add(key, fee);
     };
 }
 
@@ -422,13 +423,13 @@ public(package) fun add_to_protocol_unsettled_fees<CoinType>(
 ///
 /// Returns the user's refund as a `Coin`. Aborts on invalid owner or if the order was fully filled.
 public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     order_id: u128,
     ctx: &mut TxContext,
 ): Coin<FeeCoinType> {
-    fees_manager.validate_owner(ctx);
+    fee_manager.validate_owner(ctx);
 
     let user_unsettled_fee_key = UserUnsettledFeeKey {
         pool_id: object::id(pool),
@@ -436,9 +437,10 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
         order_id,
     };
 
-    if (!fees_manager.user_unsettled_fees.contains(user_unsettled_fee_key)) return coin::zero(ctx);
+    // No unsettled fee exists if the fee was already settled or never added
+    if (!fee_manager.user_unsettled_fees.contains(user_unsettled_fee_key)) return coin::zero(ctx);
 
-    let mut user_unsettled_fee: UserUnsettledFee<FeeCoinType> = fees_manager
+    let mut user_unsettled_fee: UserUnsettledFee<FeeCoinType> = fee_manager
         .user_unsettled_fees
         .remove(user_unsettled_fee_key);
     let user_unsettled_fee_value = user_unsettled_fee.balance.value();
@@ -471,7 +473,7 @@ public(package) fun settle_user_fees<BaseToken, QuoteToken, FeeCoinType>(
 
     let return_to_user_balance = user_unsettled_fee.balance.split(return_to_user);
     if (pay_to_protocol > 0)
-        fees_manager.add_to_protocol_unsettled_fees<FeeCoinType>(
+        fee_manager.add_to_protocol_unsettled_fees<FeeCoinType>(
             user_unsettled_fee.balance.split(pay_to_protocol),
             ctx,
         );
@@ -503,7 +505,7 @@ fun destroy_empty<CoinType>(user_unsettled_fee: UserUnsettledFee<CoinType>) {
 
 /// Core logic for claiming the storage rebate for a user's unsettled fee
 fun claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
-    fees_manager: &mut FeesManager,
+    fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     order_id: u128,
@@ -514,9 +516,9 @@ fun claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
         order_id,
     };
 
-    if (!fees_manager.user_unsettled_fees.contains(user_unsettled_fee_key)) return;
+    if (!fee_manager.user_unsettled_fees.contains(user_unsettled_fee_key)) return;
 
-    let user_unsettled_fee: UserUnsettledFee<FeeCoinType> = fees_manager
+    let user_unsettled_fee: UserUnsettledFee<FeeCoinType> = fee_manager
         .user_unsettled_fees
         .remove(user_unsettled_fee_key);
 
@@ -524,12 +526,12 @@ fun claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
 }
 
 /// Core logic for claiming the storage rebate for a protocol's unsettled fee
-fun claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager: &mut FeesManager) {
+fun claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager: &mut FeeManager) {
     let protocol_unsettled_fee_key = ProtocolUnsettledFeeKey<FeeCoinType> {};
 
-    if (!fees_manager.protocol_unsettled_fees.contains(protocol_unsettled_fee_key)) return;
+    if (!fee_manager.protocol_unsettled_fees.contains(protocol_unsettled_fee_key)) return;
 
-    let protocol_unsettled_fee: Balance<FeeCoinType> = fees_manager
+    let protocol_unsettled_fee: Balance<FeeCoinType> = fee_manager
         .protocol_unsettled_fees
         .remove(protocol_unsettled_fee_key);
 
@@ -538,34 +540,34 @@ fun claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fees_manager: &mut Fee
     protocol_unsettled_fee.destroy_zero();
 }
 
-/// Validates that the transaction sender is the owner of the `FeesManager`. Aborts if not
-fun validate_owner(fees_manager: &FeesManager, ctx: &TxContext) {
-    assert!(ctx.sender() == fees_manager.owner, EInvalidOwner);
+/// Validates that the transaction sender is the owner of the `FeeManager`. Aborts if not
+fun validate_owner(fee_manager: &FeeManager, ctx: &TxContext) {
+    assert!(ctx.sender() == fee_manager.owner, EInvalidOwner);
 }
 
 // === Test Functions ===
 /// Check if an unsettled fee exists for a specific order
 #[test_only]
 public fun has_user_unsettled_fee(
-    fees_manager: &FeesManager,
+    fee_manager: &FeeManager,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
 ): bool {
     let key = UserUnsettledFeeKey { pool_id, balance_manager_id, order_id };
-    fees_manager.user_unsettled_fees.contains(key)
+    fee_manager.user_unsettled_fees.contains(key)
 }
 
 /// Get the unsettled fee balance for a specific order
 #[test_only]
 public fun get_user_unsettled_fee_balance<CoinType>(
-    fees_manager: &FeesManager,
+    fee_manager: &FeeManager,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
 ): u64 {
     let key = UserUnsettledFeeKey { pool_id, balance_manager_id, order_id };
-    let user_unsettled_fee: &UserUnsettledFee<CoinType> = fees_manager
+    let user_unsettled_fee: &UserUnsettledFee<CoinType> = fee_manager
         .user_unsettled_fees
         .borrow(key);
     user_unsettled_fee.balance.value()
@@ -574,13 +576,13 @@ public fun get_user_unsettled_fee_balance<CoinType>(
 /// Get the order parameters stored in an unsettled fee
 #[test_only]
 public fun get_user_unsettled_fee_order_params<CoinType>(
-    fees_manager: &FeesManager,
+    fee_manager: &FeeManager,
     pool_id: ID,
     balance_manager_id: ID,
     order_id: u128,
 ): (u64, u64) {
     let key = UserUnsettledFeeKey { pool_id, balance_manager_id, order_id };
-    let user_unsettled_fee: &UserUnsettledFee<CoinType> = fees_manager
+    let user_unsettled_fee: &UserUnsettledFee<CoinType> = fee_manager
         .user_unsettled_fees
         .borrow(key);
     (user_unsettled_fee.order_quantity, user_unsettled_fee.maker_quantity)
@@ -588,16 +590,16 @@ public fun get_user_unsettled_fee_order_params<CoinType>(
 
 /// Check if a protocol's unsettled fee exists for a specific coin type
 #[test_only]
-public fun has_protocol_unsettled_fee<FeeCoinType>(fees_manager: &FeesManager): bool {
+public fun has_protocol_unsettled_fee<FeeCoinType>(fee_manager: &FeeManager): bool {
     let key = ProtocolUnsettledFeeKey<FeeCoinType> {};
-    fees_manager.protocol_unsettled_fees.contains(key)
+    fee_manager.protocol_unsettled_fees.contains(key)
 }
 
 /// Get the protocol's unsettled fee balance for a specific coin type
 #[test_only]
-public fun get_protocol_unsettled_fee_balance<FeeCoinType>(fees_manager: &FeesManager): u64 {
+public fun get_protocol_unsettled_fee_balance<FeeCoinType>(fee_manager: &FeeManager): u64 {
     let key = ProtocolUnsettledFeeKey<FeeCoinType> {};
-    let protocol_unsettled_fee: &Balance<FeeCoinType> = fees_manager
+    let protocol_unsettled_fee: &Balance<FeeCoinType> = fee_manager
         .protocol_unsettled_fees
         .borrow(key);
     protocol_unsettled_fee.value()
