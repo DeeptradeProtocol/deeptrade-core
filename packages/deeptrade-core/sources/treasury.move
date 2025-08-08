@@ -42,7 +42,6 @@ public struct Treasury has key, store {
     deep_reserves: Balance<DEEP>,
     deep_reserves_coverage_fees: Bag,
     protocol_fees: Bag,
-    unsettled_fees: Bag,
 }
 
 /// Key struct for storing charged fees by coin type
@@ -93,7 +92,6 @@ fun init(ctx: &mut TxContext) {
         deep_reserves: balance::zero(),
         deep_reserves_coverage_fees: bag::new(ctx),
         protocol_fees: bag::new(ctx),
-        unsettled_fees: bag::new(ctx),
     };
 
     transfer::share_object(treasury);
@@ -144,8 +142,8 @@ public fun withdraw_deep_reserves_coverage_fee<CoinType>(
     let key = ChargedFeeKey<CoinType> {};
 
     if (treasury.deep_reserves_coverage_fees.contains(key)) {
-        let balance: Balance<CoinType> = treasury.deep_reserves_coverage_fees.remove(key);
-        let coin = balance.into_coin(ctx);
+        let balance: &mut Balance<CoinType> = treasury.deep_reserves_coverage_fees.borrow_mut(key);
+        let coin = balance.withdraw_all().into_coin(ctx);
 
         event::emit(CoverageFeeWithdrawn<CoinType> {
             treasury_id: treasury.id.to_inner(),
@@ -185,8 +183,8 @@ public fun withdraw_protocol_fee<CoinType>(
     let key = ChargedFeeKey<CoinType> {};
 
     if (treasury.protocol_fees.contains(key)) {
-        let balance: Balance<CoinType> = treasury.protocol_fees.remove(key);
-        let coin = balance.into_coin(ctx);
+        let balance: &mut Balance<CoinType> = treasury.protocol_fees.borrow_mut(key);
+        let coin = balance.withdraw_all().into_coin(ctx);
 
         event::emit(ProtocolFeeWithdrawn<CoinType> {
             treasury_id: treasury.id.to_inner(),
@@ -382,13 +380,6 @@ public(package) fun split_deep_reserves(
 public(package) fun verify_version(treasury: &Treasury) {
     let package_version = current_version();
     assert!(treasury.allowed_versions.contains(&package_version), EPackageVersionNotEnabled);
-}
-
-public(package) fun unsettled_fees(treasury: &Treasury): &Bag { &treasury.unsettled_fees }
-
-public(package) fun unsettled_fees_mut(treasury: &mut Treasury): &mut Bag {
-    treasury.verify_version();
-    &mut treasury.unsettled_fees
 }
 
 // === Test Functions ===

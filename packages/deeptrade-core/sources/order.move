@@ -10,6 +10,7 @@ use deeptrade_core::fee::{
     calculate_input_coin_deepbook_fee,
     calculate_deep_reserves_coverage_order_fee
 };
+use deeptrade_core::fee_manager::FeeManager;
 use deeptrade_core::helper::{
     calculate_deep_required,
     transfer_if_nonzero,
@@ -25,11 +26,9 @@ use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::treasury::{
     Treasury,
     join_deep_reserves_coverage_fee,
-    join_protocol_fee,
     deep_reserves,
     split_deep_reserves
 };
-use deeptrade_core::unsettled_fees::{add_unsettled_fee, settle_user_fees};
 use pyth::price_info::PriceInfoObject;
 use std::u64;
 use sui::balance;
@@ -139,6 +138,7 @@ public struct TakerFeeCharged<phantom CoinType> has copy, drop {
 ///
 /// Parameters:
 /// - treasury: The Deeptrade treasury instance managing the order process
+/// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -164,6 +164,7 @@ public struct TakerFeeCharged<phantom CoinType> has copy, drop {
 /// - clock: System clock for timestamp verification
 public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     treasury: &mut Treasury,
+    fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -245,7 +246,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
     );
 
     charge_protocol_fees(
-        treasury,
+        fee_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -276,6 +277,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 ///
 /// Parameters:
 /// - treasury: The Deeptrade treasury instance managing the order process
+/// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -299,6 +301,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
 /// - clock: System clock for timestamp verification
 public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
     treasury: &mut Treasury,
+    fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -374,7 +377,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
     );
 
     charge_protocol_fees(
-        treasury,
+        fee_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -402,7 +405,8 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// to be used.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to add protocol fees to
+/// - treasury: The Deeptrade treasury instance to verify the package version
+/// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -418,7 +422,8 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    treasury: &Treasury,
+    fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -478,7 +483,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fee_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -506,7 +511,8 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// to be used.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to add protocol fees to
+/// - treasury: The Deeptrade treasury instance to verify the package version
+/// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -519,7 +525,8 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for order book state
 public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    treasury: &Treasury,
+    fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -574,7 +581,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fee_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -599,7 +606,8 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance managing the order process
+/// - treasury: The Deeptrade treasury instance to verify the package version
+/// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -615,7 +623,8 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    treasury: &Treasury,
+    fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -674,7 +683,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fee_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -699,7 +708,8 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// 5. Returns the order info
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance managing the order process
+/// - treasury: The Deeptrade treasury instance to verify the package version
+/// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: Loyalty program instance
 /// - pool: The trading pool where the order will be placed
@@ -712,7 +722,8 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
 /// - client_order_id: Client-provided order identifier
 /// - clock: System clock for timestamp verification
 public fun create_market_order_input_fee<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    treasury: &Treasury,
+    fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -769,7 +780,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     );
 
     charge_protocol_fees(
-        treasury,
+        fee_manager,
         trading_fee_config,
         pool,
         balance_manager,
@@ -788,7 +799,8 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 /// Cancels an order and settles any associated with the order unsettled fees
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance
+/// - treasury: The Deeptrade treasury instance to verify the package version
+/// - fee_manager: User's fee manager for settling fees
 /// - pool: The trading pool where the order was placed
 /// - balance_manager: User's balance manager
 /// - order_id: ID of the order to cancel
@@ -796,7 +808,8 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
 ///
 /// Returns the settled fees as a coin of the specified type
 public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
-    treasury: &mut Treasury,
+    treasury: &Treasury,
+    fee_manager: &mut FeeManager,
     pool: &mut Pool<BaseAsset, QuoteAsset>,
     balance_manager: &mut BalanceManager,
     order_id: u128,
@@ -805,17 +818,14 @@ public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinT
 ): Coin<UnsettledFeeCoinType> {
     treasury.verify_version();
 
-    // Verify the caller owns the balance manager
-    assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
-
-    let settled_fees = settle_user_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
-        treasury,
+    let settled_fees = fee_manager.settle_user_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinType>(
         pool,
         balance_manager,
         order_id,
         ctx,
     );
 
+    // Proof generation requires the transaction sender to be the balance manager owner
     let trade_proof = balance_manager.generate_proof_as_owner(ctx);
     pool.cancel_order(balance_manager, &trade_proof, order_id, clock, ctx);
 
@@ -1218,7 +1228,7 @@ public(package) fun validate_fees_against_max(
 /// from user's wallet and balance manager according to the protocol fee plan
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance
+/// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - pool: The trading pool where the order was placed
 /// - balance_manager: User's balance manager
@@ -1229,7 +1239,7 @@ public(package) fun validate_fees_against_max(
 /// - discount_rate: Discount rate applied to fees
 /// - deep_fee_type: Whether using DEEP fee type rates (true) or input coin fee type rates (false)
 public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
-    treasury: &mut Treasury,
+    fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
@@ -1241,8 +1251,6 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     deep_fee_type: bool,
     ctx: &mut TxContext,
 ) {
-    treasury.verify_version();
-
     // Get the protocol fee rates for the pool
     let pool_protocol_fee_config = trading_fee_config.get_pool_fee_config(pool);
     let (protocol_taker_fee_rate, protocol_maker_fee_rate) = if (deep_fee_type) {
@@ -1277,7 +1285,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     // Execute protocol fee plan
     if (is_bid) {
         execute_protocol_fee_plan(
-            treasury,
+            fee_manager,
             balance_manager,
             &mut quote_coin,
             order_info,
@@ -1286,7 +1294,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
         );
     } else {
         execute_protocol_fee_plan(
-            treasury,
+            fee_manager,
             balance_manager,
             &mut base_coin,
             order_info,
@@ -1623,7 +1631,7 @@ fun execute_deep_plan(
 
     // Take DEEP from treasury reserves if needed
     if (deep_plan.from_deep_reserves > 0) {
-        let reserve_payment = split_deep_reserves(treasury, deep_plan.from_deep_reserves, ctx);
+        let reserve_payment = treasury.split_deep_reserves(deep_plan.from_deep_reserves, ctx);
         balance_manager.deposit(reserve_payment, ctx);
     };
 }
@@ -1654,7 +1662,7 @@ fun execute_coverage_fee_plan(
     // Collect coverage fee from wallet if needed
     if (fee_plan.from_wallet > 0) {
         let fee = sui_coin.balance_mut().split(fee_plan.from_wallet);
-        join_deep_reserves_coverage_fee(treasury, fee);
+        treasury.join_deep_reserves_coverage_fee(fee);
     };
 
     // Collect coverage fee from balance manager if needed
@@ -1663,7 +1671,7 @@ fun execute_coverage_fee_plan(
             fee_plan.from_balance_manager,
             ctx,
         );
-        join_deep_reserves_coverage_fee(treasury, fee.into_balance());
+        treasury.join_deep_reserves_coverage_fee(fee.into_balance());
     };
 }
 
@@ -1675,15 +1683,13 @@ fun execute_coverage_fee_plan(
 ///
 /// Aborts if the plan indicates the user has insufficient funds.
 fun execute_protocol_fee_plan<CoinType>(
-    treasury: &mut Treasury,
+    fee_manager: &mut FeeManager,
     balance_manager: &mut BalanceManager,
     coin: &mut Coin<CoinType>,
     order_info: &OrderInfo,
     fee_plan: &ProtocolFeePlan,
     ctx: &mut TxContext,
 ) {
-    treasury.verify_version();
-
     // Verify that the user has enough funds to cover the protocol fees
     assert!(fee_plan.user_covers_fee, EInsufficientFee);
 
@@ -1707,7 +1713,7 @@ fun execute_protocol_fee_plan<CoinType>(
     // Collect taker fee and emit event if needed
     let taker_fee_value = taker_fee.value();
     if (taker_fee_value > 0) {
-        join_protocol_fee(treasury, taker_fee);
+        fee_manager.add_to_protocol_unsettled_fees(taker_fee, ctx);
 
         event::emit(TakerFeeCharged<CoinType> {
             pool_id: order_info.pool_id(),
@@ -1740,10 +1746,10 @@ fun execute_protocol_fee_plan<CoinType>(
     };
 
     if (maker_fee.value() > 0) {
-        add_unsettled_fee(
-            treasury,
+        fee_manager.add_to_user_unsettled_fees(
             maker_fee,
             order_info,
+            ctx,
         );
     } else {
         // Maker fee is zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
