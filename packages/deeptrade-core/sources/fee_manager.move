@@ -395,6 +395,13 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
 /// balance for the same coin type. This bag holds protocol-bound fees before they are
 /// settled into the treasury by the `settle_protocol_fee_and_record` function.
 ///
+/// In case zero `fee` is provided, the function will destroy the `fee` object and return.
+/// This is done to avoid adding zero fees to the protocol's unsettled fees bag,
+/// effectively reducing computation and storage gas cost.
+///
+/// This could be a case, when top-level function that uses this method,
+/// charges zero protocol fees for the operation (for instance, swap protocol fees is 0 for a particular market).
+///
 /// The transaction will abort if the caller is not the owner of the `FeeManager`.
 public(package) fun add_to_protocol_unsettled_fees<CoinType>(
     fee_manager: &mut FeeManager,
