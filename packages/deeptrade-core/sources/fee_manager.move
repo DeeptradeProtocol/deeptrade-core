@@ -369,6 +369,7 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
     let maker_quantity = order_quantity - executed_quantity;
 
     // Verify the order doesn't have an unsettled fee yet
+    // By design, we shouldn’t allow adding a user unsettled fee for a single order multiple times
     assert!(
         !fee_manager.user_unsettled_fees.contains(user_unsettled_fee_key),
         EUserUnsettledFeeAlreadyExists,
