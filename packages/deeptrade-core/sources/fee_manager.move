@@ -369,6 +369,7 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
     let maker_quantity = order_quantity - executed_quantity;
 
     // Verify the order doesn't have an unsettled fee yet
+    // By design, we shouldn’t allow adding a user unsettled fee for a single order multiple times
     assert!(
         !fee_manager.user_unsettled_fees.contains(user_unsettled_fee_key),
         EUserUnsettledFeeAlreadyExists,
@@ -393,6 +394,13 @@ public(package) fun add_to_user_unsettled_fees<CoinType>(
 /// Adds a given fee to the protocol's unsettled fees bag, aggregating it with any existing
 /// balance for the same coin type. This bag holds protocol-bound fees before they are
 /// settled into the treasury by the `settle_protocol_fee_and_record` function.
+///
+/// In case zero `fee` is provided, the function will destroy the `fee` object and return.
+/// This is done to avoid adding zero fees to the protocol's unsettled fees bag,
+/// effectively reducing computation and storage gas cost.
+///
+/// This could be a case, when top-level function that uses this method,
+/// charges zero protocol fees for the operation (for instance, swap protocol fees is 0 for a particular market).
 ///
 /// The transaction will abort if the caller is not the owner of the `FeeManager`.
 public(package) fun add_to_protocol_unsettled_fees<CoinType>(

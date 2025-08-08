@@ -69,30 +69,6 @@ DeepBook protocol requires DEEP coins (currently set to 500 DEEP) as a fee for e
 
 The Wrapper's order fee structure has minimal economic risk. By collecting fees in SUI, we maintain a stable and liquid asset for reserves management. Since reserve coverage fees directly match the DEEP amount needed, there's a fair value exchange. The additional protocol fees (calculated dynamically based on order execution) help cover operational costs and reserves maintenance.
 
-## Deployment
-
-1. Go to `packages/deeptrade-core` directory
-2. Uncomment `0x0` address in Move.toml before deploying contract
-3. Run command:
-   `sui client publish --gas-budget 220000000 --skip-dependency-verification`
-4. Use new `address` of deployed package in Move.toml
-5. Update `examples/constants.ts` with new addresses of `DEEPTRADE_CORE_PACKAGE_ID`, `ADMIN_CAP_OBJECT_ID`, `TREASURY_OBJECT_ID`.
-6. Add DEEP coins to reserves by `examples/treasury/deposit-into-reserves.ts`
-
-## Upgrade
-
-1. Go to `packages/deeptrade-core` directory (`cd packages/deeptrade-core/`)
-2. Set `address` to `0x0` in `Move.toml`
-3. Verify compability:
-   `sui-local sui client upgrade --dry-run --verify-compatibility --upgrade-capability 0xae8c80532528977c531c7ee477d55d9e8618320e03c0ce923740ee8635cab01b --gas-budget 1000000000`
-4. Dry run upgrade:
-   `sui client upgrade --dry-run --upgrade-capability 0xae8c80532528977c531c7ee477d55d9e8618320e03c0ce923740ee8635cab01b --gas-budget 1000000000`
-5. Upgrade:
-   `sui client upgrade --upgrade-capability 0xae8c80532528977c531c7ee477d55d9e8618320e03c0ce923740ee8635cab01b --gas-budget 1000000000`
-6. (optional) Update `examples/constants.ts` with new addresses of `DEEPTRADE_CORE_PACKAGE_ID`, `ADMIN_CAP_OBJECT_ID`, `TREASURY_OBJECT_ID`.
-7. Set `address` to new `address` of deployed package in `Move.toml`
-8. Build contract with new address: `sui move build`
-
 ## Deeptrade Core Package Ids:
 
 ```
@@ -107,31 +83,6 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 0x2356885eae212599c0c7a42d648cc2100dedfa4698f8fc58fc6b9f67806f2bfc
 0x03aafc54af513d592bcb91136d61b94ea40b0f9b50477f24a3a9a38fca625174
 ```
-
-## Fee & Reserves Withdrawal (Admin Only)
-
-1. Run `examples/treasury/get-charged-fee-info.ts` to get the list of coins with charged fees (coverage fees and protocol fees).
-2. Run `examples/treasury/admin-withdraw-all-coins-coverage-fee.ts` to withdraw all coins coverage fees (coverage fees charged in output coin of each swap and for limit/market orders in SUI).
-3. Run `examples/treasury/admin-withdraw-protocol-fee.ts` to withdraw all protocol fees (protocol fees charged in SUI, pool creation fees charged in DEEP).
-4. Run `examples/treasury/withdraw-all-deep-reserves.ts` to withdraw all DEEP coins from reserves.
-
-## Development notes
-
-1. Use `sui move build --lint` for linting - enables additional linting checks beyond the default linters
-
-## Development Tools
-
-### Lines of Code Analysis
-
-Analyze and count lines of code across all Deeptrade Core package modules:
-
-```bash
-node scripts/count-loc.js [--help for options]
-```
-
-The script provides a detailed breakdown by module and calculates effective lines of code. It analyzes both source files and test files separately.
-
-Example: `🎯 Effective LoC (sources only): 1,234 lines`
 
 ## License
 
