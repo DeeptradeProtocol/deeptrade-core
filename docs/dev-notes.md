@@ -63,3 +63,7 @@ node scripts/count-loc.js [--help for options]
 The script provides a detailed breakdown by module and calculates effective lines of code. It analyzes both source files and test files separately.
 
 Example: `🎯 Effective LoC (sources only): 1,234 lines`
+
+## Development notes
+
+Use `sui move build --lint` for linting - enables additional linting checks beyond the default linters

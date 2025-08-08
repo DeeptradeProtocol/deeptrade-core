@@ -1,9 +1,12 @@
 module deeptrade_core::swap;
 
 use deepbook::pool::Pool;
-use deeptrade_core::fee::{calculate_fee_by_rate, charge_swap_fee, TradingFeeConfig};
+use deeptrade_core::fee::{calculate_fee_by_rate, TradingFeeConfig};
+use deeptrade_core::helper::apply_discount;
+use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::fee_manager::FeeManager;
 use deeptrade_core::treasury::Treasury;
+use sui::balance::Balance;
 use sui::clock::Clock;
 use sui::coin::{Self, Coin};
 use sui::event;
@@ -11,6 +14,7 @@ use sui::event;
 // === Errors ===
 /// Error when the final output amount is below the user's specified minimum
 const EInsufficientOutputAmount: u64 = 1;
+const EInsufficientCoinBalance: u64 = 2;
 
 // === Events ===
 public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop {
@@ -31,6 +35,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_in: The base tokens being provided for the swap
 /// - min_quote_out: Minimum amount of quote tokens to receive (slippage protection)
@@ -50,6 +55,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     treasury: &Treasury,
     fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     base_in: Coin<BaseToken>,
     min_quote_out: u64,
@@ -78,7 +84,9 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     let (taker_fee_rate, _) = trading_fee_config
         .get_pool_fee_config(pool)
         .input_coin_fee_type_rates();
-    let fee_balance = charge_swap_fee(&mut result_quote, taker_fee_rate);
+
+    let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+    let fee_balance = charge_protocol_swap_fee(&mut result_quote, taker_fee_rate, discount_rate);
     let fee_amount = fee_balance.value();
     fee_manager.add_to_protocol_unsettled_fees(fee_balance, ctx);
 
@@ -105,6 +113,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// - treasury: The Deeptrade treasury instance to verify the package version
 /// - fee_manager: User's fee manager for collecting protocol fees
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - quote_in: The quote tokens being provided for the swap
 /// - min_base_out: Minimum amount of base tokens to receive (slippage protection)
@@ -124,6 +133,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     treasury: &Treasury,
     fee_manager: &mut FeeManager,
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
     quote_in: Coin<QuoteToken>,
     min_base_out: u64,
@@ -152,7 +162,8 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     let (taker_fee_rate, _) = trading_fee_config
         .get_pool_fee_config(pool)
         .input_coin_fee_type_rates();
-    let fee_balance = charge_swap_fee(&mut result_base, taker_fee_rate);
+    let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+    let fee_balance = charge_protocol_swap_fee(&mut result_base, taker_fee_rate, discount_rate);
     let fee_amount = fee_balance.value();
     fee_manager.add_to_protocol_unsettled_fees(fee_balance, ctx);
 
@@ -179,6 +190,7 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
 ///
 /// Parameters:
 /// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
 /// - base_quantity: Amount of base tokens to swap (set to 0 if swapping quote)
 /// - quote_quantity: Amount of quote tokens to swap (set to 0 if swapping base)
@@ -196,10 +208,12 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
 /// 3. Returns final expected output quantities
 public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
     trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
     pool: &Pool<BaseToken, QuoteToken>,
     base_quantity: u64,
     quote_quantity: u64,
     clock: &Clock,
+    ctx: &mut TxContext,
 ): (u64, u64, u64) {
     // Get the raw output quantities from DeepBook using input fee model
     // This method can return zero values in case input quantities don't meet the minimum lot size
@@ -214,8 +228,11 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
         .get_pool_fee_config(pool)
         .input_coin_fee_type_rates();
 
-    let (base_out, quote_out) = apply_treasury_fees(
+    let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+
+    let (base_out, quote_out) = apply_protocol_swap_fee(
         taker_fee_rate,
+        discount_rate,
         base_out,
         quote_out,
         base_quantity,
@@ -236,11 +253,36 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
     assert!(coin.value() >= minimum, EInsufficientOutputAmount);
 }
 
-/// Applies Deeptrade protocol fees to the output quantities from a DeepBook swap operation.
-/// This function handles fee calculations for both base-to-quote and quote-to-base swaps.
+/// Charges Deeptrade protocol swap fees on a coin and returns the fee amount as a Balance.
+///
+/// Parameters:
+/// - coin: The coin to charge fee from
+/// - fee_bps: The fee rate in billionths
+/// - discount_rate: The discount rate to apply to the calculated fees
+///
+/// Returns:
+/// - Balance<CoinType>: The fee amount as a Balance object
+fun charge_protocol_swap_fee<CoinType>(
+    coin: &mut Coin<CoinType>,
+    fee_bps: u64,
+    discount_rate: u64,
+): Balance<CoinType> {
+    let coin_balance = coin.balance_mut();
+    let coin_value = coin_balance.value();
+    let mut fee = calculate_fee_by_rate(coin_value, fee_bps);
+    fee = apply_discount(fee, discount_rate);
+
+    assert!(coin_value >= fee, EInsufficientCoinBalance);
+
+    coin_balance.split(fee)
+}
+
+/// Calculates and applies Deeptrade protocol fee to the output quantity from a DeepBook swap.
+/// Handles fee calculation and application for both base-to-quote and quote-to-base swaps.
 ///
 /// Parameters:
 /// - taker_fee_rate: The taker fee rate to apply to the output quantities
+/// - discount_rate: The discount rate to apply to the calculated fees
 /// - base_out: Mutable base token output quantity before fees
 /// - quote_out: Mutable quote token output quantity before fees
 /// - base_quantity: Input quantity of base tokens (0 if swapping quote)
@@ -250,23 +292,26 @@ fun validate_minimum_output<CoinType>(coin: &Coin<CoinType>, minimum: u64) {
 /// - (u64, u64): Tuple containing:
 ///   - Final base token output after fees
 ///   - Final quote token output after fees
-fun apply_treasury_fees(
+fun apply_protocol_swap_fee(
     taker_fee_rate: u64,
+    discount_rate: u64,
     mut base_out: u64,
     mut quote_out: u64,
     base_quantity: u64,
     quote_quantity: u64,
 ): (u64, u64) {
-    // Apply our fee to the output quantities
+    // Apply protocol fee to the output quantity
     // If base_quantity > 0, we're swapping base for quote, so apply fee to quote_out
     // If quote_quantity > 0, we're swapping quote for base, so apply fee to base_out
     if (base_quantity > 0) {
         // Swapping base for quote, apply fee to quote_out
-        let fee_amount = calculate_fee_by_rate(quote_out, taker_fee_rate);
+        let mut fee_amount = calculate_fee_by_rate(quote_out, taker_fee_rate);
+        fee_amount = apply_discount(fee_amount, discount_rate);
         quote_out = quote_out - fee_amount;
     } else if (quote_quantity > 0) {
         // Swapping quote for base, apply fee to base_out
-        let fee_amount = calculate_fee_by_rate(base_out, taker_fee_rate);
+        let mut fee_amount = calculate_fee_by_rate(base_out, taker_fee_rate);
+        fee_amount = apply_discount(fee_amount, discount_rate);
         base_out = base_out - fee_amount;
     };
 
