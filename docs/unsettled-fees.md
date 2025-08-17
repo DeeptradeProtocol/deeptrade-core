@@ -82,6 +82,16 @@ The order either remains entirely in the order book or is rejected. If placed su
 **GTC Order**:
 If 10% of the order executes immediately, the user pays taker fees for that 10% portion. A `UserUnsettledFee` is created for the remaining 90% maker portion that rests in the order book.
 
+## Swap Fee Handling
+
+Unlike limit orders which use the `FeeManager` system for unsettled fees, swap operations directly transfer protocol fees to the treasury. This design choice intentionally accepts the risk of `Treasury` shared object congestion for the following reasons:
+
+1. **Gas Optimization**: Using the `FeeManager` system for swaps would require user to create a protocol fee dynamic field inside of the fee manager for each coin the user hasn't swapped before. In cases where users have multiple hops in a single swap, creating such dynamic fields for each output coin becomes significantly more gas expensive. Despite the fact that this storage gas fee is reclaimable and is created only once per coin, using the `Treasury` object directly avoids this cost, making the swap UX more gas-efficient on a daily basis.
+
+2. **User Priority Fee Control**: Users can set priority fees at any time to ensure their swap transactions are processed even during `Treasury` object congestion.
+
+3. **Economic Incentive for Limit Orders**: During high-peak trading volumes when `Treasury` object congestion may occur, slippage on swaps typically reaches significant values. In these conditions, users are more economically driven to place limit orders at their desired prices rather than executing swaps with high slippage, which would result in losing substantial amounts of their desired tokens.
+
 ## Protocol Fee Discounts
 
 The system offers protocol fee discounts when using the DEEP fee type, designed to incentivize DEEP holders:

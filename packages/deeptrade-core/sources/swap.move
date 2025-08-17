@@ -4,7 +4,6 @@ use deepbook::pool::Pool;
 use deeptrade_core::fee::{calculate_fee_by_rate, TradingFeeConfig};
 use deeptrade_core::helper::apply_discount;
 use deeptrade_core::loyalty::LoyaltyProgram;
-use deeptrade_core::fee_manager::FeeManager;
 use deeptrade_core::treasury::Treasury;
 use sui::balance::Balance;
 use sui::clock::Clock;
@@ -18,7 +17,7 @@ const EInsufficientCoinBalance: u64 = 2;
 
 // === Events ===
 public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop {
-    fee_manager_id: ID,
+    treasury_id: ID,
     pool_id: ID,
     base_to_quote: bool,
     input_amount: u64,
@@ -32,8 +31,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// Swaps a specific amount of base tokens for quote tokens using input fee model.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to verify the package version
-/// - fee_manager: User's fee manager for collecting protocol fees
+/// - treasury: The Deeptrade treasury instance to verify the package version and join protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
@@ -52,8 +50,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns remaining base and received quote tokens
 public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
-    treasury: &Treasury,
-    fee_manager: &mut FeeManager,
+    treasury: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -88,13 +85,13 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
     let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
     let fee_balance = charge_protocol_swap_fee(&mut result_quote, taker_fee_rate, discount_rate);
     let fee_amount = fee_balance.value();
-    fee_manager.add_to_protocol_unsettled_fees(fee_balance, ctx);
+    treasury.join_protocol_fee(fee_balance);
 
     // Verify that the final output after Deeptrade fees still meets the user's minimum requirement
     validate_minimum_output(&result_quote, min_quote_out);
 
     event::emit(SwapExecuted<BaseToken, QuoteToken> {
-        fee_manager_id: object::id(fee_manager),
+        treasury_id: object::id(treasury),
         pool_id: object::id(pool),
         base_to_quote: true,
         input_amount: base_quantity,
@@ -110,8 +107,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// Swaps a specific amount of quote tokens for base tokens using input fee model.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to verify the package version
-/// - fee_manager: User's fee manager for collecting protocol fees
+/// - treasury: The Deeptrade treasury instance to verify the package version and join protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
@@ -130,8 +126,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// 3. Validates minimum output amount meets user requirements
 /// 4. Returns received base and remaining quote tokens
 public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
-    treasury: &Treasury,
-    fee_manager: &mut FeeManager,
+    treasury: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &mut Pool<BaseToken, QuoteToken>,
@@ -165,13 +160,13 @@ public fun swap_exact_quote_for_base_input_fee<BaseToken, QuoteToken>(
     let discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
     let fee_balance = charge_protocol_swap_fee(&mut result_base, taker_fee_rate, discount_rate);
     let fee_amount = fee_balance.value();
-    fee_manager.add_to_protocol_unsettled_fees(fee_balance, ctx);
+    treasury.join_protocol_fee(fee_balance);
 
     // Verify that the final output after Deeptrade fees still meets the user's minimum requirement
     validate_minimum_output(&result_base, min_base_out);
 
     event::emit(SwapExecuted<BaseToken, QuoteToken> {
-        fee_manager_id: object::id(fee_manager),
+        treasury_id: object::id(treasury),
         pool_id: object::id(pool),
         base_to_quote: false,
         input_amount: quote_quantity,
