@@ -24,7 +24,7 @@ use token::deep::DEEP;
 const EInsufficientDeepReserves: u64 = 1;
 /// Allowed versions management errors
 const EVersionAlreadyEnabled: u64 = 2;
-const ECannotDisableCurrentVersion: u64 = 3;
+const ECannotDisableNewerVersion: u64 = 3;
 const EVersionNotEnabled: u64 = 4;
 /// Error when trying to use shared object in a package whose version is not enabled
 const EPackageVersionNotEnabled: u64 = 5;
@@ -290,7 +290,7 @@ public fun enable_version(
 /// Aborts:
 /// - With ESenderIsNotMultisig if the transaction sender is not the expected multi-signature address
 ///   derived from the provided pks, weights, and threshold parameters
-/// - With ECannotDisableCurrentVersion if trying to disable the current version
+/// - With ECannotDisableNewerVersion if trying to disable a newer version
 /// - With EVersionNotEnabled if the version is not currently enabled
 public fun disable_version(
     treasury: &mut Treasury,
@@ -305,7 +305,7 @@ public fun disable_version(
         multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
         ESenderIsNotMultisig,
     );
-    assert!(version != current_version(), ECannotDisableCurrentVersion);
+    assert!(version <= current_version(), ECannotDisableNewerVersion);
     assert!(treasury.allowed_versions.contains(&version), EVersionNotEnabled);
 
     // Remove from allowed and add to disabled
