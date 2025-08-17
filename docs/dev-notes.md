@@ -24,24 +24,25 @@ Short operational notes for developers: deployment, upgrade, and development too
 
 1. Go to `packages/deeptrade-core` directory (`cd packages/deeptrade-core/`)
 2. Set `address` to `0x0` in `Move.toml`
-3. Verify compatibility:
+3. Make sure that `env` is set in `Move.lock` (or legacy `published_at` present in `Move.toml`).
+4. Verify compatibility:
    ```bash
    sui client upgrade --dry-run --verify-compatibility --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
    ```
-4. Dry run upgrade (without `--verify-compatibility`):
+5. Dry run upgrade (without `--verify-compatibility`):
    ```bash
    sui client upgrade --dry-run --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
    ```
-5. Upgrade:
+6. Upgrade:
    ```bash
    sui client upgrade --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
    ```
-6. Set `address` in `Move.toml` to the new package address (from contract upgrade tx effects)
-7. Build:
+7. Set `address` in `Move.toml` to the new package address (from contract upgrade tx effects)
+8. Build:
    ```bash
    sui move build
    ```
-8. (Optional) Update `examples/constants.ts` IDs if they changed
+9. (Optional) Update `examples/constants.ts` IDs if they changed
 
 ## Treasury Operations (Admin Only)
 
