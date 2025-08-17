@@ -31,7 +31,7 @@ public struct SwapExecuted<phantom BaseAsset, phantom QuoteAsset> has copy, drop
 /// Swaps a specific amount of base tokens for quote tokens using input fee model.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to verify the package version
+/// - treasury: The Deeptrade treasury instance to verify the package version and join protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
@@ -107,7 +107,7 @@ public fun swap_exact_base_for_quote_input_fee<BaseToken, QuoteToken>(
 /// Swaps a specific amount of quote tokens for base tokens using input fee model.
 ///
 /// Parameters:
-/// - treasury: The Deeptrade treasury instance to verify the package version
+/// - treasury: The Deeptrade treasury instance to verify the package version and join protocol fees
 /// - trading_fee_config: Trading fee configuration object
 /// - loyalty_program: The loyalty program for fee discounts
 /// - pool: The DeepBook liquidity pool for this trading pair
