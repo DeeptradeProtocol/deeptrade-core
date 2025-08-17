@@ -90,7 +90,7 @@ Unlike limit orders which use the `FeeManager` system for unsettled fees, swap o
 
 2. **User Priority Fee Control**: Users can set priority fees at any time to ensure their swap transactions are processed even during `Treasury` object congestion.
 
-3. **Economic Incentive for Limit Orders**: During high-peak trading volumes when Treasury congestion may occur, slippage on swaps typically reaches significant values. In these conditions, users are more economically driven to place limit orders at their desired prices rather than executing swaps with high slippage, which would result in losing substantial amounts of their desired tokens.
+3. **Economic Incentive for Limit Orders**: During high-peak trading volumes when `Treasury` object congestion may occur, slippage on swaps typically reaches significant values. In these conditions, users are more economically driven to place limit orders at their desired prices rather than executing swaps with high slippage, which would result in losing substantial amounts of their desired tokens.
 
 ## Protocol Fee Discounts
 
