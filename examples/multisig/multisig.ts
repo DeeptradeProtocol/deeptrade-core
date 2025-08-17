@@ -14,7 +14,10 @@ if (!signersBase64 || !weights || !threshold || !address) {
   );
 }
 
-const multisigSignersBase64Pubkeys = signersBase64.split(",").map((s) => s.trim());
+const multisigSignersBase64Pubkeys = signersBase64
+  .split(",")
+  .map((s) => s.trim())
+  .filter((el) => !!el);
 const parsedWeights = weights.split(",").map((w) => parseInt(w.trim(), 10));
 const parsedThreshold = parseInt(threshold, 10);
 
