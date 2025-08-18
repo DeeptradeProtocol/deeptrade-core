@@ -1,10 +1,13 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
-import { getDeepReservesBalance } from "./utils/getDeepReservesBalance";
+import { TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
+import { getDeepReservesBalance } from "../treasury/utils/getDeepReservesBalance";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 
-// yarn ts-node examples/treasury/withdraw-all-deep-reserves.ts > withdraw-all-deep-reserves.log 2>&1
+const TICKET_OBJECT_ID = "";
+
+// yarn ts-node examples/ticket/withdraw-all-deep-reserves.ts > withdraw-all-deep-reserves.log 2>&1
 (async () => {
   const tx = new Transaction();
 
@@ -14,11 +17,9 @@ import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigT
     target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_deep_reserves`,
     arguments: [
       tx.object(TREASURY_OBJECT_ID),
-      tx.object(ADMIN_CAP_OBJECT_ID),
+      tx.object(TICKET_OBJECT_ID),
       tx.pure.u64(amountToWithdraw),
-      tx.pure.vector("vector<u8>", MULTISIG_CONFIG.publicKeysSuiBytes),
-      tx.pure.vector("u8", MULTISIG_CONFIG.weights),
-      tx.pure.u16(MULTISIG_CONFIG.threshold),
+      tx.object(SUI_CLOCK_OBJECT_ID),
     ],
   });
 

@@ -3,7 +3,7 @@ import { keypair, provider } from "../common";
 import { DEEP_COIN_TYPE, DEEP_DECIMALS, TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 
 // How many DEEP tokens to deposit (in human-readable format)
-const DEEP_AMOUNT = 100; // Change this to the amount you want to deposit
+const DEEP_AMOUNT = 100;
 
 // Convert human-readable amount to raw amount
 const rawAmount = DEEP_AMOUNT * 10 ** DEEP_DECIMALS;
@@ -22,5 +22,5 @@ const rawAmount = DEEP_AMOUNT * 10 ** DEEP_DECIMALS;
 
   const res = await provider.signAndExecuteTransaction({ transaction: tx, signer: keypair });
 
-  console.log(res);
+  console.debug(res);
 })();
