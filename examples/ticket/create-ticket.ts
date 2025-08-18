@@ -3,7 +3,7 @@ import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigT
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { createTicketTx, TicketType } from "./utils/createTicketTx";
 
-// yarn ts-node examples/timelock-examples/create-ticket.ts > create-ticket.log 2>&1
+// yarn ts-node examples/ticket/create-ticket.ts > create-ticket.log 2>&1
 (async () => {
   const ticketType = TicketType.UpdateDefaultFees;
 

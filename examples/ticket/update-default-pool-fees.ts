@@ -14,7 +14,7 @@ const NEW_FEE_CONFIG = {
   maxDeepFeeCoverageDiscountRate: 1_000_000_000,
 };
 
-// yarn ts-node examples/timelock-examples/update-default-pool-fees.ts > update-default-pool-fees.log 2>&1
+// yarn ts-node examples/ticket/update-default-pool-fees.ts > update-default-pool-fees.log 2>&1
 (async () => {
   if (!TICKET_OBJECT_ID) {
     console.error("❌ Please set TICKET_OBJECT_ID from the ticket creation step");
