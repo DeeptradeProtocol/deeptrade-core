@@ -1,37 +1,26 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { TREASURY_OBJECT_ID } from "../constants";
+import { TREASURY_OBJECT_ID } from "../../constants";
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 
 export function getWithdrawFeeTx({
   coinType,
   target,
   user,
-  adminCapId,
+  ticketId,
   transaction,
-  pks,
-  weights,
-  threshold,
 }: {
   coinType: string;
   target: string;
   user: string;
-  adminCapId: string;
+  ticketId: string;
   transaction?: Transaction;
-  pks: number[][];
-  weights: number[];
-  threshold: number;
 }): Transaction {
   const tx = transaction ?? new Transaction();
 
   const withdrawnCoin = tx.moveCall({
     target,
+    arguments: [tx.object(TREASURY_OBJECT_ID), tx.object(ticketId), tx.object(SUI_CLOCK_OBJECT_ID)],
     typeArguments: [coinType],
-    arguments: [
-      tx.object(TREASURY_OBJECT_ID),
-      tx.object(adminCapId),
-      tx.pure.vector("vector<u8>", pks),
-      tx.pure.vector("u8", weights),
-      tx.pure.u16(threshold),
-    ],
   });
 
   tx.transferObjects([withdrawnCoin], tx.pure.address(user));

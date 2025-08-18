@@ -28,12 +28,12 @@ export function createTicketTx({ ticketType, adminCapId, pks, weights, threshold
 
   // Get the ticket type using helper functions from Move
   const ticketTypeArg = tx.moveCall({
-    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::${getTicketTypeHelperFunction(ticketType)}`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::ticket::${getTicketTypeHelperFunction(ticketType)}`,
     arguments: [],
   });
 
   const ticket = tx.moveCall({
-    target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::create_ticket`,
+    target: `${DEEPTRADE_CORE_PACKAGE_ID}::ticket::create_ticket`,
     arguments: [
       tx.object(adminCapId),
       ticketTypeArg,

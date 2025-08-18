@@ -1,12 +1,14 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
+import { DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
-import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
-import { getTreasuryBags } from "./utils/getTreasuryBags";
-import { processFeesBag } from "./utils/processFeeBag";
+import { getWithdrawFeeTx } from "./utils/getWithdrawFeeTx";
+import { getTreasuryBags } from "../treasury/utils/getTreasuryBags";
+import { processFeesBag } from "../treasury/utils/processFeeBag";
 
-// yarn ts-node examples/treasury/admin-withdraw-all-coins-coverage-fee.ts > admin-withdraw-all-coins-coverage-fee.log 2>&1
+const TICKET_OBJECT_ID = "";
+
+// yarn ts-node examples/ticket/admin-withdraw-all-coins-coverage-fee.ts > admin-withdraw-all-coins-coverage-fee.log 2>&1
 (async () => {
   const tx = new Transaction();
 
@@ -24,12 +26,9 @@ import { processFeesBag } from "./utils/processFeeBag";
     getWithdrawFeeTx({
       coinType,
       target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_deep_reserves_coverage_fee`,
+      ticketId: TICKET_OBJECT_ID,
       user: MULTISIG_CONFIG.address,
-      adminCapId: ADMIN_CAP_OBJECT_ID,
       transaction: tx,
-      pks: MULTISIG_CONFIG.publicKeysSuiBytes,
-      weights: MULTISIG_CONFIG.weights,
-      threshold: MULTISIG_CONFIG.threshold,
     });
   }
 

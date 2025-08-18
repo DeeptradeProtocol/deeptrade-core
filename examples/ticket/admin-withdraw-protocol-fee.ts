@@ -1,12 +1,15 @@
-import { ADMIN_CAP_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
+import { DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
-import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
+import { getWithdrawFeeTx } from "./utils/getWithdrawFeeTx";
 import { Transaction } from "@mysten/sui/transactions";
-import { getTreasuryBags } from "./utils/getTreasuryBags";
-import { processFeesBag } from "./utils/processFeeBag";
+import { getTreasuryBags } from "../treasury/utils/getTreasuryBags";
+import { processFeesBag } from "../treasury/utils/processFeeBag";
 
-// yarn ts-node examples/treasury/admin-withdraw-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
+// Put all ticket objects ids for each coin type respectively
+const TICKETS_OBJECT_IDS: string[] = [];
+
+// yarn ts-node examples/ticket/admin-withdraw-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
 (async () => {
   console.warn(`Building transaction to withdraw all protocol fees`);
   const tx = new Transaction();
@@ -17,18 +20,15 @@ import { processFeesBag } from "./utils/processFeeBag";
   const { coinsMapByCoinType } = await processFeesBag(protocolFeesBagId);
   const coinTypes = Object.keys(coinsMapByCoinType);
 
-  for (const coinType of coinTypes) {
+  coinTypes.forEach((coinType, index) => {
     getWithdrawFeeTx({
       coinType: coinType,
       target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_protocol_fee`,
+      ticketId: TICKETS_OBJECT_IDS[index],
       user: MULTISIG_CONFIG.address,
-      adminCapId: ADMIN_CAP_OBJECT_ID,
       transaction: tx,
-      pks: MULTISIG_CONFIG.publicKeysSuiBytes,
-      weights: MULTISIG_CONFIG.weights,
-      threshold: MULTISIG_CONFIG.threshold,
     });
-  }
+  });
 
   await buildAndLogMultisigTransaction(tx);
 })();

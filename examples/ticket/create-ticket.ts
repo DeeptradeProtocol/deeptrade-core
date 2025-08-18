@@ -4,7 +4,7 @@ import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { createTicketTx, TicketType } from "./utils/createTicketTx";
 
 // yarn ts-node examples/timelock-examples/create-ticket.ts > create-ticket.log 2>&1
-async () => {
+(async () => {
   const ticketType = TicketType.UpdateDefaultFees;
 
   console.warn(`Building transaction to create ticket for ${ticketType}`);
@@ -18,4 +18,4 @@ async () => {
   });
 
   await buildAndLogMultisigTransaction(tx);
-};
+})();
