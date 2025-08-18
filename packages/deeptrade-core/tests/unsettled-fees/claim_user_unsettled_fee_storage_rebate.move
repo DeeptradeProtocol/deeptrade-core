@@ -45,11 +45,13 @@ fun owner_claims_rebate_successfully() {
     // Claim the storage rebate as the fee manager owner
     scenario.next_tx(ALICE);
     {
+        let treasury = scenario.take_shared<Treasury>();
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
         claim_user_unsettled_fee_storage_rebate<SUI, USDC, SUI>(
+            &treasury,
             &mut fee_manager,
             &pool,
             &balance_manager,
@@ -63,6 +65,7 @@ fun owner_claims_rebate_successfully() {
             false,
         );
 
+        return_shared(treasury);
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
@@ -85,11 +88,13 @@ fun unauthorized_user_claim_fails() {
     // Attempt to claim as an unrelated user
     scenario.next_tx(UNRELATED_USER);
     {
+        let treasury = scenario.take_shared<Treasury>();
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
         claim_user_unsettled_fee_storage_rebate<SUI, USDC, SUI>(
+            &treasury,
             &mut fee_manager,
             &pool,
             &balance_manager,
@@ -97,6 +102,7 @@ fun unauthorized_user_claim_fails() {
             scenario.ctx(),
         );
 
+        return_shared(treasury);
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
@@ -138,11 +144,13 @@ fun claim_for_unsettled_fee_fails() {
     // Step 2: Attempt to claim the rebate without settling the fee first.
     scenario.next_tx(ALICE);
     {
+        let treasury = scenario.take_shared<Treasury>();
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
         claim_user_unsettled_fee_storage_rebate<SUI, USDC, SUI>(
+            &treasury,
             &mut fee_manager,
             &pool,
             &balance_manager,
@@ -150,6 +158,7 @@ fun claim_for_unsettled_fee_fails() {
             scenario.ctx(),
         );
 
+        return_shared(treasury);
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
@@ -168,12 +177,14 @@ fun claim_for_non_existent_fee_is_noop() {
 
     scenario.next_tx(ALICE);
     {
+        let treasury = scenario.take_shared<Treasury>();
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
 
         // This should be a no-op since the fee does not exist.
         claim_user_unsettled_fee_storage_rebate<SUI, USDC, SUI>(
+            &treasury,
             &mut fee_manager,
             &pool,
             &balance_manager,
@@ -187,6 +198,7 @@ fun claim_for_non_existent_fee_is_noop() {
             false,
         );
 
+        return_shared(treasury);
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
@@ -209,12 +221,14 @@ fun admin_claims_rebate_successfully() {
     let multisig_address = get_test_multisig_address();
     scenario.next_tx(multisig_address);
     {
+        let treasury = scenario.take_shared<Treasury>();
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         claim_user_unsettled_fee_storage_rebate_admin<SUI, USDC, SUI>(
+            &treasury,
             &mut fee_manager,
             &pool,
             &balance_manager,
@@ -233,6 +247,7 @@ fun admin_claims_rebate_successfully() {
         );
 
         destroy(admin_cap);
+        return_shared(treasury);
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
@@ -255,12 +270,14 @@ fun non_multisig_admin_claim_fails() {
     // Attempt to claim as a regular user, not the multisig admin
     scenario.next_tx(UNRELATED_USER);
     {
+        let treasury = scenario.take_shared<Treasury>();
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         claim_user_unsettled_fee_storage_rebate_admin<SUI, USDC, SUI>(
+            &treasury,
             &mut fee_manager,
             &pool,
             &balance_manager,
@@ -273,6 +290,7 @@ fun non_multisig_admin_claim_fails() {
         );
 
         destroy(admin_cap);
+        return_shared(treasury);
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
@@ -358,10 +376,7 @@ public(package) fun setup_filled_order_for_rebate(): (Scenario, ID, ID, ID, u128
         receipt.finish_protocol_fee_settlement_for_testing();
 
         // Verify the unsettled fee is now empty but still exists.
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             0,

@@ -254,12 +254,14 @@ public fun finish_protocol_fee_settlement<FeeCoinType>(receipt: FeeSettlementRec
 /// Can only be called by the `FeeManager` owner after a fee has been collected via
 /// `settle_filled_order_fee_and_record`. Aborts if the fee object is not empty.
 public fun claim_user_unsettled_fee_storage_rebate<BaseToken, QuoteToken, FeeCoinType>(
+    treasury: &Treasury,
     fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
     order_id: u128,
     ctx: &mut TxContext,
 ) {
+    treasury.verify_version();
     fee_manager.validate_owner(ctx);
 
     claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
@@ -275,6 +277,7 @@ public fun claim_user_unsettled_fee_storage_rebate<BaseToken, QuoteToken, FeeCoi
 /// This is a protected maintenance function to clean up empty fee objects that users have
 /// not claimed. Aborts if the fee object is not empty.
 public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, FeeCoinType>(
+    treasury: &Treasury,
     fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
@@ -289,6 +292,7 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
         multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
         ESenderIsNotMultisig,
     );
+    treasury.verify_version();
 
     claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
         fee_manager,
@@ -303,9 +307,11 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
 /// Can only be called by the `FeeManager` owner after a fee has been collected via
 /// `settle_protocol_fee_and_record`. Aborts if the balance is not empty.
 public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
+    treasury: &Treasury,
     fee_manager: &mut FeeManager,
     ctx: &mut TxContext,
 ) {
+    treasury.verify_version();
     fee_manager.validate_owner(ctx);
 
     claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
@@ -316,6 +322,7 @@ public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
 /// This is a protected maintenance function to clean up empty fee balances that have not
 /// been claimed. Aborts if the balance is not empty.
 public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
+    treasury: &Treasury,
     fee_manager: &mut FeeManager,
     _admin: &AdminCap,
     pks: vector<vector<u8>>,
@@ -327,6 +334,7 @@ public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
         multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
         ESenderIsNotMultisig,
     );
+    treasury.verify_version();
 
     claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
 }
