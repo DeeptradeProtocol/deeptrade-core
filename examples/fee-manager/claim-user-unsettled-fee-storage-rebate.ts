@@ -18,7 +18,8 @@ const FEE_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb84
   tx.moveCall({
     target: `${DEEPTRADE_CORE_PACKAGE_ID}::fee_manager::claim_user_unsettled_fee_storage_rebate_admin`,
     arguments: [
-      tx.object(TREASURY_OBJECT_ID),
+      // TODO: Uncomment, when upgraded to new version of contract
+      // tx.object(TREASURY_OBJECT_ID),
       tx.object(FEE_MANAGER_ID),
       tx.object(POOL_ID),
       tx.object(BALANCE_MANAGER_ID),
