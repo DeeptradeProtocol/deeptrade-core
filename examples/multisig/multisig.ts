@@ -45,10 +45,10 @@ if (derivedAddress !== address) {
 
 export const MULTISIG_CONFIG: MultisigConfig = {
   publicKeys,
-  publicKeysSuiBytes,
   weights: parsedWeights,
   threshold: parsedThreshold,
   address,
+  publicKeysSuiBytes,
 };
 
 console.debug("Multisig Config Loaded and Verified:");
@@ -58,6 +58,5 @@ console.debug(`- Threshold: ${JSON.stringify(MULTISIG_CONFIG.threshold)}`);
 console.debug("- Signer Details:");
 MULTISIG_CONFIG.publicKeys.forEach((pk, i) => {
   const scheme = SIGNATURE_FLAG_TO_SCHEME[pk.flag() as keyof typeof SIGNATURE_FLAG_TO_SCHEME];
-  console.debug(`  - Signer ${i + 1} (${scheme}): ${pk.toSuiAddress()}`);
+  console.debug(`  - Signer ${i + 1}: ${pk.toSuiAddress()} (${scheme})`);
 });
-console.debug(`- Sui Public Key Bytes (for transactions): `, MULTISIG_CONFIG.publicKeysSuiBytes);

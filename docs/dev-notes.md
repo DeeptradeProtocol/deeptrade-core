@@ -54,6 +54,22 @@ Short operational notes for developers: deployment, upgrade, and development too
 
 ## Development Tools
 
+### Multisig Testing Tool
+
+For testing contract endpoints that require multisig authorization, use the multisig testing tool:
+
+```bash
+npm run test:multisig <transaction-bytes>
+```
+
+This tool automates the multisig transaction flow by:
+
+1. Signing the transaction with all configured signers
+2. Combining the signatures
+3. Executing the final transaction
+
+The tool uses the multisig configuration from `examples/multisig/multisig.ts`. Useful for rapid testing of multisig-protected endpoints during development.
+
 ### Lines of Code Analysis
 
 Analyze and count lines of code across all Deeptrade Core package modules:
