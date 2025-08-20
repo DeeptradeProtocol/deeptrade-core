@@ -94,7 +94,7 @@ Example: `🎯 Effective LoC (sources only): 1,234 lines`
 
 Use `sui move build --lint` for linting - enables additional linting checks beyond the default linters
 
-### `deeptrade_core` Address Workaround
+### Package Address Workaround
 
 The `deeptrade_core` address in `packages/deeptrade-core/Move.toml` is set to `0x1` as a workaround for a Sui compiler bug that creates namespace conflicts when a package and its dependencies share module names ([Sui issue #22194](https://github.com/MystenLabs/sui/issues/22194)). Our package and its `deepbook` dependency both contain `math`, `pool`, and `order` modules.
 
