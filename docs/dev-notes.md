@@ -45,6 +45,14 @@ Short operational notes for developers: deployment, upgrade, and development too
    ```
 10. (Optional) Update `examples/constants.ts` IDs if they changed
 
+## Running Tests
+
+We prefer using remote dependencies in `[dependencies]` section of `Move.toml`, to ensure that we maintain clarity for external observers and avoid potential integrity issues that could arise from using modified local versions of dependencies in long-term.
+
+To run tests for the `deeptrade-core` package, you need to use the development dependencies. In `packages/deeptrade-core/Move.toml`, uncomment the `deepbook` and `Pyth` dependencies under `[dev-dependencies]` section.
+
+These dependencies are kept commented by default due to a bug in the Sui compiler, which causes build failures when they are active ([Sui issue #23173](https://github.com/MystenLabs/sui/issues/23173)). You should only uncomment them when you need to run tests using `sui move test`.
+
 ## Treasury Operations (Admin Only)
 
 1. Run `examples/treasury/get-charged-fee-info.ts` to get the list of coins with charged fees (coverage fees and protocol fees).
