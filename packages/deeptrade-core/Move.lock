@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "6F8AF0D941F2D0F7F0F850C5B48A8EB9EDD87E1B38118BA1F2C85B411BFD309D"
+manifest_digest = "FF15E00E32B65B307702E4D1A37E9132F973D6E10E4FBE39169C799ABD4DE29F"
 deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -16,7 +16,7 @@ dependencies = [
 
 [[move.package]]
 id = "Bridge"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "79918a3f1357", subdir = "crates/sui-framework/packages/bridge" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "b448b1d971bd6c1aac8ef4eee4305943806d5d5b", subdir = "crates/sui-framework/packages/bridge" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -26,11 +26,11 @@ dependencies = [
 
 [[move.package]]
 id = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "79918a3f1357", subdir = "crates/sui-framework/packages/move-stdlib" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "b448b1d971bd6c1aac8ef4eee4305943806d5d5b", subdir = "crates/sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 id = "Pyth"
-source = { local = "../pyth" }
+source = { git = "https://github.com/pyth-network/pyth-crosschain.git", rev = "sui-contract-mainnet", subdir = "target_chains/sui/contracts" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },
@@ -39,7 +39,7 @@ dependencies = [
 
 [[move.package]]
 id = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "79918a3f1357", subdir = "crates/sui-framework/packages/sui-framework" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "b448b1d971bd6c1aac8ef4eee4305943806d5d5b", subdir = "crates/sui-framework/packages/sui-framework" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -47,7 +47,7 @@ dependencies = [
 
 [[move.package]]
 id = "SuiSystem"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "79918a3f1357", subdir = "crates/sui-framework/packages/sui-system" }
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "b448b1d971bd6c1aac8ef4eee4305943806d5d5b", subdir = "crates/sui-framework/packages/sui-system" }
 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
@@ -56,7 +56,7 @@ dependencies = [
 
 [[move.package]]
 id = "Wormhole"
-source = { local = "../wormhole" }
+source = { git = "https://github.com/wormhole-foundation/wormhole.git", rev = "sui/mainnet", subdir = "sui/wormhole" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },
@@ -64,7 +64,7 @@ dependencies = [
 
 [[move.package]]
 id = "deepbook"
-source = { local = "../deepbook" }
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "v3.0.0", subdir = "packages/deepbook" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },
@@ -73,7 +73,7 @@ dependencies = [
 
 [[move.package]]
 id = "multisig"
-source = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", rev = "main", subdir = "move" }
+source = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", rev = "v1.0.0", subdir = "move" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -84,7 +84,7 @@ dependencies = [
 
 [[move.package]]
 id = "token"
-source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "main", subdir = "packages/token" }
+source = { git = "https://github.com/MystenLabs/deepbookv3.git", rev = "v3.0.0", subdir = "packages/token" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },
