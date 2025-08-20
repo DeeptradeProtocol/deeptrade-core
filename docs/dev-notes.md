@@ -8,7 +8,7 @@ Short operational notes for developers: deployment, upgrade, and development too
 2. Set `address` to `0x0` in `Move.toml`
 3. Publish:
    ```bash
-   sui client publish --gas-budget 220000000 --skip-dependency-verification
+   sui client publish --gas-budget 420000000
    ```
 4. Copy the new package `address` into `packages/deeptrade-core/Move.toml`
 5. Update `examples/constants.ts` with new:
