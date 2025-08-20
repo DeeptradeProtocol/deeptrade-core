@@ -56,9 +56,9 @@ These dependencies are kept commented by default due to a bug in the Sui compile
 ## Treasury Operations (Admin Only)
 
 1. Run `examples/treasury/get-charged-fee-info.ts` to get the list of coins with charged fees (coverage fees and protocol fees).
-2. Run `examples/treasury/admin-withdraw-all-coins-coverage-fee.ts` to withdraw all coins coverage fees (coverage fees charged in output coin of each swap and for limit/market orders in SUI).
-3. Run `examples/treasury/admin-withdraw-protocol-fee.ts` to withdraw all protocol fees (protocol fees charged in SUI, pool creation fees charged in DEEP).
-4. Run `examples/treasury/withdraw-all-deep-reserves.ts` to withdraw all DEEP coins from reserves.
+2. Run `examples/ticket/admin-withdraw-all-coins-coverage-fee.ts` to withdraw all coins coverage fees (coverage fees charged in output coin of each swap and for limit/market orders in SUI).
+3. Run `examples/ticket/admin-withdraw-protocol-fee.ts` to withdraw all protocol fees (protocol fees charged in SUI, pool creation fees charged in DEEP).
+4. Run `examples/ticket/admin-withdraw-all-deep-reserves.ts` to withdraw all DEEP coins from reserves.
 
 ## Development Tools
 
@@ -93,3 +93,11 @@ Example: `🎯 Effective LoC (sources only): 1,234 lines`
 ## Development notes
 
 Use `sui move build --lint` for linting - enables additional linting checks beyond the default linters
+
+### `deeptrade_core` Address Workaround
+
+The `deeptrade_core` address in `packages/deeptrade-core/Move.toml` is set to `0x1` as a workaround for a Sui compiler bug that creates namespace conflicts when a package and its dependencies share module names ([Sui issue #22194](https://github.com/MystenLabs/sui/issues/22194)). Our package and its `deepbook` dependency both contain `math`, `pool`, and `order` modules.
+
+While developers typically set a package's address to `0x0` for local development, we use `0x1` to prevent build failures.
+
+**Important**: This address must be changed to `0x0` before deploying or upgrading the package.

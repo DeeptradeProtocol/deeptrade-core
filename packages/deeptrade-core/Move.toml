@@ -17,4 +17,6 @@ multisig = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", sub
 # Pyth = { local = "../pyth", address = "0x04e20ddf36af412a4096f9014f4a565af9e812db9a05cc40254846cf6ed0ad91" }
 
 [addresses]
+# Workaround for Sui compiler bug (#22194) causing namespace conflicts with dependencies.
+# This address must be set to `0x0` for deployment or upgrades. See `docs/dev-notes.md`.
 deeptrade_core = "0x1"
