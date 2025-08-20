@@ -4,9 +4,17 @@ version = "1.0.0"
 edition = "2024.beta"
 
 [dependencies]
-deepbook = { local = "../deepbook", address = "0xcaf6ba059d539a97646d47f0b9ddf843e138d215e2a12ca1f4585d386f7aec3a" }
-Pyth = { local = "../pyth", address = "0x04e20ddf36af412a4096f9014f4a565af9e812db9a05cc40254846cf6ed0ad91" }
-multisig = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", subdir = "move", rev = "main" }
+deepbook = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packages/deepbook", rev = "v3.0.0" }
+Pyth = { git = "https://github.com/pyth-network/pyth-crosschain.git", subdir = "target_chains/sui/contracts", rev = "sui-contract-mainnet" }
+multisig = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", subdir = "move", rev = "v1.0.0" }
+
+[dev-dependencies]
+# Uncomment these dev deps when running `sui move test`.
+# deepbook = { git = "https://github.com/DeeptradeProtocol/deepbookv3.git", subdir = "packages/deepbook", rev = "v3-tag-fork-test-methods" }
+# Pyth = { git = "https://github.com/DeeptradeProtocol/pyth-crosschain.git", subdir = "target_chains/sui/contracts", rev = "sui-contract-mainnet" }
+# Also local deps could be used for `sui move test`.
+# deepbook = { local = "../deepbook", address = "0xcaf6ba059d539a97646d47f0b9ddf843e138d215e2a12ca1f4585d386f7aec3a" }
+# Pyth = { local = "../pyth", address = "0x04e20ddf36af412a4096f9014f4a565af9e812db9a05cc40254846cf6ed0ad91" }
 
 [addresses]
-deeptrade_core = "0x0"
+deeptrade_core = "0x1"
