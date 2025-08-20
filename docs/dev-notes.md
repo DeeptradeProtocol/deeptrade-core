@@ -49,7 +49,7 @@ Short operational notes for developers: deployment, upgrade, and development too
 
 We prefer using remote dependencies in `[dependencies]` section of `Move.toml`, to ensure that we maintain clarity for external observers and avoid potential integrity issues that could arise from using modified local versions of dependencies in long-term.
 
-To run tests for the `deeptrade-core` package, you need to use the development dependencies. In `packages/deeptrade-core/Move.toml`, uncomment the `deepbook` and `Pyth` dependencies under `[dev-dependencies]` section.
+To run tests for the `deeptrade-core` package, you need to use the development dependencies. In `packages/deeptrade-core/Move.toml`, uncomment the `deepbook` and `Pyth` dependencies under `[dev-dependencies]` section and then run `sui move test`.
 
 These dependencies are kept commented by default due to a bug in the Sui compiler, which causes build failures when they are active ([Sui issue #23173](https://github.com/MystenLabs/sui/issues/23173)). You should only uncomment them when you need to run tests using `sui move test`.
 
