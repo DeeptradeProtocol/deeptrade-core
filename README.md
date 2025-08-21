@@ -1,19 +1,18 @@
-# Deepbook Wrapper
+# Logo
 
-The Deepbook Wrapper is a "wrapper" package for DeepBook V3 that enables trading without requiring users to hold DEEP coins.
+TBD
+
+# Deeptrade Core
 
 ## Overview
 
-This wrapper simplifies the trading experience by automatically handling DEEP coin requirements:
-
-- **Orders**: Covers DEEP fees from reserves in exchange for a portion of user's SUI
-
-The wrapper acts as an intermediary, managing all DEEP-related fee operations.
+TBD
 
 ## System Design
 
 For detailed technical specifications and implementation details, please refer to:
 
+- [Treasury DEEP Reserves](docs/treasury_deep_reserves.md)
 - [Fee Design](docs/fee-design.md)
 - [Loyalty Program](docs/loyalty.md)
 - [Oracle Price Calculation](docs/oracle-price-calculation.md)
@@ -22,52 +21,34 @@ For detailed technical specifications and implementation details, please refer t
 - [Versioning](docs/versioning.md)
 - [Multisig](docs/multisig.md)
 - [Admin Capabilities](docs/admin.md)
+- [Development Notes](docs/dev-notes.md)
 
-### Orders
-
-The Deepbook Wrapper provides DEEP coins from its reserves only when user needs additional DEEP to cover DeepBook's native fees during order placement. When the pool is whitelisted by DeepBook, the wrapper doesn't provide any DEEP, since such pools doesn't have DEEP fees.
-Also, if user has enough DEEP in their wallet or balance manager, the wrapper doesn't provide any DEEP.
-
-## Fee Structure
-
-### Swap Fees
-
-The Deepbook Wrapper charges a fee on each swap in the output coin of the swap. The fee structure directly mirrors DeepBook's `taker_fee` parameter, which is set and controlled by DeepBook governance. The Wrapper simply adopts these rates without modification.
-
-Initially (before 3.1 version of DeepBook) swaps require DEEP coin as a fee that was charged by DeepBook protocol.
-
-As of DeepBook version 3.1, it introduce ability to charge fee in input coin for swaps.
-Since that, the existing fee charging model could be described as following:
-DeepBook charge fee in `input coin`, `taker fee` \* `fee penalty multiplier`, where `fee penalty multiplier` is `1.25`.
-
-Deepbook Wrapper charge fee on top of this in `output coin`, equal to the `taker_fee` parameter from DeepBook's `pool.pool_trade_params()`.
+## Fee overview
 
 ### Order Fees
 
-DeepBook protocol requires paying fees for order placement in either DEEP coins or the order's input asset (DEEP-based fee or Input Coin fee types), with fees calculated based on order price and size. The wrapper extends this flexibility by allowing users to pay these fees using various sources: their wallet, their `BalanceManager`, or even the wrapper's own DEEP reserves if the user's DEEP balance is insufficient.
+DeepBook protocol requires paying fees for order placement in either DEEP or the order's input asset (DEEP-based fee or Input Coin fee types), with fees calculated based on order price and size. Deeptrade protocol extends this flexibility by allowing users to pay these fees using various sources: their wallet, their `BalanceManager`, or even the protocol's treasury DEEP reserves if the user's DEEP balance is insufficient.
 
-- **Protocol Fees**: In addition to DeepBook's fees, the wrapper charges its own protocol fees. These fees can be configured with different rates for taker and maker orders, and can be set globally or on a per-pool basis.
-
-**DEEP Reserve Coverage Fee**: Only charged when the user needs to borrow DEEP from Wrapper reserves to cover DeepBook fees. This fee equals the required DEEP amount converted to SUI value and is paid in SUI coins.
-
-**Protocol Fee Discounts**: When using DEEP fee type, users can receive discounts on protocol fees based on how much DeepBook fees they cover with their own DEEP tokens. The more DEEP the user provides, the higher their discount on protocol fees. Additionally, the system includes a **Loyalty Program** that provides additional protocol fee discounts based on user loyalty levels. For detailed information about the loyalty program, see the [Loyalty Program](docs/loyalty.md) documentation.
-
-This structure incentivizes users to hold DEEP coins while ensuring trading accessibility for everyone.
-For whitelisted pools, there are no DEEP fees, so no coverage fees are required. However, protocol fees are still charged, with whitelisted pools receiving the maximum protocol fee discount rate for each order. Maximum discount rates for pools are specified in `TradingFeeConfig`, with a default rate of 25% used if not specified.
-
+**Protocol Fees**: In addition to DeepBook's fees, the Deeptrade charges its own protocol fees. These fees can be configured with different rates for taker and maker orders, and can be set globally or on a per-pool basis.
 For detailed information about dynamic protocol fee calculation, and the unsettled fees mechanism, see the [Fee Design](docs/fee-design.md) and [Unsettled Fees](docs/unsettled-fees.md) documentation.
 
-### Pool Creation Fees
+**DEEP Reserve Coverage Fee**: This fee is charged only when a user borrows `DEEP` from the protocol's reserves to cover DeepBook fees. It is paid in SUI and is equivalent to the market value of the `DEEP` provided. More information is available in the [Treasury DEEP Reserves](docs/treasury_deep_reserves.md).
 
-When creating a new trading pool, there are two separate fees:
+#### Protocol Fee Discounts
 
-DeepBook protocol requires DEEP coins (currently set to 500 DEEP) as a fee for each new pool creation. Additionally, the Wrapper charges a configurable protocol fee (currently set to 100 DEEP coins) stored in the `PoolCreationConfig` object.
+When using DEEP fee type, users can receive discounts on protocol fees based on how much DeepBook fees they cover with their own DEEP tokens. The more DEEP the user provides, the higher their discount on protocol fees.
+Whitelisted pools receive the maximum protocol fee discount rate for each order. The discount rates are per-pool based and set in `TradingFeeConfig`, with a default rate of 25% used if not specified.
 
-## Economic Considerations
+Additionally, the system includes a **Loyalty Program** that provides additional protocol fee discounts based on user loyalty levels. For detailed information about the loyalty program, see the [Loyalty Program](docs/loyalty.md).
 
-### DEEP Reserves Sustainability
+## Swap Fees
 
-The Wrapper's order fee structure has minimal economic risk. By collecting fees in SUI, we maintain a stable and liquid asset for reserves management. Since reserve coverage fees directly match the DEEP amount needed, there's a fair value exchange. The additional protocol fees (calculated dynamically based on order execution) help cover operational costs and reserves maintenance.
+Similar to order fees, the DeepBook protocol requires paying fees for swaps in either `DEEP` or the swap's input coin (DEEP-based or Input Coin fee types), calculated based on the swap size.
+
+Deeptrade charges its own fees using the `taker_fee` parameter specified in `TradingFeeConfig`. For swaps, the protocol currently only supports the Input Coin fee type.
+
+The protocol fee is charged in the output coin of the swap.
+Discounts from the [Loyalty Program](docs/loyalty.md) also apply to swap fees.
 
 ## Deeptrade Core Package Ids:
 
@@ -82,6 +63,18 @@ The Wrapper's order fee structure has minimal economic risk. By collecting fees 
 0xc49f720f4e8427cbd3955846ca9231441dab8ccda6c3da6e9d44ed6f9dcf865c
 0x2356885eae212599c0c7a42d648cc2100dedfa4698f8fc58fc6b9f67806f2bfc
 0x03aafc54af513d592bcb91136d61b94ea40b0f9b50477f24a3a9a38fca625174
+```
+
+## Upgrade Cap:
+
+```
+
+```
+
+## Admin Cap:
+
+```
+
 ```
 
 ## License
