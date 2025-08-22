@@ -2,6 +2,7 @@
 module deeptrade_core::calculate_input_coin_deepbook_fee_tests;
 
 use deeptrade_core::fee::calculate_input_coin_deepbook_fee;
+use std::u64;
 use std::unit_test::assert_eq;
 
 #[test]
@@ -76,7 +77,7 @@ fun max_amount_overflow() {
     // We use a taker_fee high enough to cause an overflow when multiplied by amount.
     // The result of the fee calculation will exceed u64::MAX.
     calculate_input_coin_deepbook_fee(
-        18446744073709551615, // u64::MAX
+        u64::max_value!(), // u64::MAX
         1_000_000_000, // 100%
     );
 }
@@ -90,6 +91,6 @@ fun max_taker_fee_overflow() {
     // inside the math::mul function when calculating the penalized fee rate.
     calculate_input_coin_deepbook_fee(
         1_000_000_000,
-        18446744073709551615, // u64::MAX
+        u64::max_value!(), // u64::MAX
     );
 }
