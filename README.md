@@ -4,9 +4,24 @@
 
 # Deeptrade Core
 
-## Overview
+## Overview (DRAFT)
 
-TBD
+This package is a **comprehensive on-chain trading protocol suite** built to enhance and secure liquidity operations on the Sui network's DeepBook order book.
+
+It introduces a sophisticated, self-sustaining economic model centered around a core **Treasury** that manages protocol-owned liquidity for `DEEP` tokens. This allows for a more accessible trading experience by abstracting the native fee token requirements of the underlying order book.
+
+The protocol's key innovation is its robust **Fee and Liquidity Management Engine**, which includes:
+
+- **Dynamic Fee Generation**: A configurable fee engine that generates revenue for the protocol from trading activity, with distinct rates for taker/maker orders and pool creation.
+- **Unsettled Fees System**: A fair and scalable mechanism that ensures fees are only charged on executed trade volumes, utilizing per-user `FeeManager` objects to prevent network congestion.
+- **Oracle-Secured Pricing**: A dual-validation system that leverages both on-chain pool data and external Pyth oracle feeds to protect the protocol's reserves from atomic price manipulation attacks.
+- **User Incentives**: An integrated Loyalty Program that rewards high-volume traders with fee discounts, encouraging sustained platform activity.
+
+Governance and security are paramount, enforced through an **on-chain Multisig Guarantee** that hardcodes multi-signature verification into all sensitive administrative functions.
+
+High-risk operations, such as fund withdrawals and fee updates, are further protected by a mandatory, event-logged **Timelock System**, providing transparency and a critical buffer against compromise.
+
+The protocol is designed for long-term maintainability with a built-in **Versioning System**, allowing for secure and seamless upgrades.
 
 ## System Design
 
