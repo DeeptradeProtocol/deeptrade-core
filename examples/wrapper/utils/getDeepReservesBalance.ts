@@ -8,7 +8,7 @@ export async function getDeepReservesBalance() {
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${WRAPPER_PACKAGE_ID}::wrapper::deep_reserves`,
+    target: `${WRAPPER_PACKAGE_ID}::wrapper::get_deep_reserves_value`,
     arguments: [tx.object(WRAPPER_OBJECT_ID)],
   });
 

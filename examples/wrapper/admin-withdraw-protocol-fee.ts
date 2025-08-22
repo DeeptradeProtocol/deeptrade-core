@@ -20,7 +20,7 @@ import { processFeesBag } from "./utils/processFeeBag";
   for (const coinType of coinTypes) {
     getWithdrawFeeTx({
       coinType,
-      target: `${WRAPPER_PACKAGE_ID}::wrapper::admin_withdraw_protocol_fee_v2`,
+      target: `${WRAPPER_PACKAGE_ID}::wrapper::admin_withdraw_protocol_fee`,
       user,
       adminCapId: ADMIN_CAP_OBJECT_ID,
       transaction: tx,

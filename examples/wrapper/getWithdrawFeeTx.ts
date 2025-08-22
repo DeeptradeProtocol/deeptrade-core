@@ -26,7 +26,7 @@ export function getWithdrawFeeTx({
   const withdrawnCoin = tx.moveCall({
     target,
     typeArguments: [coinType],
-    arguments: [tx.object(WRAPPER_OBJECT_ID), tx.object(cap)],
+    arguments: [tx.object(cap), tx.object(WRAPPER_OBJECT_ID), ],
   });
 
   tx.transferObjects([withdrawnCoin], tx.pure.address(user));
