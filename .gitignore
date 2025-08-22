@@ -31,3 +31,4 @@ text_docs/
 # Test files
 *.mvcov
 .trace
+packages/deeptrade-core/coverage-reports/
