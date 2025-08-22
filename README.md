@@ -1,6 +1,6 @@
-# Logo
-
-TBD
+<p align="center">
+  <img src="./assets/sui-deeptrade-dynamic-logo.svg" alt="Sui Deeptrade Logo" style="border: none; background: transparent;">
+</p>
 
 # Deeptrade Core
 
