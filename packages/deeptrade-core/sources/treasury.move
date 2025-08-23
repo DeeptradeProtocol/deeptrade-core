@@ -383,6 +383,30 @@ public(package) fun verify_version(treasury: &Treasury) {
 }
 
 // === Test Functions ===
+/// Get the allowed versions for testing.
+#[test_only]
+public fun allowed_versions(treasury: &Treasury): &VecSet<u16> {
+    &treasury.allowed_versions
+}
+
+/// Get the disabled versions for testing.
+#[test_only]
+public fun disabled_versions(treasury: &Treasury): &VecSet<u16> {
+    &treasury.disabled_versions
+}
+
+/// Get the deep reserves coverage fees bag for testing.
+#[test_only]
+public fun deep_reserves_coverage_fees(treasury: &Treasury): &Bag {
+    &treasury.deep_reserves_coverage_fees
+}
+
+/// Get the protocol fees bag for testing.
+#[test_only]
+public fun protocol_fees(treasury: &Treasury): &Bag {
+    &treasury.protocol_fees
+}
+
 /// Get the protocol fee balance for a specific coin type.
 #[test_only]
 public fun get_protocol_fee_balance<CoinType>(treasury: &Treasury): u64 {
