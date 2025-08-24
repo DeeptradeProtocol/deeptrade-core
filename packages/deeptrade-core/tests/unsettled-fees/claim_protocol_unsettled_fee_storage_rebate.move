@@ -12,11 +12,11 @@ use deeptrade_core::fee_manager::{
     EProtocolUnsettledFeeNotEmpty,
     ESenderIsNotMultisig
 };
-use deeptrade_core::grant_user_level_tests::{
+use multisig::multisig_test_utils::{
+    get_test_multisig_address,
     get_test_multisig_pks,
     get_test_multisig_weights,
-    get_test_multisig_threshold,
-    get_test_multisig_address
+    get_test_multisig_threshold
 };
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
 use deeptrade_core::treasury::Treasury;

@@ -1,11 +1,11 @@
 #[test_only]
 module deeptrade_core::add_loyalty_level_tests;
 
-use deeptrade_core::grant_user_level_tests::{
+use multisig::multisig_test_utils::{
+    get_test_multisig_address,
     get_test_multisig_pks,
     get_test_multisig_weights,
-    get_test_multisig_threshold,
-    get_test_multisig_address
+    get_test_multisig_threshold
 };
 use deeptrade_core::loyalty::{
     Self,
