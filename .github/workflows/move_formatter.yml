@@ -1,0 +1,30 @@
+name: Move Formatter CI
+
+on:
+  pull_request:
+    paths:
+      - "packages/**.move"
+      - ".github/workflows/move_formatter.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/**.move"
+      - ".github/workflows/move_formatter.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-move-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Move files formatting
+        uses: MystenLabs/move-formatter-action@v1
+        with:
+          # The action needs to run in the directory containing Move.toml to detect the edition.
+          working-directory: "packages"
