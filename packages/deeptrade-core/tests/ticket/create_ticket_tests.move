@@ -2,21 +2,16 @@
 module deeptrade_core::create_ticket_tests;
 
 use deeptrade_core::admin::AdminCap;
-use deeptrade_core::ticket::{
-    Self,
-    AdminTicket,
-    ESenderIsNotMultisig,
-};
-use sui::clock;
-
-use sui::test_scenario;
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
+use deeptrade_core::ticket::{Self, AdminTicket, ESenderIsNotMultisig};
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
     get_test_multisig_pks,
     get_test_multisig_weights,
     get_test_multisig_threshold
 };
+use sui::clock;
+use sui::test_scenario;
 
 const TICKET_TYPE: u8 = 0;
 const CLOCK_TIMESTAMP_MS: u64 = 1756071906000;
@@ -44,7 +39,7 @@ fun create_ticket_success_with_multisig() {
             &clock,
             test_scenario::ctx(&mut scenario),
         );
-        
+
         clock::destroy_for_testing(clock);
         test_scenario::return_to_sender(&scenario, admin_cap);
     };
@@ -55,7 +50,7 @@ fun create_ticket_success_with_multisig() {
         assert!(ticket::owner(&ticket) == multisig_address, 1);
         assert!(ticket::ticket_type(&ticket) == TICKET_TYPE, 2);
         assert!(ticket::created_at(&ticket) == TICKET_TIMESTAMP_S, 3);
-        
+
         test_scenario::return_shared(ticket);
     };
 
@@ -68,7 +63,7 @@ fun create_ticket_success_with_multisig() {
 fun create_ticket_fails_if_sender_not_multisig() {
     let owner = @0xDEED;
     let (mut scenario) = setup_with_admin_cap(owner);
-    
+
     // NOTE: We do NOT switch the sender. The sender remains the OWNER,
     // which does not match the derived multisig address.
     test_scenario::next_tx(&mut scenario, owner);
@@ -86,11 +81,10 @@ fun create_ticket_fails_if_sender_not_multisig() {
             &clock,
             test_scenario::ctx(&mut scenario),
         );
-        
+
         clock::destroy_for_testing(clock);
         test_scenario::return_to_sender(&scenario, admin_cap);
     };
 
     scenario.end();
 }
-

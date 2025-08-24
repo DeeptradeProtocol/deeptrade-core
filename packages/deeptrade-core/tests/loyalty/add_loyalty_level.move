@@ -1,18 +1,18 @@
 #[test_only]
 module deeptrade_core::add_loyalty_level_tests;
 
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
 use deeptrade_core::loyalty::{
     Self,
     LoyaltyProgram,
     ELoyaltyLevelAlreadyExists,
     EInvalidFeeDiscountRate,
     ESenderIsNotMultisig
+};
+use multisig::multisig_test_utils::{
+    get_test_multisig_address,
+    get_test_multisig_pks,
+    get_test_multisig_weights,
+    get_test_multisig_threshold
 };
 use std::unit_test::assert_eq;
 use sui::test_scenario::{Scenario, begin, end, return_shared};

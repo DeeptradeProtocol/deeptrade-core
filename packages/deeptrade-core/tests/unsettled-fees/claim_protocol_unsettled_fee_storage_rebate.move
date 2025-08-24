@@ -12,14 +12,14 @@ use deeptrade_core::fee_manager::{
     EProtocolUnsettledFeeNotEmpty,
     ESenderIsNotMultisig
 };
+use deeptrade_core::settle_user_fees_tests::setup_test_environment;
+use deeptrade_core::treasury::Treasury;
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
     get_test_multisig_pks,
     get_test_multisig_weights,
     get_test_multisig_threshold
 };
-use deeptrade_core::settle_user_fees_tests::setup_test_environment;
-use deeptrade_core::treasury::Treasury;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::sui::SUI;

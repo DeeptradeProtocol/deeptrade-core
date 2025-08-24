@@ -32,7 +32,6 @@ fun init_logic_creates_and_transfers_admin_cap_to_publisher() {
     test_scenario::end(scenario);
 }
 
-
 /// Initializes admin and gives the AdminCap to the OWNER.
 #[test_only]
 public fun setup_with_admin_cap(owner: address): sui::test_scenario::Scenario {
