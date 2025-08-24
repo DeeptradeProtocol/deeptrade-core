@@ -164,3 +164,13 @@ public(package) fun validate_ticket(
     // Check if ready
     assert!(is_ticket_ready(ticket, clock), ETicketNotReady);
 }
+
+// === Test Functions ===
+#[test_only]
+public fun owner(ticket: &AdminTicket): address { ticket.owner }
+
+#[test_only]
+public fun created_at(ticket: &AdminTicket): u64 { ticket.created_at }
+
+#[test_only]
+public fun ticket_type(ticket: &AdminTicket): u8 { ticket.ticket_type }
