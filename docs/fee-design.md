@@ -2,7 +2,8 @@
 
 ## Overview
 
-The Deeptrade protocol charges additional fees on top of the standard DeepBook fees. These fees are calculated using a protocol-level fee configuration system and are applied regardless of which fee type is used for the underlying DeepBook order.
+The Deeptrade protocol charges additional fees on top of the standard DeepBook fees. The additional protocol fees help cover operational costs and reserves maintenance.
+These fees are calculated using a protocol-level fee configuration system and are applied regardless of which fee type is used for the underlying DeepBook order.
 
 ## Fee Configuration
 
@@ -107,3 +108,10 @@ We have two functions for creating limit orders:
 Why we need separate functions: In the Move language, the `pool` argument (target pool) is a mutable reference, while the `reference_pool` argument is a regular reference. Move doesn't allow these to be the same object (for example, when creating a limit order on the DEEP/SUI pool while using that same pool as the reference pool).
 
 We created `create_limit_order_whitelisted` to handle this limitation. Since whitelisted pools (by DeepBook's design) don't charge DEEP fees, the Deeptrade protocol doesn't need to charge coverage fees for them. Therefore, no reference pool is needed when working with whitelisted pools.
+
+## Pool Creation Fees
+
+When creating a new trading pool, there are two separate fees:
+
+- DeepBook protocol requires DEEP coins (currently set to 500 DEEP) as a fee for each new pool creation.
+- Additionally, the Wrapper charges a configurable protocol fee (currently set to 100 DEEP) stored in the `PoolCreationConfig` object.

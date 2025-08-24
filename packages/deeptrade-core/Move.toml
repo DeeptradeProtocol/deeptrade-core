@@ -6,7 +6,7 @@ edition = "2024.beta"
 [dependencies]
 deepbook = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packages/deepbook", rev = "v3.0.0" }
 Pyth = { git = "https://github.com/pyth-network/pyth-crosschain.git", subdir = "target_chains/sui/contracts", rev = "sui-contract-mainnet" }
-multisig = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", subdir = "move", rev = "v1.0.0" }
+multisig = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", subdir = "move", rev = "v1.0.1" }
 
 [dev-dependencies]
 # Uncomment these dev deps when running `sui move test`.

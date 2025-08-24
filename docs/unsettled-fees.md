@@ -18,7 +18,7 @@ All protocol fee operations are managed through the `FeeManager` object. This ob
 
 1.  **`user_unsettled_fees`**: This field holds `UserUnsettledFee` structs, each created for the **maker portion** of a limit order (the part that rests in the order book). A struct persists in this bag even after its order is filled, until it is processed by a settlement function.
 
-2.  **`protocol_unsettled_fees`**: This field aggregates all fees that have been earned by the protocol but not yet transferred to the treasury. This includes taker fees, the protocol's share of maker fees from partially filled orders, and fees charged from swaps. It holds `Balance` values, one for each coin type.
+2.  **`protocol_unsettled_fees`**: This field aggregates all fees that have been earned by the protocol but not yet transferred to the treasury. This includes taker fees, the protocol's share of maker fees from partially filled orders. It holds `Balance` values, one for each coin type.
 
 ## The Fee Lifecycle
 
