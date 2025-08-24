@@ -56,9 +56,9 @@ jobs:
       - name: Prepare Move.toml for tests
         run: |
           # This will uncomment the git-based dev dependencies for deepbook and Pyth.
-          # Note: The -i option for sed behaves differently on macOS vs Linux. This is for Linux (ubuntu-latest).
-          sed -i 's/^#\(deepbook = { git = "https:\/\/github.com\/DeeptradeProtocol\/deepbookv3.git".*}\)/\1/' packages/deeptrade-core/Move.toml
-          sed -i 's/^#\(Pyth = { git = "https:\/\/github.com\/DeeptradeProtocol\/pyth-crosschain.git".*}\)/\1/' packages/deeptrade-core/Move.toml
+          # We use perl here instead of sed for cross-platform compatibility (macOS vs Linux).
+          perl -i -pe 's/^#\s*(deepbook = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/deepbookv3.git".*\})/$1/' packages/deeptrade-core/Move.toml
+          perl -i -pe 's/^#\s*(Pyth = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/pyth-crosschain.git".*\})/$1/' packages/deeptrade-core/Move.toml
           echo "Move.toml after changes:"
           cat packages/deeptrade-core/Move.toml
 
