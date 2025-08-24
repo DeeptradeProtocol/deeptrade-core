@@ -1,0 +1,80 @@
+name: Move Test CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "packages/deeptrade-core/**"
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SUI_VERSION: "1.54.2" # Parameterized Sui version
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install Sui v${{ env.SUI_VERSION }}
+        run: |
+          echo "Installing Sui v${{ env.SUI_VERSION }}..."
+          mkdir -p $HOME/sui-bin
+
+          SUI_URL="https://github.com/MystenLabs/sui/releases/download/mainnet-v${{ env.SUI_VERSION }}/sui-mainnet-v${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz"
+          echo "Downloading Sui from $SUI_URL"
+
+          # Use curl with fail flag and check response
+          HTTP_STATUS=$(curl -o sui.tar.gz -w "%{http_code}" -L $SUI_URL)
+
+          if [[ "$HTTP_STATUS" -ne 200 ]]; then
+            echo "Error: Failed to download Sui. HTTP Status: $HTTP_STATUS"
+            exit 1
+          fi
+
+          if ! file sui.tar.gz | grep -q "gzip compressed"; then
+            echo "Error: Downloaded file is not a valid tar.gz archive."
+            exit 1
+          fi
+
+          tar -xvzf sui.tar.gz -C $HOME/sui-bin
+          chmod +x $HOME/sui-bin/sui
+          echo "$HOME/sui-bin" >> $GITHUB_PATH
+          export PATH="$HOME/sui-bin:$PATH"
+
+          # Verify installation
+          sui --version
+
+      - name: Build with production dependencies
+        run: |
+          PACKAGE_PATH="packages/deeptrade-core"
+          echo "Building package at $PACKAGE_PATH with production dependencies..."
+          sui move build --lint --path "$PACKAGE_PATH"
+
+      - name: Prepare Move.toml for tests
+        run: |
+          # This will uncomment the git-based dev dependencies for deepbook and Pyth.
+          # We use perl here instead of sed for cross-platform compatibility (macOS vs Linux).
+          perl -i -pe 's/^#\s*(deepbook = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/deepbookv3.git".*\})/$1/' packages/deeptrade-core/Move.toml
+          perl -i -pe 's/^#\s*(Pyth = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/pyth-crosschain.git".*\})/$1/' packages/deeptrade-core/Move.toml
+          echo "Move.toml after changes:"
+          cat packages/deeptrade-core/Move.toml
+
+      - name: Run Move tests for deeptrade-core
+        run: |
+          PACKAGE_PATH="packages/deeptrade-core"
+          if [ ! -f "$PACKAGE_PATH/Move.toml" ]; then
+            echo "Error: $PACKAGE_PATH/Move.toml not found!"
+            exit 1
+          fi
+
+          echo "Running sui move test in $PACKAGE_PATH"
+          sui move test --lint --path "$PACKAGE_PATH"
