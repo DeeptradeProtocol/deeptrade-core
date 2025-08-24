@@ -48,10 +48,9 @@ fun settle_single_fee() {
 
         settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
 
-        let (
-            orders_count,
-            total_settled,
-        ) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        let (orders_count, total_settled) = fee_manager::finish_protocol_fee_settlement_for_testing(
+            receipt,
+        );
 
         // settle_protocol_fee_and_record does not increment orders_count
         assert_eq!(orders_count, 0);
@@ -87,10 +86,9 @@ fun settle_non_existent_fee() {
 
         settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
 
-        let (
-            orders_count,
-            total_settled,
-        ) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        let (orders_count, total_settled) = fee_manager::finish_protocol_fee_settlement_for_testing(
+            receipt,
+        );
         assert_eq!(orders_count, 0);
         assert_eq!(total_settled, 0);
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 0);
@@ -145,10 +143,9 @@ fun settle_zero_fee() {
 
         settle_protocol_fee_and_record(&mut treasury, &mut fee_manager, &mut receipt);
 
-        let (
-            orders_count,
-            total_settled,
-        ) = fee_manager::finish_protocol_fee_settlement_for_testing(receipt);
+        let (orders_count, total_settled) = fee_manager::finish_protocol_fee_settlement_for_testing(
+            receipt,
+        );
         assert_eq!(orders_count, 0);
         assert_eq!(total_settled, 0);
 

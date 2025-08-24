@@ -90,10 +90,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
         let balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
 
         assert_eq!(pool.account_open_orders(&balance_manager).contains(&order_id), false);
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
 
         return_shared(fee_manager);
         return_shared(pool);
@@ -123,10 +120,7 @@ fun protocol_settles_fee_on_fully_filled_order() {
         assert_eq!(total_settled, 1000);
 
         // Verify the unsettled fee is now empty but still exists for future storage rebate claim
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             0,
@@ -212,10 +206,7 @@ fun protocol_settles_fee_on_user_cancelled_order() {
         assert_eq!(treasury.get_protocol_fee_balance<SUI>(), 1000);
 
         // Verify the unsettled fee is now empty but still exists for future storage rebate claim
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             0,
@@ -284,10 +275,7 @@ fun protocol_ignores_live_unfilled_order() {
         assert_eq!(total_settled, 0);
 
         // Verify the unsettled fee is still there and has previous balance
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             1000,
@@ -379,10 +367,7 @@ fun protocol_ignores_live_partially_filled_order() {
         assert_eq!(total_settled, 0);
 
         // Verify the unsettled fee is still there and has previous balance
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             1000,

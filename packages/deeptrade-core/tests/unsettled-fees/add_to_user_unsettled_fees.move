@@ -51,10 +51,7 @@ fun live_order_success() {
         fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         // Verify fee was stored correctly
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             fee_amount,
@@ -113,10 +110,7 @@ fun partially_filled_order_success() {
         fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
 
         // Verify fee was stored correctly
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             fee_amount,
@@ -170,10 +164,7 @@ fun join_existing_fee_fails() {
         fee_manager.add_to_user_unsettled_fees(fee_balance_1, &order_info, ctx);
 
         // Verify first fee was stored correctly
-        assert_eq!(
-            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
-            true,
-        );
+        assert_eq!(fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id), true);
         assert_eq!(
             fee_manager.get_user_unsettled_fee_balance<SUI>(pool_id, balance_manager_id, order_id),
             fee_amount_1,
