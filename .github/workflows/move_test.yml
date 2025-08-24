@@ -53,6 +53,12 @@ jobs:
           # Verify installation
           sui --version
 
+      - name: Build with production dependencies
+        run: |
+          PACKAGE_PATH="packages/deeptrade-core"
+          echo "Building package at $PACKAGE_PATH with production dependencies..."
+          sui move build --lint --path "$PACKAGE_PATH"
+
       - name: Prepare Move.toml for tests
         run: |
           # This will uncomment the git-based dev dependencies for deepbook and Pyth.
@@ -71,4 +77,4 @@ jobs:
           fi
 
           echo "Running sui move test in $PACKAGE_PATH"
-          sui move test --path "$PACKAGE_PATH"
+          sui move test --lint --path "$PACKAGE_PATH"
