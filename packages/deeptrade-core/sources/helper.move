@@ -190,6 +190,8 @@ public(package) fun get_sui_per_deep<ReferenceBaseAsset, ReferenceQuoteAsset>(
     // Choose maximum (best for treasury - users pay more SUI for DEEP)
     let sui_per_deep = u64::max(oracle_sui_per_deep, reference_sui_per_deep);
 
+    // Sanity check: reference pool price must be positive here because `get_pool_first_ask_price`
+    // aborts with `ENoAskPrice` if no ask price exists, otherwise returns a positive price.
     assert!(sui_per_deep > 0, EInvalidSuiPerDeep);
 
     sui_per_deep
