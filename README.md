@@ -31,7 +31,7 @@ High-risk operations, such as withdrawals from the protocol's treasury and fee u
 
 The protocol is designed for long-term maintainability with a built-in **Versioning System**, allowing for secure and seamless upgrades.
 
-To further enhance transparency around upgrades, the protocol will adopt a **Custom Upgrade Policy** for its `UpgradeCap`. This initiative directly addresses the critical need for observable package upgrades—a challenge recognized within the broader Sui ecosystem (see [Sui Improvement Proposal #57](https://github.com/sui-foundation/sips/pull/57/files)). The custom policy, currently in draft (see [PR #75](https://github.com/DeeptradeProtocol/deeptrade-core/pull/75)), will provide essential on-chain visibility for any upgrade event. This lays the groundwork for a future upgrade timelock, ensuring the community has a crucial window to review and react to changes, safeguarding against unauthorized modifications.
+To further enhance transparency around upgrades, the protocol will adopt a **Custom Upgrade Policy** for its `UpgradeCap`. This initiative directly addresses the critical need for observable package upgrades — a challenge recognized within the broader Sui ecosystem (see [Sui Improvement Proposal #57](https://github.com/sui-foundation/sips/pull/57/files)). The custom policy, currently in draft (see [PR #75](https://github.com/DeeptradeProtocol/deeptrade-core/pull/75)), will provide essential on-chain visibility for any upgrade event. This lays the groundwork for a future upgrade timelock, ensuring the community has a crucial window to review and react to changes, safeguarding against unauthorized modifications.
 
 ## System Design
 
