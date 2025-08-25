@@ -14,9 +14,9 @@ const ESenderIsNotMultisig: u64 = 5;
 const ETicketNotExpired: u64 = 6;
 
 // === Constants ===
-const SECONDS_PER_DAY: u64 = 86400;
-const TICKET_DELAY_DURATION: u64 = SECONDS_PER_DAY * 2; // 2 days
-const TICKET_ACTIVE_DURATION: u64 = SECONDS_PER_DAY * 3; // 3 days
+const MILLISECONDS_PER_DAY: u64 = 86_400_000;
+const TICKET_DELAY_DURATION: u64 = MILLISECONDS_PER_DAY * 2; // 2 days
+const TICKET_ACTIVE_DURATION: u64 = MILLISECONDS_PER_DAY * 3; // 3 days
 
 /// Ticket types
 const WITHDRAW_DEEP_RESERVES: u8 = 0;
@@ -82,7 +82,7 @@ public fun create_ticket(
         ESenderIsNotMultisig,
     );
 
-    let created_at = clock.timestamp_ms() / 1000;
+    let created_at = clock.timestamp_ms();
 
     let ticket = AdminTicket {
         id: object::new(ctx),
@@ -110,13 +110,13 @@ public fun cleanup_expired_ticket(ticket: AdminTicket, clock: &Clock) {
 // === Public-View Functions ===
 /// Check if ticket is ready for execution (past delay period)
 public fun is_ticket_ready(ticket: &AdminTicket, clock: &Clock): bool {
-    let current_time = clock.timestamp_ms() / 1000;
+    let current_time = clock.timestamp_ms();
     current_time >= ticket.created_at + TICKET_DELAY_DURATION
 }
 
 /// Check if ticket is expired (past active period)
 public fun is_ticket_expired(ticket: &AdminTicket, clock: &Clock): bool {
-    let current_time = clock.timestamp_ms() / 1000;
+    let current_time = clock.timestamp_ms();
     current_time >= ticket.created_at + TICKET_DELAY_DURATION + TICKET_ACTIVE_DURATION
 }
 

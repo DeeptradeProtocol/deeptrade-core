@@ -15,7 +15,6 @@ use sui::test_scenario;
 
 const TICKET_TYPE: u8 = 0;
 const CLOCK_TIMESTAMP_MS: u64 = 1756071906000;
-const TICKET_TIMESTAMP_S: u64 = CLOCK_TIMESTAMP_MS / 1000;
 
 #[test]
 /// Test that a ticket is created successfully when the sender is a valid multisig address.
@@ -49,7 +48,7 @@ fun create_ticket_success_with_multisig() {
         let ticket = test_scenario::take_shared<AdminTicket>(&scenario);
         assert!(ticket::owner(&ticket) == multisig_address, 1);
         assert!(ticket::ticket_type(&ticket) == TICKET_TYPE, 2);
-        assert!(ticket::created_at(&ticket) == TICKET_TIMESTAMP_S, 3);
+        assert!(ticket::created_at(&ticket) == CLOCK_TIMESTAMP_MS, 3);
 
         test_scenario::return_shared(ticket);
     };
