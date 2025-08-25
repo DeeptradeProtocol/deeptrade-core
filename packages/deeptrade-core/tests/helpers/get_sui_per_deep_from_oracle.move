@@ -1567,7 +1567,7 @@ fun real_world_price_ratio() {
 }
 
 #[test_only]
-fun new_deep_price_object(
+public fun new_deep_price_object(
     scenario: &mut Scenario,
     price_magnitude: u64,
     price_mag_is_negative: bool,
@@ -1590,7 +1590,7 @@ fun new_deep_price_object(
 }
 
 #[test_only]
-fun new_sui_price_object(
+public fun new_sui_price_object(
     scenario: &mut Scenario,
     price_magnitude: u64,
     price_mag_is_negative: bool,
@@ -1613,7 +1613,7 @@ fun new_sui_price_object(
 }
 
 #[test_only]
-fun new_price_info_object(
+public fun new_price_info_object(
     scenario: &mut Scenario,
     price_id: vector<u8>,
     price_magnitude: u64,
