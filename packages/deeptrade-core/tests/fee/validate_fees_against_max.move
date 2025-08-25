@@ -6,7 +6,8 @@ use deeptrade_core::helper::apply_slippage;
 use deeptrade_core::order::{
     validate_fees_against_max,
     EDeepRequiredExceedsMax,
-    ECoverageFeeExceedsMax
+    ECoverageFeeExceedsMax,
+    EInvalidSlippage
 };
 use std::unit_test::assert_eq;
 
@@ -293,6 +294,56 @@ fun minimal_slippage_tolerance() {
     let estimated_sui_fee_slippage = 1_000_000; // 0.1% slippage (very small)
 
     // This should not abort - values are exactly equal with minimal tolerance
+    validate_fees_against_max(
+        deep_required,
+        deep_from_reserves,
+        sui_per_deep,
+        estimated_deep_required,
+        estimated_deep_required_slippage,
+        estimated_sui_fee,
+        estimated_sui_fee_slippage,
+    );
+}
+
+#[test, expected_failure(abort_code = EInvalidSlippage)]
+fun deep_required_slippage_exceeds_hundred_percent() {
+    // Test case: DEEP required slippage exceeds 100% (1_000_000_000)
+
+    let deep_required = 100_000_000; // 100 DEEP (6 decimals)
+    let deep_from_reserves = 50_000_000; // 50 DEEP from treasury reserves
+    let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP
+
+    let estimated_deep_required = 95_000_000; // 95 DEEP
+    let estimated_deep_required_slippage = 1_100_000_000; // 110% slippage (exceeds 100%)
+    let estimated_sui_fee = 50_000_000_000; // 50 SUI
+    let estimated_sui_fee_slippage = 100_000_000; // 10% slippage
+
+    // This should abort with EInvalidSlippage (code 10) because deep_required_slippage > 100%
+    validate_fees_against_max(
+        deep_required,
+        deep_from_reserves,
+        sui_per_deep,
+        estimated_deep_required,
+        estimated_deep_required_slippage,
+        estimated_sui_fee,
+        estimated_sui_fee_slippage,
+    );
+}
+
+#[test, expected_failure(abort_code = EInvalidSlippage)]
+fun sui_fee_slippage_exceeds_hundred_percent() {
+    // Test case: SUI fee slippage exceeds 100% (1_000_000_000)
+
+    let deep_required = 100_000_000; // 100 DEEP (6 decimals)
+    let deep_from_reserves = 50_000_000; // 50 DEEP from treasury reserves
+    let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP
+
+    let estimated_deep_required = 95_000_000; // 95 DEEP
+    let estimated_deep_required_slippage = 100_000_000; // 10% slippage
+    let estimated_sui_fee = 50_000_000_000; // 50 SUI
+    let estimated_sui_fee_slippage = 1_500_000_000; // 150% slippage (exceeds 100%)
+
+    // This should abort with EInvalidSlippage (code 10) because sui_fee_slippage > 100%
     validate_fees_against_max(
         deep_required,
         deep_from_reserves,
