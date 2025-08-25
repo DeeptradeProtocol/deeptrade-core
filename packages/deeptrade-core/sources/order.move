@@ -1308,6 +1308,89 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     transfer_if_nonzero(quote_coin, ctx.sender());
 }
 
+/// Executes a `ProtocolFeePlan` to collect Deeptrade fees from the user's
+/// wallet and balance manager.
+///
+/// Taker fees are collected immediately into the Deeptrade's protocol fees. Maker
+/// fees are added to an unsettled list for future settlement by the user or protocol.
+///
+/// Aborts if the plan indicates the user has insufficient funds.
+public(package) fun execute_protocol_fee_plan<CoinType>(
+    fee_manager: &mut FeeManager,
+    balance_manager: &mut BalanceManager,
+    coin: &mut Coin<CoinType>,
+    order_info: &OrderInfo,
+    fee_plan: &ProtocolFeePlan,
+    ctx: &mut TxContext,
+) {
+    // Verify that the user has enough funds to cover the protocol fees
+    assert!(fee_plan.user_covers_fee, EInsufficientFee);
+
+    let mut taker_fee = balance::zero<CoinType>();
+
+    // Join taker fee from wallet to total taker fee if needed
+    if (fee_plan.taker_fee_from_wallet > 0) {
+        let fee = coin.balance_mut().split(fee_plan.taker_fee_from_wallet);
+        taker_fee.join(fee);
+    };
+
+    // Join taker fee from balance manager to total taker fee if needed
+    if (fee_plan.taker_fee_from_balance_manager > 0) {
+        let fee = balance_manager.withdraw<CoinType>(
+            fee_plan.taker_fee_from_balance_manager,
+            ctx,
+        );
+        taker_fee.join(fee.into_balance());
+    };
+
+    // Collect taker fee and emit event if needed
+    let taker_fee_value = taker_fee.value();
+    if (taker_fee_value > 0) {
+        fee_manager.add_to_protocol_unsettled_fees(taker_fee, ctx);
+
+        event::emit(TakerFeeCharged<CoinType> {
+            pool_id: order_info.pool_id(),
+            balance_manager_id: order_info.balance_manager_id(),
+            order_id: order_info.order_id(),
+            client_order_id: order_info.client_order_id(),
+            taker_fee: taker_fee_value,
+        });
+    } else {
+        // The taker fee is zero for fully maker orders (e.g., Post-Only, resting GTC),
+        // or when the taker fee rate is zero
+        taker_fee.destroy_zero();
+    };
+
+    let mut maker_fee = balance::zero<CoinType>();
+
+    // Join maker fee from wallet to total maker fee if needed
+    if (fee_plan.maker_fee_from_wallet > 0) {
+        let fee = coin.balance_mut().split(fee_plan.maker_fee_from_wallet);
+        maker_fee.join(fee);
+    };
+
+    // Join maker fee from balance manager to total maker fee if needed
+    if (fee_plan.maker_fee_from_balance_manager > 0) {
+        let fee = balance_manager.withdraw<CoinType>(
+            fee_plan.maker_fee_from_balance_manager,
+            ctx,
+        );
+        maker_fee.join(fee.into_balance());
+    };
+
+    if (maker_fee.value() > 0) {
+        fee_manager.add_to_user_unsettled_fees(
+            maker_fee,
+            order_info,
+            ctx,
+        );
+    } else {
+        // Maker fee is zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
+        // or when the order is filled on creation
+        maker_fee.destroy_zero();
+    }
+}
+
 // === Private Functions ===
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
@@ -1675,89 +1758,6 @@ fun execute_coverage_fee_plan(
     };
 }
 
-/// Executes a `ProtocolFeePlan` to collect Deeptrade fees from the user's
-/// wallet and balance manager.
-///
-/// Taker fees are collected immediately into the Deeptrade's protocol fees. Maker
-/// fees are added to an unsettled list for future settlement by the user or protocol.
-///
-/// Aborts if the plan indicates the user has insufficient funds.
-fun execute_protocol_fee_plan<CoinType>(
-    fee_manager: &mut FeeManager,
-    balance_manager: &mut BalanceManager,
-    coin: &mut Coin<CoinType>,
-    order_info: &OrderInfo,
-    fee_plan: &ProtocolFeePlan,
-    ctx: &mut TxContext,
-) {
-    // Verify that the user has enough funds to cover the protocol fees
-    assert!(fee_plan.user_covers_fee, EInsufficientFee);
-
-    let mut taker_fee = balance::zero<CoinType>();
-
-    // Join taker fee from wallet to total taker fee if needed
-    if (fee_plan.taker_fee_from_wallet > 0) {
-        let fee = coin.balance_mut().split(fee_plan.taker_fee_from_wallet);
-        taker_fee.join(fee);
-    };
-
-    // Join taker fee from balance manager to total taker fee if needed
-    if (fee_plan.taker_fee_from_balance_manager > 0) {
-        let fee = balance_manager.withdraw<CoinType>(
-            fee_plan.taker_fee_from_balance_manager,
-            ctx,
-        );
-        taker_fee.join(fee.into_balance());
-    };
-
-    // Collect taker fee and emit event if needed
-    let taker_fee_value = taker_fee.value();
-    if (taker_fee_value > 0) {
-        fee_manager.add_to_protocol_unsettled_fees(taker_fee, ctx);
-
-        event::emit(TakerFeeCharged<CoinType> {
-            pool_id: order_info.pool_id(),
-            balance_manager_id: order_info.balance_manager_id(),
-            order_id: order_info.order_id(),
-            client_order_id: order_info.client_order_id(),
-            taker_fee: taker_fee_value,
-        });
-    } else {
-        // The taker fee is zero for fully maker orders (e.g., Post-Only, resting GTC),
-        // or when the taker fee rate is zero
-        taker_fee.destroy_zero();
-    };
-
-    let mut maker_fee = balance::zero<CoinType>();
-
-    // Join maker fee from wallet to total maker fee if needed
-    if (fee_plan.maker_fee_from_wallet > 0) {
-        let fee = coin.balance_mut().split(fee_plan.maker_fee_from_wallet);
-        maker_fee.join(fee);
-    };
-
-    // Join maker fee from balance manager to total maker fee if needed
-    if (fee_plan.maker_fee_from_balance_manager > 0) {
-        let fee = balance_manager.withdraw<CoinType>(
-            fee_plan.maker_fee_from_balance_manager,
-            ctx,
-        );
-        maker_fee.join(fee.into_balance());
-    };
-
-    if (maker_fee.value() > 0) {
-        fee_manager.add_to_user_unsettled_fees(
-            maker_fee,
-            order_info,
-            ctx,
-        );
-    } else {
-        // Maker fee is zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
-        // or when the order is filled on creation
-        maker_fee.destroy_zero();
-    }
-}
-
 /// Executes the input coin deposit plan by transferring coins to the balance manager
 /// Deposits required input coins from user wallet to balance manager based on the plan
 /// Handles different coin types based on order type: quote coins for bid orders, base coins for ask orders
@@ -1899,3 +1899,22 @@ public fun assert_input_coin_deposit_plan_eq(
     assert_eq!(actual.from_user_wallet, expected_from_user_wallet);
     assert_eq!(actual.user_has_enough_input_coin, expected_sufficient);
 }
+
+#[test_only]
+public fun taker_fee_from_wallet(plan: &ProtocolFeePlan): u64 { plan.taker_fee_from_wallet }
+
+#[test_only]
+public fun taker_fee_from_balance_manager(plan: &ProtocolFeePlan): u64 {
+    plan.taker_fee_from_balance_manager
+}
+
+#[test_only]
+public fun maker_fee_from_wallet(plan: &ProtocolFeePlan): u64 { plan.maker_fee_from_wallet }
+
+#[test_only]
+public fun maker_fee_from_balance_manager(plan: &ProtocolFeePlan): u64 {
+    plan.maker_fee_from_balance_manager
+}
+
+#[test_only]
+public fun user_covers_fee(plan: &ProtocolFeePlan): bool { plan.user_covers_fee }
