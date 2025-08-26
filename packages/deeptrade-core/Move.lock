@@ -2,7 +2,7 @@
 
 [move]
 version = 3
-manifest_digest = "FF15E00E32B65B307702E4D1A37E9132F973D6E10E4FBE39169C799ABD4DE29F"
+manifest_digest = "24946535D113859FC8F71F7D7D2E6090A8130DB7A07510B8CF679D74F50D9396"
 deps_digest = "CAFAD8A7CF51067FB4358215BECB86BD100DD64E57C2AC8A7AE7D74B688F5965"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -73,7 +73,7 @@ dependencies = [
 
 [[move.package]]
 id = "multisig"
-source = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", rev = "v1.0.0", subdir = "move" }
+source = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", rev = "v1.0.1", subdir = "move" }
 
 dependencies = [
   { id = "Bridge", name = "Bridge" },
