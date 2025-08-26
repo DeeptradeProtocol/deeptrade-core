@@ -1,53 +1,28 @@
 #[test_only]
 module deeptrade_core::cleanup_expired_ticket_tests;
 
-use deeptrade_core::admin::AdminCap;
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
-use deeptrade_core::ticket::{Self, AdminTicket, ETicketNotExpired};
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_threshold,
-    get_test_multisig_weights
+use deeptrade_core::create_ticket_tests::create_ticket_with_multisig;
+use deeptrade_core::ticket::{
+    Self,
+    AdminTicket,
+    ETicketNotExpired,
+    withdraw_deep_reserves_ticket_type
 };
+use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::clock;
-use sui::test_scenario::Scenario;
 
-const TICKET_TYPE: u8 = 0;
 // Durations in milliseconds
 const MILLISECONDS_PER_DAY: u64 = 86_400_000;
 const TICKET_DELAY_DURATION: u64 = MILLISECONDS_PER_DAY * 2; // 2 days
 const TICKET_ACTIVE_DURATION: u64 = MILLISECONDS_PER_DAY * 3; // 3 days
-
-// TODO: Move it to a helper section of create ticket tests module
-// and make it more generic, so it would accept owner and ticket type
-fun create_ticket(scenario: &mut Scenario) {
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
-
-    let clock = clock::create_for_testing(scenario.ctx());
-    let admin_cap = scenario.take_from_sender<AdminCap>();
-
-    ticket::create_ticket(
-        &admin_cap,
-        TICKET_TYPE,
-        get_test_multisig_pks(),
-        get_test_multisig_weights(),
-        get_test_multisig_threshold(),
-        &clock,
-        scenario.ctx(),
-    );
-
-    clock::destroy_for_testing(clock);
-    scenario.return_to_sender(admin_cap);
-}
 
 #[test]
 /// Test that an expired ticket can be cleaned up
 fun test_cleanup_expired_ticket_success() {
     let multisig_address = get_test_multisig_address();
     let (mut scenario) = setup_with_admin_cap(multisig_address);
-    create_ticket(&mut scenario);
+    create_ticket_with_multisig(&mut scenario, withdraw_deep_reserves_ticket_type());
 
     // Advance time to make it expire
     let total_duration = TICKET_DELAY_DURATION + TICKET_ACTIVE_DURATION;
@@ -68,7 +43,7 @@ fun test_cleanup_expired_ticket_success() {
 fun test_cleanup_fails_if_not_expired() {
     let multisig_address = get_test_multisig_address();
     let (mut scenario) = setup_with_admin_cap(multisig_address);
-    create_ticket(&mut scenario);
+    create_ticket_with_multisig(&mut scenario, withdraw_deep_reserves_ticket_type());
 
     // Advance time, but not enough to expire it
     let duration = TICKET_DELAY_DURATION + TICKET_ACTIVE_DURATION - 1;
@@ -81,4 +56,11 @@ fun test_cleanup_fails_if_not_expired() {
 
     clock::destroy_for_testing(clock);
     scenario.end();
+}
+
+#[test]
+/// Test that the constants in the ticket module are in sync with the constants in this test module
+fun test_constants_are_in_sync() {
+    assert!(TICKET_DELAY_DURATION == ticket::get_ticket_delay_duration(), 0);
+    assert!(TICKET_ACTIVE_DURATION == ticket::get_ticket_active_duration(), 1);
 }

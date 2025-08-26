@@ -11,7 +11,7 @@ use multisig::multisig_test_utils::{
     get_test_multisig_threshold
 };
 use sui::clock;
-use sui::test_scenario;
+use sui::test_scenario::{Self, Scenario, return_shared};
 
 const TICKET_TYPE: u8 = 0;
 const CLOCK_TIMESTAMP_MS: u64 = 1756071906000;
@@ -23,11 +23,11 @@ fun create_ticket_success_with_multisig() {
     let (mut scenario) = setup_with_admin_cap(multisig_address);
 
     // Switch to the derived multisig address to send the transaction
-    test_scenario::next_tx(&mut scenario, multisig_address);
+    scenario.next_tx(multisig_address);
     {
-        let mut clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+        let mut clock = clock::create_for_testing(scenario.ctx());
         clock.set_for_testing(CLOCK_TIMESTAMP_MS);
-        let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
+        let admin_cap = scenario.take_from_sender<AdminCap>();
 
         ticket::create_ticket(
             &admin_cap,
@@ -40,17 +40,17 @@ fun create_ticket_success_with_multisig() {
         );
 
         clock::destroy_for_testing(clock);
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     };
 
-    test_scenario::next_tx(&mut scenario, multisig_address);
+    scenario.next_tx(multisig_address);
     {
         let ticket = test_scenario::take_shared<AdminTicket>(&scenario);
         assert!(ticket::owner(&ticket) == multisig_address, 1);
         assert!(ticket::ticket_type(&ticket) == TICKET_TYPE, 2);
         assert!(ticket::created_at(&ticket) == CLOCK_TIMESTAMP_MS, 3);
 
-        test_scenario::return_shared(ticket);
+        return_shared(ticket);
     };
 
     scenario.end();
@@ -67,8 +67,8 @@ fun create_ticket_fails_if_sender_not_multisig() {
     // which does not match the derived multisig address.
     test_scenario::next_tx(&mut scenario, owner);
     {
-        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
-        let admin_cap = test_scenario::take_from_sender<AdminCap>(&scenario);
+        let clock = clock::create_for_testing(scenario.ctx());
+        let admin_cap = scenario.take_from_sender<AdminCap>();
 
         // This should abort
         ticket::create_ticket(
@@ -82,8 +82,31 @@ fun create_ticket_fails_if_sender_not_multisig() {
         );
 
         clock::destroy_for_testing(clock);
-        test_scenario::return_to_sender(&scenario, admin_cap);
+        scenario.return_to_sender(admin_cap);
     };
 
     scenario.end();
+}
+
+// === Helper functions ===
+#[test_only]
+public fun create_ticket_with_multisig(scenario: &mut Scenario, ticket_type: u8) {
+    let multisig_address = get_test_multisig_address();
+    scenario.next_tx(multisig_address);
+
+    let clock = clock::create_for_testing(scenario.ctx());
+    let admin_cap = scenario.take_from_sender<AdminCap>();
+
+    ticket::create_ticket(
+        &admin_cap,
+        ticket_type,
+        get_test_multisig_pks(),
+        get_test_multisig_weights(),
+        get_test_multisig_threshold(),
+        &clock,
+        scenario.ctx(),
+    );
+
+    clock::destroy_for_testing(clock);
+    scenario.return_to_sender(admin_cap);
 }
