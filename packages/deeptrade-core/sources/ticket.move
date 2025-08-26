@@ -178,3 +178,13 @@ public fun created_at(ticket: &AdminTicket): u64 { ticket.created_at }
 
 #[test_only]
 public fun ticket_type(ticket: &AdminTicket): u8 { ticket.ticket_type }
+
+#[test_only]
+public fun unwrap_ticket_created_event(event: &TicketCreated): (ID, u8) {
+    (event.ticket_id, event.ticket_type)
+}
+
+#[test_only]
+public fun unwrap_ticket_destroyed_event(event: &TicketDestroyed): (ID, u8, bool) {
+    (event.ticket_id, event.ticket_type, event.is_expired)
+}
