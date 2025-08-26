@@ -1425,6 +1425,39 @@ public(package) fun execute_deep_plan(
     };
 }
 
+/// Executes the input coin deposit plan by transferring coins to the balance manager
+/// Deposits required input coins from user wallet to balance manager based on the plan
+/// Handles different coin types based on order type: quote coins for bid orders, base coins for ask orders
+///
+/// Steps performed:
+/// 1. Verifies the user has enough input coins to satisfy the deposit requirements
+/// 2. For bid orders: transfers quote coins from user wallet to balance manager
+/// 3. For ask orders: transfers base coins from user wallet to balance manager
+public(package) fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
+    balance_manager: &mut BalanceManager,
+    base_coin: &mut Coin<BaseToken>,
+    quote_coin: &mut Coin<QuoteToken>,
+    deposit_plan: &InputCoinDepositPlan,
+    is_bid: bool,
+    ctx: &mut TxContext,
+) {
+    // Verify there are enough coins to satisfy the deposit requirements
+    assert!(deposit_plan.user_has_enough_input_coin, EInsufficientInput);
+
+    // Deposit coins from wallet if needed
+    if (deposit_plan.from_user_wallet > 0) {
+        if (is_bid) {
+            // Quote coins for bid
+            let payment = quote_coin.split(deposit_plan.from_user_wallet, ctx);
+            balance_manager.deposit(payment, ctx);
+        } else {
+            // Base coins for ask
+            let payment = base_coin.split(deposit_plan.from_user_wallet, ctx);
+            balance_manager.deposit(payment, ctx);
+        };
+    };
+}
+
 // === Private Functions ===
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
@@ -1758,39 +1791,6 @@ fun execute_coverage_fee_plan(
     };
 }
 
-/// Executes the input coin deposit plan by transferring coins to the balance manager
-/// Deposits required input coins from user wallet to balance manager based on the plan
-/// Handles different coin types based on order type: quote coins for bid orders, base coins for ask orders
-///
-/// Steps performed:
-/// 1. Verifies the user has enough input coins to satisfy the deposit requirements
-/// 2. For bid orders: transfers quote coins from user wallet to balance manager
-/// 3. For ask orders: transfers base coins from user wallet to balance manager
-fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
-    balance_manager: &mut BalanceManager,
-    base_coin: &mut Coin<BaseToken>,
-    quote_coin: &mut Coin<QuoteToken>,
-    deposit_plan: &InputCoinDepositPlan,
-    is_bid: bool,
-    ctx: &mut TxContext,
-) {
-    // Verify there are enough coins to satisfy the deposit requirements
-    assert!(deposit_plan.user_has_enough_input_coin, EInsufficientInput);
-
-    // Deposit coins from wallet if needed
-    if (deposit_plan.from_user_wallet > 0) {
-        if (is_bid) {
-            // Quote coins for bid
-            let payment = quote_coin.split(deposit_plan.from_user_wallet, ctx);
-            balance_manager.deposit(payment, ctx);
-        } else {
-            // Base coins for ask
-            let payment = base_coin.split(deposit_plan.from_user_wallet, ctx);
-            balance_manager.deposit(payment, ctx);
-        };
-    };
-}
-
 /// Creates a coverage fee plan with no fees and user_covers_fee set to true
 /// Used when no coverage fees are required
 fun zero_coverage_fee_plan(): CoverageFeePlan {
@@ -1928,4 +1928,12 @@ public fun from_deep_reserves(plan: &DeepPlan): u64 { plan.from_deep_reserves }
 #[test_only]
 public fun deep_reserves_cover_order(plan: &DeepPlan): bool {
     plan.deep_reserves_cover_order
+}
+
+#[test_only]
+public fun from_user_wallet_icdp(plan: &InputCoinDepositPlan): u64 { plan.from_user_wallet }
+
+#[test_only]
+public fun user_has_enough_input_coin_icdp(plan: &InputCoinDepositPlan): bool {
+    plan.user_has_enough_input_coin
 }
