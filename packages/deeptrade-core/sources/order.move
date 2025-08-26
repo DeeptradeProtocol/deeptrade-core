@@ -1559,6 +1559,80 @@ public(package) fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
     balance_manager.generate_proof_as_owner(ctx)
 }
 
+/// Prepares order execution for whitelisted pools by handling coin deposits
+/// This function contains the shared logic for both limit and market orders in whitelisted pools,
+/// focusing only on input coin management without DEEP or fee handling
+///
+/// Steps:
+/// 1. Verifies the caller owns the balance manager
+/// 2. Creates and executes input coin deposit plan
+/// 3. Returns the balance manager proof needed for order placement and protocol fee discount rate
+///
+/// Parameters:
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - pool: The trading pool where the order will be placed
+/// - balance_manager: User's balance manager for managing coin deposits
+/// - base_coin: Base token coins from user's wallet
+/// - quote_coin: Quote token coins from user's wallet
+/// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
+/// - is_bid: True for buy orders, false for sell orders
+public(package) fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
+    trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
+    pool: &Pool<BaseToken, QuoteToken>,
+    balance_manager: &mut BalanceManager,
+    base_coin: &mut Coin<BaseToken>,
+    quote_coin: &mut Coin<QuoteToken>,
+    order_amount: u64,
+    is_bid: bool,
+    ctx: &mut TxContext,
+): (TradeProof, u64) {
+    // Verify the caller owns the balance manager
+    assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
+
+    // Get balances from balance manager
+    let balance_manager_base = balance_manager.balance<BaseToken>();
+    let balance_manager_quote = balance_manager.balance<QuoteToken>();
+    let balance_manager_input_coin = if (is_bid) balance_manager_quote else balance_manager_base;
+
+    // Get balances from wallet coins
+    let base_in_wallet = base_coin.value();
+    let quote_in_wallet = quote_coin.value();
+    let wallet_input_coin = if (is_bid) quote_in_wallet else base_in_wallet;
+
+    // Calculate the total discount rate for the protocol fees
+    let max_deep_fee_coverage_discount_rate = trading_fee_config
+        .get_pool_fee_config(pool)
+        .max_deep_fee_coverage_discount_rate();
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+
+    // Ensure the total discount rate doesn't exceed 100%
+    // Intentional: whitelisted pools get maximum DEEP fee coverage discount by design
+    let total_discount_rate = u64::min(
+        max_deep_fee_coverage_discount_rate + loyalty_discount_rate,
+        hundred_percent(),
+    );
+
+    let input_coin_deposit_plan = get_input_coin_deposit_plan(
+        order_amount,
+        wallet_input_coin,
+        balance_manager_input_coin,
+    );
+
+    execute_input_coin_deposit_plan(
+        balance_manager,
+        base_coin,
+        quote_coin,
+        &input_coin_deposit_plan,
+        is_bid,
+        ctx,
+    );
+
+    // Generate and return proof and protocol fee discount rate
+    (balance_manager.generate_proof_as_owner(ctx), total_discount_rate)
+}
+
 // === Private Functions ===
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
@@ -1712,80 +1786,6 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
     // Base and quote coins will be returned after protocol fees charging
     transfer_if_nonzero(deep_coin, ctx.sender());
     transfer_if_nonzero(sui_coin, ctx.sender());
-
-    // Generate and return proof and protocol fee discount rate
-    (balance_manager.generate_proof_as_owner(ctx), total_discount_rate)
-}
-
-/// Prepares order execution for whitelisted pools by handling coin deposits
-/// This function contains the shared logic for both limit and market orders in whitelisted pools,
-/// focusing only on input coin management without DEEP or fee handling
-///
-/// Steps:
-/// 1. Verifies the caller owns the balance manager
-/// 2. Creates and executes input coin deposit plan
-/// 3. Returns the balance manager proof needed for order placement and protocol fee discount rate
-///
-/// Parameters:
-/// - trading_fee_config: Trading fee configuration object
-/// - loyalty_program: Loyalty program instance
-/// - pool: The trading pool where the order will be placed
-/// - balance_manager: User's balance manager for managing coin deposits
-/// - base_coin: Base token coins from user's wallet
-/// - quote_coin: Quote token coins from user's wallet
-/// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
-/// - is_bid: True for buy orders, false for sell orders
-fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
-    trading_fee_config: &TradingFeeConfig,
-    loyalty_program: &LoyaltyProgram,
-    pool: &Pool<BaseToken, QuoteToken>,
-    balance_manager: &mut BalanceManager,
-    base_coin: &mut Coin<BaseToken>,
-    quote_coin: &mut Coin<QuoteToken>,
-    order_amount: u64,
-    is_bid: bool,
-    ctx: &mut TxContext,
-): (TradeProof, u64) {
-    // Verify the caller owns the balance manager
-    assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
-
-    // Get balances from balance manager
-    let balance_manager_base = balance_manager.balance<BaseToken>();
-    let balance_manager_quote = balance_manager.balance<QuoteToken>();
-    let balance_manager_input_coin = if (is_bid) balance_manager_quote else balance_manager_base;
-
-    // Get balances from wallet coins
-    let base_in_wallet = base_coin.value();
-    let quote_in_wallet = quote_coin.value();
-    let wallet_input_coin = if (is_bid) quote_in_wallet else base_in_wallet;
-
-    // Calculate the total discount rate for the protocol fees
-    let max_deep_fee_coverage_discount_rate = trading_fee_config
-        .get_pool_fee_config(pool)
-        .max_deep_fee_coverage_discount_rate();
-    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
-
-    // Ensure the total discount rate doesn't exceed 100%
-    // Intentional: whitelisted pools get maximum DEEP fee coverage discount by design
-    let total_discount_rate = u64::min(
-        max_deep_fee_coverage_discount_rate + loyalty_discount_rate,
-        hundred_percent(),
-    );
-
-    let input_coin_deposit_plan = get_input_coin_deposit_plan(
-        order_amount,
-        wallet_input_coin,
-        balance_manager_input_coin,
-    );
-
-    execute_input_coin_deposit_plan(
-        balance_manager,
-        base_coin,
-        quote_coin,
-        &input_coin_deposit_plan,
-        is_bid,
-        ctx,
-    );
 
     // Generate and return proof and protocol fee discount rate
     (balance_manager.generate_proof_as_owner(ctx), total_discount_rate)
