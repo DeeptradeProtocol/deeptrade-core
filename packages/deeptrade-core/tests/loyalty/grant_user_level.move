@@ -362,6 +362,7 @@ fun grant_to_zero_address_succeeds() {
 
 /// Sets up a complete test environment with loyalty program.
 /// Returns (scenario, loyalty_program_id) ready for testing.
+#[test_only]
 public(package) fun setup_test_environment(): (Scenario, ID) {
     let mut scenario = begin(OWNER);
 
