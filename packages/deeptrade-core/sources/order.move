@@ -1458,6 +1458,45 @@ public(package) fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
     };
 }
 
+/// Executes the coverage fee charging plan by taking SUI coins from specified sources
+///
+/// Parameters:
+/// - treasury: Main treasury object that will receive the fees
+/// - balance_manager: User's balance manager to withdraw fees from
+/// - sui_coin: User's SUI coins to take fees from
+/// - fee_plan: Plan that specifies how much to take from each source
+/// - ctx: Transaction context
+///
+/// Aborts:
+/// - EInsufficientFee: If user cannot cover the fees
+public(package) fun execute_coverage_fee_plan(
+    treasury: &mut Treasury,
+    balance_manager: &mut BalanceManager,
+    sui_coin: &mut Coin<SUI>,
+    fee_plan: &CoverageFeePlan,
+    ctx: &mut TxContext,
+) {
+    treasury.verify_version();
+
+    // Verify that the user has enough funds to cover the coverage fee
+    assert!(fee_plan.user_covers_fee, EInsufficientFee);
+
+    // Collect coverage fee from wallet if needed
+    if (fee_plan.from_wallet > 0) {
+        let fee = sui_coin.balance_mut().split(fee_plan.from_wallet);
+        treasury.join_deep_reserves_coverage_fee(fee);
+    };
+
+    // Collect coverage fee from balance manager if needed
+    if (fee_plan.from_balance_manager > 0) {
+        let fee = balance_manager.withdraw<SUI>(
+            fee_plan.from_balance_manager,
+            ctx,
+        );
+        treasury.join_deep_reserves_coverage_fee(fee.into_balance());
+    };
+}
+
 // === Private Functions ===
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
@@ -1752,45 +1791,6 @@ fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
     balance_manager.generate_proof_as_owner(ctx)
 }
 
-/// Executes the coverage fee charging plan by taking SUI coins from specified sources
-///
-/// Parameters:
-/// - treasury: Main treasury object that will receive the fees
-/// - balance_manager: User's balance manager to withdraw fees from
-/// - sui_coin: User's SUI coins to take fees from
-/// - fee_plan: Plan that specifies how much to take from each source
-/// - ctx: Transaction context
-///
-/// Aborts:
-/// - EInsufficientFee: If user cannot cover the fees
-fun execute_coverage_fee_plan(
-    treasury: &mut Treasury,
-    balance_manager: &mut BalanceManager,
-    sui_coin: &mut Coin<SUI>,
-    fee_plan: &CoverageFeePlan,
-    ctx: &mut TxContext,
-) {
-    treasury.verify_version();
-
-    // Verify that the user has enough funds to cover the coverage fee
-    assert!(fee_plan.user_covers_fee, EInsufficientFee);
-
-    // Collect coverage fee from wallet if needed
-    if (fee_plan.from_wallet > 0) {
-        let fee = sui_coin.balance_mut().split(fee_plan.from_wallet);
-        treasury.join_deep_reserves_coverage_fee(fee);
-    };
-
-    // Collect coverage fee from balance manager if needed
-    if (fee_plan.from_balance_manager > 0) {
-        let fee = balance_manager.withdraw<SUI>(
-            fee_plan.from_balance_manager,
-            ctx,
-        );
-        treasury.join_deep_reserves_coverage_fee(fee.into_balance());
-    };
-}
-
 /// Creates a coverage fee plan with no fees and user_covers_fee set to true
 /// Used when no coverage fees are required
 fun zero_coverage_fee_plan(): CoverageFeePlan {
@@ -1937,3 +1937,12 @@ public fun from_user_wallet_icdp(plan: &InputCoinDepositPlan): u64 { plan.from_u
 public fun user_has_enough_input_coin_icdp(plan: &InputCoinDepositPlan): bool {
     plan.user_has_enough_input_coin
 }
+
+#[test_only]
+public fun from_wallet_cfp(plan: &CoverageFeePlan): u64 { plan.from_wallet }
+
+#[test_only]
+public fun from_balance_manager_cfp(plan: &CoverageFeePlan): u64 { plan.from_balance_manager }
+
+#[test_only]
+public fun user_covers_fee_cfp(plan: &CoverageFeePlan): bool { plan.user_covers_fee }
