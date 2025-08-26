@@ -1391,6 +1391,40 @@ public(package) fun execute_protocol_fee_plan<CoinType>(
     }
 }
 
+/// Executes the DEEP coin sourcing plan by acquiring coins from specified sources
+/// Sources DEEP coins from user wallet and/or treasury reserves based on the deep plan
+/// Deposits all acquired DEEP coins to the user's balance manager for order placement
+///
+/// Steps performed:
+/// 1. Verifies the treasury has enough DEEP reserves
+/// 2. Takes DEEP coins from user wallet when specified in the plan
+/// 3. Takes DEEP coins from treasury reserves when needed
+/// 4. Deposits all acquired DEEP coins to the balance manager
+public(package) fun execute_deep_plan(
+    treasury: &mut Treasury,
+    balance_manager: &mut BalanceManager,
+    deep_coin: &mut Coin<DEEP>,
+    deep_plan: &DeepPlan,
+    ctx: &mut TxContext,
+) {
+    treasury.verify_version();
+
+    // Check if there is enough DEEP in the treasury reserves
+    assert!(deep_plan.deep_reserves_cover_order, EInsufficientDeepReserves);
+
+    // Take DEEP from wallet if needed
+    if (deep_plan.from_user_wallet > 0) {
+        let payment = deep_coin.split(deep_plan.from_user_wallet, ctx);
+        balance_manager.deposit(payment, ctx);
+    };
+
+    // Take DEEP from treasury reserves if needed
+    if (deep_plan.from_deep_reserves > 0) {
+        let reserve_payment = treasury.split_deep_reserves(deep_plan.from_deep_reserves, ctx);
+        balance_manager.deposit(reserve_payment, ctx);
+    };
+}
+
 // === Private Functions ===
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
@@ -1685,40 +1719,6 @@ fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
     balance_manager.generate_proof_as_owner(ctx)
 }
 
-/// Executes the DEEP coin sourcing plan by acquiring coins from specified sources
-/// Sources DEEP coins from user wallet and/or treasury reserves based on the deep plan
-/// Deposits all acquired DEEP coins to the user's balance manager for order placement
-///
-/// Steps performed:
-/// 1. Verifies the treasury has enough DEEP reserves
-/// 2. Takes DEEP coins from user wallet when specified in the plan
-/// 3. Takes DEEP coins from treasury reserves when needed
-/// 4. Deposits all acquired DEEP coins to the balance manager
-fun execute_deep_plan(
-    treasury: &mut Treasury,
-    balance_manager: &mut BalanceManager,
-    deep_coin: &mut Coin<DEEP>,
-    deep_plan: &DeepPlan,
-    ctx: &mut TxContext,
-) {
-    treasury.verify_version();
-
-    // Check if there is enough DEEP in the treasury reserves
-    assert!(deep_plan.deep_reserves_cover_order, EInsufficientDeepReserves);
-
-    // Take DEEP from wallet if needed
-    if (deep_plan.from_user_wallet > 0) {
-        let payment = deep_coin.split(deep_plan.from_user_wallet, ctx);
-        balance_manager.deposit(payment, ctx);
-    };
-
-    // Take DEEP from treasury reserves if needed
-    if (deep_plan.from_deep_reserves > 0) {
-        let reserve_payment = treasury.split_deep_reserves(deep_plan.from_deep_reserves, ctx);
-        balance_manager.deposit(reserve_payment, ctx);
-    };
-}
-
 /// Executes the coverage fee charging plan by taking SUI coins from specified sources
 ///
 /// Parameters:
@@ -1918,3 +1918,14 @@ public fun maker_fee_from_balance_manager(plan: &ProtocolFeePlan): u64 {
 
 #[test_only]
 public fun user_covers_fee(plan: &ProtocolFeePlan): bool { plan.user_covers_fee }
+
+#[test_only]
+public fun from_user_wallet(plan: &DeepPlan): u64 { plan.from_user_wallet }
+
+#[test_only]
+public fun from_deep_reserves(plan: &DeepPlan): u64 { plan.from_deep_reserves }
+
+#[test_only]
+public fun deep_reserves_cover_order(plan: &DeepPlan): bool {
+    plan.deep_reserves_cover_order
+}
