@@ -556,3 +556,8 @@ fun validate_discount_rate(discount_rate: u64) {
         EDiscountOutOfRange,
     );
 }
+
+// === Test Functions ===
+/// Initialize the fee module for testing
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) { init(ctx); }
