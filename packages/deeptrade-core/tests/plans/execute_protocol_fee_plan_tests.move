@@ -517,6 +517,8 @@ fun create_partially_executed_order(original_quantity: u64, executed_quantity: u
         original_quantity,
         executed_quantity,
         status,
+        true, // is_bid
+        true, // fee_is_deep
     )
 }
 
@@ -533,6 +535,8 @@ fun create_live_order(original_quantity: u64): OrderInfo {
         original_quantity,
         0, // executed_quantity = 0 (no execution)
         status,
+        true, // is_bid
+        true, // fee_is_deep
     )
 }
 
@@ -549,5 +553,7 @@ fun create_fully_executed_order(original_quantity: u64): OrderInfo {
         original_quantity,
         original_quantity, // executed_quantity = original_quantity (fully executed)
         status,
+        true, // is_bid
+        true, // fee_is_deep
     )
 }
