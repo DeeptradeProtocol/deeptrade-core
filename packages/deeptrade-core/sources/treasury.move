@@ -424,3 +424,18 @@ public fun get_protocol_fee_balance<CoinType>(treasury: &Treasury): u64 {
 public fun init_for_testing(ctx: &mut TxContext) {
     init(ctx);
 }
+
+/// Check if deep reserves coverage fees exist for a specific coin type
+#[test_only]
+public fun has_deep_reserves_coverage_fee<CoinType>(treasury: &Treasury): bool {
+    let key = ChargedFeeKey<CoinType> {};
+    treasury.deep_reserves_coverage_fees.contains(key)
+}
+
+/// Get the deep reserves coverage fee balance for a specific coin type
+#[test_only]
+public fun get_deep_reserves_coverage_fee_balance<CoinType>(treasury: &Treasury): u64 {
+    let key = ChargedFeeKey<CoinType> {};
+    let balance: &Balance<CoinType> = treasury.deep_reserves_coverage_fees.borrow(key);
+    balance.value()
+}
