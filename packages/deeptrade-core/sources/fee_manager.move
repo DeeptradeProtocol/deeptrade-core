@@ -30,6 +30,7 @@ const EFilledQuantityGreaterThanOrderQuantity: u64 = 7;
 const EUserUnsettledFeeNotEmpty: u64 = 8;
 const EProtocolUnsettledFeeNotEmpty: u64 = 9;
 const ESenderIsNotMultisig: u64 = 10;
+const EInvalidFeeManagerShareTicket: u64 = 11;
 
 // === Structs ===
 /// A shared object that manages a user's fee-related operations. Required for trading
@@ -145,7 +146,7 @@ public fun new(ctx: &mut TxContext): (FeeManager, FeeManagerOwnerCap, FeeManager
 
 /// Shares the `FeeManager` object, consuming the `FeeManagerShareTicket` to enforce the policy
 public fun share_fee_manager(fee_manager: FeeManager, ticket: FeeManagerShareTicket) {
-    assert!(fee_manager.id.to_inner() == ticket.fee_manager_id, EInvalidOwner);
+    assert!(fee_manager.id.to_inner() == ticket.fee_manager_id, EInvalidFeeManagerShareTicket);
 
     let FeeManagerShareTicket { .. } = ticket;
     transfer::share_object(fee_manager);
