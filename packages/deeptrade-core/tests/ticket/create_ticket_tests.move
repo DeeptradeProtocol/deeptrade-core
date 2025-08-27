@@ -103,7 +103,7 @@ fun create_ticket_fails_if_sender_not_multisig() {
     scenario.end();
 }
 
-// === Helper functions ===
+// === Helper Functions ===
 #[test_only]
 public fun create_ticket_with_multisig(scenario: &mut Scenario, ticket_type: u8) {
     let multisig_address = get_test_multisig_address();
