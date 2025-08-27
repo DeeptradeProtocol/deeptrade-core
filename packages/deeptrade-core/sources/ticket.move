@@ -46,6 +46,7 @@ public struct TicketCreated has copy, drop {
 public struct TicketDestroyed has copy, drop {
     ticket_id: ID,
     ticket_type: u8,
+    // Whether the ticket was expired (true) or consumed (false)
     is_expired: bool,
 }
 
