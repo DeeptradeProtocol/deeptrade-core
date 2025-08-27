@@ -186,12 +186,7 @@ public fun pool_creation_protocol_fee(config: &PoolCreationConfig): u64 { config
 // === Test Functions ===
 #[test_only]
 public fun init_for_testing(ctx: &mut TxContext) {
-    let pool_creation_config = PoolCreationConfig {
-        id: object::new(ctx),
-        protocol_fee: DEFAULT_POOL_CREATION_PROTOCOL_FEE,
-    };
-
-    transfer::share_object(pool_creation_config);
+    init(ctx);
 }
 
 /// Get the default protocol fee for creating a pool
