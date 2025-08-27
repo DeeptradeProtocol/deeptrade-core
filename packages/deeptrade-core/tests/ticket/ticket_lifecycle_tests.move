@@ -95,8 +95,8 @@ fun test_validate_ticket_success_all_types() {
     ];
 
     let mut i = 0;
-    while (i < vector::length(&ticket_types)) {
-        let ticket_type = *vector::borrow(&ticket_types, i);
+    while (i < ticket_types.length()) {
+        let ticket_type = ticket_types[i];
         run_validate_ticket_success(&mut scenario, ticket_type);
         i = i + 1;
     };
