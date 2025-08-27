@@ -78,6 +78,23 @@ fun success() {
         let open_orders = pool.account_open_orders(&balance_manager);
         assert_eq!(open_orders.size(), 1);
 
+        // Check that user unsettled fees are added to the fee manager
+        assert_eq!(
+            fee_manager.has_user_unsettled_fee(
+                order_info.pool_id(),
+                order_info.balance_manager_id(),
+                order_info.order_id(),
+            ),
+            true,
+        );
+        assert!(
+            fee_manager.get_user_unsettled_fee_balance<USDC>(
+            order_info.pool_id(),
+            order_info.balance_manager_id(),
+            order_info.order_id(),
+        ) > 0,
+        );
+
         // Clean up
         return_shared(treasury);
         return_shared(fee_manager);
