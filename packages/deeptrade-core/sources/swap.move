@@ -237,6 +237,48 @@ public fun get_quantity_out_input_fee<BaseToken, QuoteToken>(
     (base_out, quote_out, deep_required)
 }
 
+// === Public-Package Functions ===
+/// Calculates and applies Deeptrade protocol fee to the output quantity from a DeepBook swap.
+/// Handles fee calculation and application for both base-to-quote and quote-to-base swaps.
+///
+/// Parameters:
+/// - taker_fee_rate: The taker fee rate to apply to the output quantities
+/// - discount_rate: The discount rate to apply to the calculated fees
+/// - base_out: Mutable base token output quantity before fees
+/// - quote_out: Mutable quote token output quantity before fees
+/// - base_quantity: Input quantity of base tokens (0 if swapping quote)
+/// - quote_quantity: Input quantity of quote tokens (0 if swapping base)
+///
+/// Returns:
+/// - (u64, u64): Tuple containing:
+///   - Final base token output after fees
+///   - Final quote token output after fees
+public(package) fun apply_protocol_swap_fee(
+    taker_fee_rate: u64,
+    discount_rate: u64,
+    mut base_out: u64,
+    mut quote_out: u64,
+    base_quantity: u64,
+    quote_quantity: u64,
+): (u64, u64) {
+    // Apply protocol fee to the output quantity
+    // If base_quantity > 0, we're swapping base for quote, so apply fee to quote_out
+    // If quote_quantity > 0, we're swapping quote for base, so apply fee to base_out
+    if (base_quantity > 0) {
+        // Swapping base for quote, apply fee to quote_out
+        let mut fee_amount = calculate_fee_by_rate(quote_out, taker_fee_rate);
+        fee_amount = apply_discount(fee_amount, discount_rate);
+        quote_out = quote_out - fee_amount;
+    } else if (quote_quantity > 0) {
+        // Swapping quote for base, apply fee to base_out
+        let mut fee_amount = calculate_fee_by_rate(base_out, taker_fee_rate);
+        fee_amount = apply_discount(fee_amount, discount_rate);
+        base_out = base_out - fee_amount;
+    };
+
+    (base_out, quote_out)
+}
+
 // === Private Functions ===
 /// Validates that a coin's value meets the minimum required amount
 /// Aborts with EInsufficientOutputAmount if the check fails
@@ -270,45 +312,4 @@ fun charge_protocol_swap_fee<CoinType>(
     assert!(coin_value >= fee, EInsufficientCoinBalance);
 
     coin_balance.split(fee)
-}
-
-/// Calculates and applies Deeptrade protocol fee to the output quantity from a DeepBook swap.
-/// Handles fee calculation and application for both base-to-quote and quote-to-base swaps.
-///
-/// Parameters:
-/// - taker_fee_rate: The taker fee rate to apply to the output quantities
-/// - discount_rate: The discount rate to apply to the calculated fees
-/// - base_out: Mutable base token output quantity before fees
-/// - quote_out: Mutable quote token output quantity before fees
-/// - base_quantity: Input quantity of base tokens (0 if swapping quote)
-/// - quote_quantity: Input quantity of quote tokens (0 if swapping base)
-///
-/// Returns:
-/// - (u64, u64): Tuple containing:
-///   - Final base token output after fees
-///   - Final quote token output after fees
-fun apply_protocol_swap_fee(
-    taker_fee_rate: u64,
-    discount_rate: u64,
-    mut base_out: u64,
-    mut quote_out: u64,
-    base_quantity: u64,
-    quote_quantity: u64,
-): (u64, u64) {
-    // Apply protocol fee to the output quantity
-    // If base_quantity > 0, we're swapping base for quote, so apply fee to quote_out
-    // If quote_quantity > 0, we're swapping quote for base, so apply fee to base_out
-    if (base_quantity > 0) {
-        // Swapping base for quote, apply fee to quote_out
-        let mut fee_amount = calculate_fee_by_rate(quote_out, taker_fee_rate);
-        fee_amount = apply_discount(fee_amount, discount_rate);
-        quote_out = quote_out - fee_amount;
-    } else if (quote_quantity > 0) {
-        // Swapping quote for base, apply fee to base_out
-        let mut fee_amount = calculate_fee_by_rate(base_out, taker_fee_rate);
-        fee_amount = apply_discount(fee_amount, discount_rate);
-        base_out = base_out - fee_amount;
-    };
-
-    (base_out, quote_out)
 }
