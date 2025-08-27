@@ -556,3 +556,42 @@ fun validate_discount_rate(discount_rate: u64) {
         EDiscountOutOfRange,
     );
 }
+
+// === Test Functions ===
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ctx)
+}
+#[test_only]
+public fun unwrap_pool_fees_updated_event(
+    event: &PoolFeesUpdated,
+): (ID, ID, PoolFeeConfig, PoolFeeConfig) {
+    (event.config_id, event.pool_id, event.old_fees, event.new_fees)
+}
+#[test_only]
+public fun unwrap_default_fees_updated_event(
+    event: &DefaultFeesUpdated,
+): (ID, PoolFeeConfig, PoolFeeConfig) {
+    (event.config_id, event.old_fees, event.new_fees)
+}
+
+#[test_only]
+public fun get_fee_defaults(): (u64, u64, u64, u64, u64) {
+    (
+        DEFAULT_DEEP_TAKER_FEE_BPS,
+        DEFAULT_DEEP_MAKER_FEE_BPS,
+        DEFAULT_INPUT_COIN_TAKER_FEE_BPS,
+        DEFAULT_INPUT_COIN_MAKER_FEE_BPS,
+        DEFAULT_MAX_DEEP_FEE_COVERAGE_DISCOUNT_RATE,
+    )
+}
+
+#[test_only]
+public fun default_fees(config: &TradingFeeConfig): PoolFeeConfig {
+    config.default_fees
+}
+
+#[test_only]
+public fun pool_specific_fees(config: &TradingFeeConfig): &Table<ID, PoolFeeConfig> {
+    &config.pool_specific_fees
+}
