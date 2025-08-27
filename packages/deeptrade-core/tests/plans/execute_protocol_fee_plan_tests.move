@@ -505,6 +505,7 @@ fun pure_taker_order_no_maker_fee() {
 // === Helper Functions ===
 
 /// Creates a partially executed order for testing (both taker and maker fees apply)
+#[test_only]
 fun create_partially_executed_order(original_quantity: u64, executed_quantity: u64): OrderInfo {
     let status = constants::partially_filled();
 
@@ -523,6 +524,7 @@ fun create_partially_executed_order(original_quantity: u64, executed_quantity: u
 }
 
 /// Creates a live order for testing (no execution, pure maker fees)
+#[test_only]
 fun create_live_order(original_quantity: u64): OrderInfo {
     let status = constants::live();
 
@@ -541,6 +543,7 @@ fun create_live_order(original_quantity: u64): OrderInfo {
 }
 
 /// Creates a fully executed order for testing (pure taker fees, no maker fees)
+#[test_only]
 fun create_fully_executed_order(original_quantity: u64): OrderInfo {
     let status = constants::filled();
 

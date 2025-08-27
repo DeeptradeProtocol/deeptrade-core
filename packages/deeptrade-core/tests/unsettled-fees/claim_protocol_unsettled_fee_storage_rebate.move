@@ -206,9 +206,9 @@ fun non_multisig_admin_claim_fails() {
     end(scenario);
 }
 
-#[test_only]
 /// Sets up a test scenario where a protocol fee has been settled, leaving an empty
 /// `Balance` object ready for a storage rebate claim.
+#[test_only]
 public(package) fun setup_protocol_fee_for_rebate(): (Scenario, ID) {
     let (mut scenario, _pool_id, _balance_manager_id, fee_manager_id) = setup_test_environment();
 

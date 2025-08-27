@@ -819,6 +819,7 @@ public fun fully_executed_order_only_taker_fees() {
 // ===== Helper Functions =====
 
 /// Creates a fully executed order for testing
+#[test_only]
 fun create_fully_executed_order(): OrderInfo {
     let original_quantity = 1_000_000;
     let executed_quantity = 1_000_000;
@@ -828,6 +829,7 @@ fun create_fully_executed_order(): OrderInfo {
 }
 
 /// Creates a partially executed order for testing
+#[test_only]
 fun create_partially_executed_order(): OrderInfo {
     let original_quantity = 1_000_000;
     let executed_quantity = 500_000; // 50% executed
@@ -837,6 +839,7 @@ fun create_partially_executed_order(): OrderInfo {
 }
 
 /// Creates a cancelled order for testing (with partial execution)
+#[test_only]
 fun create_cancelled_order(): OrderInfo {
     let original_quantity = 1_000_000;
     let executed_quantity = 300_000; // 30% executed before cancellation
@@ -847,6 +850,7 @@ fun create_cancelled_order(): OrderInfo {
 
 /// Creates an order with zero execution quantity for testing
 /// This simulates an IOC order that doesn't find matching orders
+#[test_only]
 fun create_zero_execution_order(): OrderInfo {
     let original_quantity = 1_000_000;
     let executed_quantity = 0; // Zero execution
@@ -856,6 +860,7 @@ fun create_zero_execution_order(): OrderInfo {
 }
 
 /// Helper to create mock OrderInfo using the test function from deepbook
+#[test_only]
 fun create_mock_order_info(original_quantity: u64, executed_quantity: u64, status: u8): OrderInfo {
     order_info::create_order_info_for_tests(
         id_from_address(POOL_ID),

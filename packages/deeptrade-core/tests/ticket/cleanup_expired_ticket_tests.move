@@ -21,6 +21,7 @@ const TICKET_ACTIVE_DURATION: u64 = MILLISECONDS_PER_DAY * 3; // 3 days
 
 // TODO: Move it to a helper section of create ticket tests module
 // and make it more generic, so it would accept owner and ticket type
+#[test_only]
 fun create_ticket(scenario: &mut Scenario) {
     let multisig_address = get_test_multisig_address();
     scenario.next_tx(multisig_address);
