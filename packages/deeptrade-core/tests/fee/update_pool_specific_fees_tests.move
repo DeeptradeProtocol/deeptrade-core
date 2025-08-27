@@ -33,6 +33,9 @@ use token::deep::DEEP;
 const NEW_TAKER_FEE: u64 = 1_500_000;
 const NEW_MAKER_FEE: u64 = 700_000;
 
+const MAX_TAKER_FEE_RATE: u64 = 2_000_000;
+const MAX_DISCOUNT_RATE: u64 = 1_000_000_000;
+
 /// Test successful update of pool-specific fees
 #[test]
 fun test_update_pool_specific_fees_success() {
@@ -117,6 +120,210 @@ fun test_update_pool_specific_fees_fails_wrong_type() {
         ticket,
         &pool,
         new_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    test_scenario::return_shared(pool);
+    test_scenario::return_shared(config);
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+// === View Function Logic Tests ===
+/// Test that `get_pool_fee_config` returns the default fees for a pool with no specific config.
+#[test]
+fun test_get_pool_fee_config_returns_default_when_no_specific_config() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    scenario.next_tx(multisig_address);
+    let config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    let default_fees = fee::default_fees(&config);
+    let received_fees = get_pool_fee_config(&config, &pool);
+
+    assert!(received_fees == default_fees, 1);
+
+    test_scenario::return_shared(pool);
+    test_scenario::return_shared(config);
+    scenario.end();
+}
+
+/// Test that `get_pool_fee_config` returns the correct specific fees after they have been set.
+#[test]
+fun test_get_pool_fee_config_returns_specific_fees() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    // 1. Set the specific fees
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let specific_fees = new_pool_fee_config(NEW_TAKER_FEE, NEW_MAKER_FEE, 0, 0, 0);
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket,
+        &pool,
+        specific_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    // 2. Verify `get_pool_fee_config` returns the fees we just set
+    let received_fees = get_pool_fee_config(&config, &pool);
+    assert!(received_fees == specific_fees, 1);
+
+    // 3. Just to be sure, also verify they are different from the default fees
+    let default_fees = fee::default_fees(&config);
+    assert!(received_fees != default_fees, 2);
+
+    test_scenario::return_shared(pool);
+    test_scenario::return_shared(config);
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+// === Validation Failure Tests ===
+
+/// Test that updating specific fees fails if the taker fee rate exceeds the maximum allowed.
+#[test]
+#[expected_failure(abort_code = fee::EFeeOutOfRange)]
+fun test_update_specific_fails_if_taker_fee_exceeds_max() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        MAX_TAKER_FEE_RATE + 1000, // Exceeds the maximum, multiple of 1000
+        0,
+        0,
+        0,
+        0,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket,
+        &pool,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    test_scenario::return_shared(pool);
+    test_scenario::return_shared(config);
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+/// Test that updating specific fees fails if the maker fee is greater than the taker fee.
+#[test]
+#[expected_failure(abort_code = fee::EInvalidFeeHierarchy)]
+fun test_update_specific_fails_if_maker_exceeds_taker() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        500_000,
+        600_000,
+        0,
+        0,
+        0,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket,
+        &pool,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    test_scenario::return_shared(pool);
+    test_scenario::return_shared(config);
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+/// Test that updating specific fees fails if a fee rate does not adhere to the precision multiple.
+#[test]
+#[expected_failure(abort_code = fee::EInvalidFeePrecision)]
+fun test_update_specific_fails_with_invalid_precision() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(1_000_001, 0, 0, 0, 0);
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket,
+        &pool,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    test_scenario::return_shared(pool);
+    test_scenario::return_shared(config);
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+/// Test that updating specific fees fails if the discount rate exceeds the maximum.
+#[test]
+#[expected_failure(abort_code = fee::EDiscountOutOfRange)]
+fun test_update_specific_fails_if_discount_exceeds_max() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        0,
+        0,
+        0,
+        0,
+        MAX_DISCOUNT_RATE + 1000,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket,
+        &pool,
+        invalid_fees,
         &clock,
         scenario.ctx(),
     );
