@@ -24,7 +24,7 @@ use deeptrade_core::ticket::{
 };
 use deeptrade_core::trading_fee_config_init_tests::setup_with_trading_fee_config;
 use multisig::multisig_test_utils::get_test_multisig_address;
-use sui::clock;
+use sui::clock::{Self, Clock};
 use sui::event;
 use sui::sui::SUI;
 use sui::test_scenario::{Self, Scenario};
@@ -90,10 +90,7 @@ fun test_update_pool_specific_fees_success() {
     assert!(event_old_fees == old_fees, 6);
     assert!(event_new_fees == new_fees, 7);
 
-    test_scenario::return_shared(pool);
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, pool, config, clock);
 }
 
 /// Test failure when updating pool-specific fees with an incorrect ticket type
@@ -124,10 +121,7 @@ fun test_update_pool_specific_fees_fails_wrong_type() {
         scenario.ctx(),
     );
 
-    test_scenario::return_shared(pool);
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, pool, config, clock);
 }
 
 // === View Function Logic Tests ===
@@ -184,10 +178,7 @@ fun test_get_pool_fee_config_returns_specific_fees() {
     let default_fees = fee::default_fees(&config);
     assert!(received_fees != default_fees, 2);
 
-    test_scenario::return_shared(pool);
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, pool, config, clock);
 }
 
 // === Validation Failure Tests ===
@@ -223,10 +214,7 @@ fun test_update_specific_fails_if_taker_fee_exceeds_max() {
         scenario.ctx(),
     );
 
-    test_scenario::return_shared(pool);
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, pool, config, clock);
 }
 
 /// Test that updating specific fees fails if the maker fee is greater than the taker fee.
@@ -260,10 +248,7 @@ fun test_update_specific_fails_if_maker_exceeds_taker() {
         scenario.ctx(),
     );
 
-    test_scenario::return_shared(pool);
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, pool, config, clock);
 }
 
 /// Test that updating specific fees fails if a fee rate does not adhere to the precision multiple.
@@ -291,10 +276,7 @@ fun test_update_specific_fails_with_invalid_precision() {
         scenario.ctx(),
     );
 
-    test_scenario::return_shared(pool);
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, pool, config, clock);
 }
 
 /// Test that updating specific fees fails if the discount rate exceeds the maximum.
@@ -328,10 +310,7 @@ fun test_update_specific_fails_if_discount_exceeds_max() {
         scenario.ctx(),
     );
 
-    test_scenario::return_shared(pool);
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, pool, config, clock);
 }
 
 // === Helper Functions ===
@@ -357,4 +336,12 @@ fun setup(multisig_address: address): (Scenario, ID) {
     );
 
     (scenario, pool_id)
+}
+
+#[test_only]
+fun cleanup(scenario: Scenario, pool: Pool<SUI, USDC>, config: TradingFeeConfig, clock: Clock) {
+    test_scenario::return_shared(pool);
+    test_scenario::return_shared(config);
+    clock::destroy_for_testing(clock);
+    scenario.end();
 }

@@ -24,9 +24,9 @@ use deeptrade_core::ticket::{
 };
 use deeptrade_core::trading_fee_config_init_tests::setup_with_trading_fee_config;
 use multisig::multisig_test_utils::get_test_multisig_address;
-use sui::clock;
+use sui::clock::{Self, Clock};
 use sui::event;
-use sui::test_scenario;
+use sui::test_scenario::{Self, Scenario};
 
 const NEW_TAKER_FEE: u64 = 1_000_000; // 10 bps
 const NEW_MAKER_FEE: u64 = 500_000; // 5 bps
@@ -79,9 +79,7 @@ fun test_update_default_fees_success() {
     assert!(event_old_fees == old_fees, 5);
     assert!(event_new_fees == new_fees, 6);
 
-    test_scenario::return_shared(config);
-    clock::destroy_for_testing(clock);
-    scenario.end();
+    cleanup(scenario, config, clock);
 }
 
 /// Test failure when updating default fees with an incorrect ticket type
@@ -110,9 +108,7 @@ fun test_update_default_fees_fails_wrong_type() {
         scenario.ctx(),
     );
 
-    clock::destroy_for_testing(clock);
-    test_scenario::return_shared(config);
-    scenario.end();
+    cleanup(scenario, config, clock);
 }
 
 /// Test that updating default fees fails if the taker fee rate exceeds the maximum allowed.
@@ -145,9 +141,7 @@ fun test_update_fails_if_taker_fee_exceeds_max() {
         scenario.ctx(),
     );
 
-    clock::destroy_for_testing(clock);
-    test_scenario::return_shared(config);
-    scenario.end();
+    cleanup(scenario, config, clock);
 }
 
 /// Test that updating default fees fails if the maker fee is greater than the taker fee.
@@ -180,9 +174,7 @@ fun test_update_fails_if_maker_exceeds_taker() {
         scenario.ctx(),
     );
 
-    clock::destroy_for_testing(clock);
-    test_scenario::return_shared(config);
-    scenario.end();
+    cleanup(scenario, config, clock);
 }
 
 /// Test that updating default fees fails if a fee rate does not adhere to the precision multiple.
@@ -215,9 +207,7 @@ fun test_update_fails_with_invalid_precision() {
         scenario.ctx(),
     );
 
-    clock::destroy_for_testing(clock);
-    test_scenario::return_shared(config);
-    scenario.end();
+    cleanup(scenario, config, clock);
 }
 /// Test that updating default fees fails if the discount rate exceeds the maximum.
 #[test]
@@ -249,7 +239,11 @@ fun test_update_fails_if_discount_exceeds_max() {
         scenario.ctx(),
     );
 
-    clock::destroy_for_testing(clock);
+    cleanup(scenario, config, clock);
+}
+
+fun cleanup(scenario: Scenario, config: TradingFeeConfig, clock: Clock) {
     test_scenario::return_shared(config);
+    clock::destroy_for_testing(clock);
     scenario.end();
 }
