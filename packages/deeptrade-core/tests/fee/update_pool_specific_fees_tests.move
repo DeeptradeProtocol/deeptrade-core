@@ -13,7 +13,10 @@ use deeptrade_core::fee::{
     PoolFeesUpdated,
     new_pool_fee_config,
     unwrap_pool_fees_updated_event,
-    get_pool_fee_config
+    get_pool_fee_config,
+    deep_fee_type_rates,
+    input_coin_fee_type_rates,
+    max_deep_fee_coverage_discount_rate
 };
 use deeptrade_core::ticket::{
     ETicketTypeMismatch,
@@ -32,6 +35,9 @@ use token::deep::DEEP;
 
 const NEW_TAKER_FEE: u64 = 1_500_000;
 const NEW_MAKER_FEE: u64 = 700_000;
+const NEW_INPUT_TAKER_FEE: u64 = 100_000;
+const NEW_INPUT_MAKER_FEE: u64 = 50_000;
+const NEW_DISCOUNT_RATE: u64 = 200_000_000;
 
 const MAX_TAKER_FEE_RATE: u64 = 2_000_000;
 const MAX_DISCOUNT_RATE: u64 = 1_000_000_000;
@@ -155,7 +161,13 @@ fun test_get_pool_fee_config_returns_specific_fees() {
     let ticket_type = update_pool_specific_fees_ticket_type();
     let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
 
-    let specific_fees = new_pool_fee_config(NEW_TAKER_FEE, NEW_MAKER_FEE, 0, 0, 0);
+    let specific_fees = new_pool_fee_config(
+        NEW_TAKER_FEE, // deep_fee_type_taker_rate
+        NEW_MAKER_FEE, // deep_fee_type_maker_rate
+        NEW_INPUT_TAKER_FEE, // input_coin_fee_type_taker_rate
+        NEW_INPUT_MAKER_FEE, // input_coin_fee_type_maker_rate
+        NEW_DISCOUNT_RATE, // max_deep_fee_coverage_discount_rate
+    );
 
     scenario.next_tx(multisig_address);
     let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
@@ -177,6 +189,18 @@ fun test_get_pool_fee_config_returns_specific_fees() {
     // 3. Just to be sure, also verify they are different from the default fees
     let default_fees = fee::default_fees(&config);
     assert!(received_fees != default_fees, 2);
+
+    // 4. Explicitly test the individual getter functions
+    let (deep_taker, deep_maker) = deep_fee_type_rates(received_fees);
+    assert!(deep_taker == NEW_TAKER_FEE, 3);
+    assert!(deep_maker == NEW_MAKER_FEE, 4);
+
+    let (input_taker, input_maker) = input_coin_fee_type_rates(received_fees);
+    assert!(input_taker == NEW_INPUT_TAKER_FEE, 5);
+    assert!(input_maker == NEW_INPUT_MAKER_FEE, 6);
+
+    let discount = max_deep_fee_coverage_discount_rate(received_fees);
+    assert!(discount == NEW_DISCOUNT_RATE, 7);
 
     cleanup(scenario, pool, config, clock);
 }
