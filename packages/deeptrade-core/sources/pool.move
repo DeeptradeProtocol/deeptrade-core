@@ -182,3 +182,34 @@ public fun update_pool_creation_protocol_fee(
 // === Public-View Functions ===
 /// Get the current protocol fee for creating a pool
 public fun pool_creation_protocol_fee(config: &PoolCreationConfig): u64 { config.protocol_fee }
+
+// === Test Functions ===
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    let pool_creation_config = PoolCreationConfig {
+        id: object::new(ctx),
+        protocol_fee: DEFAULT_POOL_CREATION_PROTOCOL_FEE,
+    };
+
+    transfer::share_object(pool_creation_config);
+}
+
+/// Get the default protocol fee for creating a pool
+#[test_only]
+public fun default_pool_creation_protocol_fee(): u64 {
+    DEFAULT_POOL_CREATION_PROTOCOL_FEE
+}
+
+#[test_only]
+public fun unwrap_pool_created_event<BaseAsset, QuoteAsset>(
+    event: &PoolCreated<BaseAsset, QuoteAsset>,
+): (ID, ID, u64, u64, u64) {
+    (event.config_id, event.pool_id, event.tick_size, event.lot_size, event.min_size)
+}
+
+#[test_only]
+public fun unwrap_pool_creation_protocol_fee_updated_event(
+    event: &PoolCreationProtocolFeeUpdated,
+): (ID, u64, u64) {
+    (event.config_id, event.old_fee, event.new_fee)
+}
