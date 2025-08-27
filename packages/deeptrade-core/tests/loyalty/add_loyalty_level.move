@@ -519,6 +519,7 @@ fun add_level_then_grant_to_user() {
 
 /// Sets up a test environment with loyalty program but without pre-added levels.
 /// Returns (scenario) ready for testing.
+#[test_only]
 public(package) fun setup_test_environment(): Scenario {
     let mut scenario = begin(OWNER);
 
