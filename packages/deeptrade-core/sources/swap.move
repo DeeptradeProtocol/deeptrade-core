@@ -309,6 +309,7 @@ fun charge_protocol_swap_fee<CoinType>(
     let mut fee = calculate_fee_by_rate(coin_value, fee_bps);
     fee = apply_discount(fee, discount_rate);
 
+    // Safety check: fee cannot exceed coin value since fee rate is capped below 100%
     assert!(coin_value >= fee, EInsufficientCoinBalance);
 
     coin_balance.split(fee)
