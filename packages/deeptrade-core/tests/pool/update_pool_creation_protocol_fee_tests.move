@@ -2,7 +2,7 @@
 module deeptrade_core::update_pool_creation_protocol_fee_tests;
 
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
-use deeptrade_core::create_ticket_tests::create_ticket_with_multisig;
+use deeptrade_core::create_ticket_tests::get_ticket_ready_for_consumption;
 use deeptrade_core::pool::{
     Self,
     PoolCreationConfig,
@@ -12,10 +12,8 @@ use deeptrade_core::pool::{
 };
 use deeptrade_core::pool_init_tests::setup_with_pool_creation_config;
 use deeptrade_core::ticket::{
-    AdminTicket,
     ETicketTypeMismatch,
     TicketDestroyed,
-    get_ticket_delay_duration,
     unwrap_ticket_destroyed_event,
     update_pool_creation_protocol_fee_ticket_type,
     update_default_fees_ticket_type
@@ -34,13 +32,9 @@ fun test_update_pool_creation_protocol_fee_success() {
     let multisig_address = get_test_multisig_address();
 
     let ticket_type = update_pool_creation_protocol_fee_ticket_type();
-    create_ticket_with_multisig(&mut scenario, ticket_type);
-    let ticket: AdminTicket = scenario.take_shared<AdminTicket>();
-    let ticket_id = object::id(&ticket);
+    let (ticket, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
 
-    let delay = get_ticket_delay_duration();
-    let mut clock = clock::create_for_testing(scenario.ctx());
-    clock.increment_for_testing(delay);
+    let ticket_id = object::id(&ticket);
 
     scenario.next_tx(multisig_address);
     let mut config: PoolCreationConfig = scenario.take_shared<PoolCreationConfig>();
@@ -82,12 +76,7 @@ fun test_update_pool_creation_protocol_fee_fails_wrong_type() {
 
     // Create a ticket of the wrong type
     let wrong_ticket_type = update_default_fees_ticket_type();
-    create_ticket_with_multisig(&mut scenario, wrong_ticket_type);
-    let ticket: AdminTicket = scenario.take_shared<AdminTicket>();
-
-    let delay = get_ticket_delay_duration();
-    let mut clock = clock::create_for_testing(scenario.ctx());
-    clock.increment_for_testing(delay);
+    let (ticket, clock) = get_ticket_ready_for_consumption(&mut scenario, wrong_ticket_type);
 
     scenario.next_tx(multisig_address);
     let mut config: PoolCreationConfig = scenario.take_shared<PoolCreationConfig>();
