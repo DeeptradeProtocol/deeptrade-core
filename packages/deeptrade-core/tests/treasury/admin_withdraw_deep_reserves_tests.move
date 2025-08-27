@@ -28,30 +28,6 @@ use token::deep::DEEP;
 
 const DEPOSIT_AMOUNT: u64 = 1_000_000_000;
 
-/// Setup a scenario with a treasury and a DEEP coin deposit
-#[test_only]
-fun setup_with_deposit(): Scenario {
-    let multisig_address = get_test_multisig_address();
-    let (mut scenario) = setup_with_admin_cap(multisig_address);
-
-    // Init treasury and get its ID
-    scenario.next_tx(multisig_address);
-    {
-        init_for_testing(scenario.ctx());
-    };
-
-    // Deposit DEEP into reserves
-    scenario.next_tx(@0xDEADBEEF);
-    {
-        let deep_coin = coin::mint_for_testing<DEEP>(DEPOSIT_AMOUNT, scenario.ctx());
-        let mut treasury: Treasury = scenario.take_shared<Treasury>();
-        treasury::deposit_into_reserves(&mut treasury, deep_coin);
-        test_scenario::return_shared(treasury);
-    };
-
-    scenario
-}
-
 /// Test successful withdrawal of deep reserves using a valid ticket
 #[test]
 fun test_withdraw_deep_reserves_success() {
@@ -143,4 +119,29 @@ fun test_withdraw_deep_reserves_fails_wrong_ticket_type() {
 
     clock::destroy_for_testing(clock);
     scenario.end();
+}
+
+// === Helper Functions ===
+/// Setup a scenario with a treasury and a DEEP coin deposit
+#[test_only]
+fun setup_with_deposit(): Scenario {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario) = setup_with_admin_cap(multisig_address);
+
+    // Init treasury and get its ID
+    scenario.next_tx(multisig_address);
+    {
+        init_for_testing(scenario.ctx());
+    };
+
+    // Deposit DEEP into reserves
+    scenario.next_tx(@0xDEADBEEF);
+    {
+        let deep_coin = coin::mint_for_testing<DEEP>(DEPOSIT_AMOUNT, scenario.ctx());
+        let mut treasury: Treasury = scenario.take_shared<Treasury>();
+        treasury::deposit_into_reserves(&mut treasury, deep_coin);
+        test_scenario::return_shared(treasury);
+    };
+
+    scenario
 }
