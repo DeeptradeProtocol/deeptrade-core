@@ -7,7 +7,8 @@ use deeptrade_core::pool::{
     Self,
     PoolCreationConfig,
     PoolCreationProtocolFeeUpdated,
-    unwrap_pool_creation_protocol_fee_updated_event
+    unwrap_pool_creation_protocol_fee_updated_event,
+    default_pool_creation_protocol_fee
 };
 use deeptrade_core::pool_init_tests::setup_with_pool_creation_config;
 use deeptrade_core::ticket::{
@@ -60,11 +61,12 @@ fun test_update_pool_creation_protocol_fee_success() {
 
     let updated_fee_events = event::events_by_type<PoolCreationProtocolFeeUpdated>();
     assert!(updated_fee_events.length() == 1, 3);
-    let (event_config_id, _, new_fee) = unwrap_pool_creation_protocol_fee_updated_event(
+    let (event_config_id, old_fee, new_fee) = unwrap_pool_creation_protocol_fee_updated_event(
         &updated_fee_events[0],
     );
     assert!(event_config_id == config_id, 4);
-    assert!(new_fee == NEW_FEE, 5);
+    assert!(old_fee == default_pool_creation_protocol_fee(), 5);
+    assert!(new_fee == NEW_FEE, 6);
 
     clock::destroy_for_testing(clock);
     test_scenario::return_shared(config);
