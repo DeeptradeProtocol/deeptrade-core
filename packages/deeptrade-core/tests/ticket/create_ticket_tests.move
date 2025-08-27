@@ -140,12 +140,14 @@ public fun create_ticket_with_multisig(scenario: &mut Scenario, ticket_type: u8)
 public fun get_ticket_ready_for_consumption(
     scenario: &mut Scenario,
     ticket_type: u8,
-): (AdminTicket, Clock) {
+): (AdminTicket, ID, Clock) {
     create_ticket_with_multisig(scenario, ticket_type);
     let ticket = scenario.take_shared<AdminTicket>();
+    let ticket_id = object::id(&ticket);
+
     let delay = get_ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 
-    (ticket, clock)
+    (ticket, ticket_id, clock)
 }

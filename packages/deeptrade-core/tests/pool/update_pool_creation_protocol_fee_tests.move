@@ -32,9 +32,7 @@ fun test_update_pool_creation_protocol_fee_success() {
     let multisig_address = get_test_multisig_address();
 
     let ticket_type = update_pool_creation_protocol_fee_ticket_type();
-    let (ticket, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
-
-    let ticket_id = object::id(&ticket);
+    let (ticket, ticket_id, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
 
     scenario.next_tx(multisig_address);
     let mut config: PoolCreationConfig = scenario.take_shared<PoolCreationConfig>();
@@ -76,7 +74,10 @@ fun test_update_pool_creation_protocol_fee_fails_wrong_type() {
 
     // Create a ticket of the wrong type
     let wrong_ticket_type = update_default_fees_ticket_type();
-    let (ticket, clock) = get_ticket_ready_for_consumption(&mut scenario, wrong_ticket_type);
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(
+        &mut scenario,
+        wrong_ticket_type,
+    );
 
     scenario.next_tx(multisig_address);
     let mut config: PoolCreationConfig = scenario.take_shared<PoolCreationConfig>();
