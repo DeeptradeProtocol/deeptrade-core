@@ -242,6 +242,7 @@ fun test_update_fails_if_discount_exceeds_max() {
     cleanup(scenario, config, clock);
 }
 
+#[test_only]
 fun cleanup(scenario: Scenario, config: TradingFeeConfig, clock: Clock) {
     test_scenario::return_shared(config);
     clock::destroy_for_testing(clock);
