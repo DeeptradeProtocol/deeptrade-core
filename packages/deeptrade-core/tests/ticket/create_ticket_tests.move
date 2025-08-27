@@ -124,4 +124,7 @@ public fun create_ticket_with_multisig(scenario: &mut Scenario, ticket_type: u8)
 
     clock::destroy_for_testing(clock);
     scenario.return_to_sender(admin_cap);
+
+    // We keep it here to make sure the ticket is available from Global Inventory in the next test
+    scenario.next_tx(multisig_address);
 }
