@@ -91,8 +91,7 @@ fun success() {
     end(scenario);
 }
 
-#[test]
-#[expected_failure(abort_code = order::ENotSupportedExpireTimestamp)]
+#[test, expected_failure(abort_code = order::ENotSupportedExpireTimestamp)]
 fun test_not_supported_expire_timestamp() {
     let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
@@ -154,8 +153,7 @@ fun test_not_supported_expire_timestamp() {
     end(scenario);
 }
 
-#[test]
-#[expected_failure(abort_code = order::ENotSupportedSelfMatchingOption)]
+#[test, expected_failure(abort_code = order::ENotSupportedSelfMatchingOption)]
 fun test_not_supported_self_matching_option() {
     let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 

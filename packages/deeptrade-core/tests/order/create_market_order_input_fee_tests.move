@@ -116,8 +116,7 @@ fun success() {
     end(scenario);
 }
 
-#[test]
-#[expected_failure(abort_code = order::ENotSupportedSelfMatchingOption)]
+#[test, expected_failure(abort_code = order::ENotSupportedSelfMatchingOption)]
 fun test_not_supported_self_matching_option() {
     let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
 
