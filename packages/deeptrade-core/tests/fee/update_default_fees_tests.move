@@ -9,7 +9,11 @@ use deeptrade_core::fee::{
     DefaultFeesUpdated,
     new_pool_fee_config,
     unwrap_default_fees_updated_event,
-    default_fees
+    default_fees,
+    EFeeOutOfRange,
+    EInvalidFeeHierarchy,
+    EInvalidFeePrecision,
+    EDiscountOutOfRange
 };
 use deeptrade_core::ticket::{
     ETicketTypeMismatch,
@@ -26,6 +30,8 @@ use sui::test_scenario;
 
 const NEW_TAKER_FEE: u64 = 1_000_000; // 10 bps
 const NEW_MAKER_FEE: u64 = 500_000; // 5 bps
+const MAX_TAKER_FEE_RATE: u64 = 2_000_000; // 20 bps
+const MAX_DISCOUNT_RATE: u64 = 1_000_000_000; // 100 bps
 
 /// Test successful update of the default fees
 #[test]
@@ -104,8 +110,146 @@ fun test_update_default_fees_fails_wrong_type() {
         scenario.ctx(),
     );
 
-    // Cleanup should not be reached
-    test_scenario::return_shared(config);
     clock::destroy_for_testing(clock);
+    test_scenario::return_shared(config);
+    scenario.end();
+}
+
+/// Test that updating default fees fails if the taker fee rate exceeds the maximum allowed.
+#[test]
+#[expected_failure(abort_code = EFeeOutOfRange)]
+fun test_update_fails_if_taker_fee_exceeds_max() {
+    let multisig_address = get_test_multisig_address();
+    let mut scenario = setup_with_admin_cap(multisig_address);
+    setup_with_trading_fee_config(&mut scenario, multisig_address);
+
+    let ticket_type = update_default_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        MAX_TAKER_FEE_RATE + 1000, // Exceeds the maximum, multiple of 1000
+        0,
+        0,
+        0,
+        0,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+
+    fee::update_default_fees(
+        &mut config,
+        ticket,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    clock::destroy_for_testing(clock);
+    test_scenario::return_shared(config);
+    scenario.end();
+}
+
+/// Test that updating default fees fails if the maker fee is greater than the taker fee.
+#[test]
+#[expected_failure(abort_code = EInvalidFeeHierarchy)]
+fun test_update_fails_if_maker_exceeds_taker() {
+    let multisig_address = get_test_multisig_address();
+    let mut scenario = setup_with_admin_cap(multisig_address);
+    setup_with_trading_fee_config(&mut scenario, multisig_address);
+
+    let ticket_type = update_default_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        700_000, // Taker fee: 7 bps
+        1_000_000, // Maker fee: 10 bps and multiple of 1000
+        0,
+        0,
+        0,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+
+    fee::update_default_fees(
+        &mut config,
+        ticket,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    clock::destroy_for_testing(clock);
+    test_scenario::return_shared(config);
+    scenario.end();
+}
+
+/// Test that updating default fees fails if a fee rate does not adhere to the precision multiple.
+#[test]
+#[expected_failure(abort_code = EInvalidFeePrecision)]
+fun test_update_fails_with_invalid_precision() {
+    let multisig_address = get_test_multisig_address();
+    let mut scenario = setup_with_admin_cap(multisig_address);
+    setup_with_trading_fee_config(&mut scenario, multisig_address);
+
+    let ticket_type = update_default_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        1_000_001, // Not a multiple of 1000
+        0,
+        0,
+        0,
+        0,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+
+    fee::update_default_fees(
+        &mut config,
+        ticket,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    clock::destroy_for_testing(clock);
+    test_scenario::return_shared(config);
+    scenario.end();
+}
+/// Test that updating default fees fails if the discount rate exceeds the maximum.
+#[test]
+#[expected_failure(abort_code = EDiscountOutOfRange)]
+fun test_update_fails_if_discount_exceeds_max() {
+    let multisig_address = get_test_multisig_address();
+    let mut scenario = setup_with_admin_cap(multisig_address);
+    setup_with_trading_fee_config(&mut scenario, multisig_address);
+
+    let ticket_type = update_default_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        0,
+        0,
+        0,
+        0,
+        MAX_DISCOUNT_RATE + 1000, // Exceeds max, multiple of 1000
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+
+    fee::update_default_fees(
+        &mut config,
+        ticket,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    clock::destroy_for_testing(clock);
+    test_scenario::return_shared(config);
     scenario.end();
 }
