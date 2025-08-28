@@ -13,7 +13,6 @@ use deeptrade_core::fee::{
 use deeptrade_core::fee_manager::FeeManager;
 use deeptrade_core::helper::{
     calculate_deep_required,
-    transfer_if_nonzero,
     calculate_order_amount,
     get_sui_per_deep,
     calculate_market_order_params,
@@ -174,8 +173,8 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
     balance_manager: &mut BalanceManager,
     mut base_coin: Coin<BaseToken>,
     mut quote_coin: Coin<QuoteToken>,
-    deep_coin: Coin<DEEP>,
-    sui_coin: Coin<SUI>,
+    mut deep_coin: Coin<DEEP>,
+    mut sui_coin: Coin<SUI>,
     price: u64,
     quantity: u64,
     is_bid: bool,
@@ -189,7 +188,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
     estimated_sui_fee_slippage: u64,
     clock: &Clock,
     ctx: &mut TxContext,
-): (OrderInfo) {
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>, Coin<DEEP>, Coin<SUI>) {
     treasury.verify_version();
 
     // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
@@ -217,8 +216,8 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
         balance_manager,
         &mut base_coin,
         &mut quote_coin,
-        deep_coin,
-        sui_coin,
+        &mut deep_coin,
+        &mut sui_coin,
         deep_required,
         order_amount,
         is_bid,
@@ -250,8 +249,8 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
         trading_fee_config,
         pool,
         balance_manager,
-        base_coin,
-        quote_coin,
+        &mut base_coin,
+        &mut quote_coin,
         &order_info,
         order_amount,
         protocol_fee_discount_rate,
@@ -259,7 +258,7 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
         ctx,
     );
 
-    order_info
+    (order_info, base_coin, quote_coin, deep_coin, sui_coin)
 }
 
 /// Creates a market order on DeepBook using coins from various sources
@@ -311,8 +310,8 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
     balance_manager: &mut BalanceManager,
     mut base_coin: Coin<BaseToken>,
     mut quote_coin: Coin<QuoteToken>,
-    deep_coin: Coin<DEEP>,
-    sui_coin: Coin<SUI>,
+    mut deep_coin: Coin<DEEP>,
+    mut sui_coin: Coin<SUI>,
     order_amount: u64,
     is_bid: bool,
     self_matching_option: u8,
@@ -323,7 +322,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
     estimated_sui_fee_slippage: u64,
     clock: &Clock,
     ctx: &mut TxContext,
-): (OrderInfo) {
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>, Coin<DEEP>, Coin<SUI>) {
     treasury.verify_version();
 
     // Verify the self matching option is self matching allowed. Read more about self matching option
@@ -351,8 +350,8 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
         balance_manager,
         &mut base_coin,
         &mut quote_coin,
-        deep_coin,
-        sui_coin,
+        &mut deep_coin,
+        &mut sui_coin,
         deep_required,
         order_amount,
         is_bid,
@@ -381,8 +380,8 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
         trading_fee_config,
         pool,
         balance_manager,
-        base_coin,
-        quote_coin,
+        &mut base_coin,
+        &mut quote_coin,
         &order_info,
         order_amount,
         protocol_fee_discount_rate,
@@ -390,7 +389,7 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
         ctx,
     );
 
-    order_info
+    (order_info, base_coin, quote_coin, deep_coin, sui_coin)
 }
 
 /// Creates a limit order on DeepBook using coins from user's wallet for whitelisted pools
@@ -439,7 +438,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
     client_order_id: u64,
     clock: &Clock,
     ctx: &mut TxContext,
-): (OrderInfo) {
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>) {
     treasury.verify_version();
 
     // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
@@ -487,8 +486,8 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
         trading_fee_config,
         pool,
         balance_manager,
-        base_coin,
-        quote_coin,
+        &mut base_coin,
+        &mut quote_coin,
         &order_info,
         order_amount,
         protocol_fee_discount_rate,
@@ -496,7 +495,7 @@ public fun create_limit_order_whitelisted<BaseToken, QuoteToken>(
         ctx,
     );
 
-    order_info
+    (order_info, base_coin, quote_coin)
 }
 
 /// Creates a market order on DeepBook using coins from user's wallet for whitelisted pools
@@ -539,7 +538,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
     client_order_id: u64,
     clock: &Clock,
     ctx: &mut TxContext,
-): (OrderInfo) {
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>) {
     treasury.verify_version();
 
     // Verify the self matching option is self matching allowed. Read more about self matching option
@@ -585,8 +584,8 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
         trading_fee_config,
         pool,
         balance_manager,
-        base_coin,
-        quote_coin,
+        &mut base_coin,
+        &mut quote_coin,
         &order_info,
         order_amount,
         protocol_fee_discount_rate,
@@ -594,7 +593,7 @@ public fun create_market_order_whitelisted<BaseToken, QuoteToken>(
         ctx,
     );
 
-    order_info
+    (order_info, base_coin, quote_coin)
 }
 
 /// Creates a limit order on DeepBook using input coins for fees
@@ -640,7 +639,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
     client_order_id: u64,
     clock: &Clock,
     ctx: &mut TxContext,
-): (OrderInfo) {
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>) {
     treasury.verify_version();
 
     // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
@@ -687,8 +686,8 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
         trading_fee_config,
         pool,
         balance_manager,
-        base_coin,
-        quote_coin,
+        &mut base_coin,
+        &mut quote_coin,
         &order_info,
         order_amount,
         loyalty_fee_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
@@ -696,7 +695,7 @@ public fun create_limit_order_input_fee<BaseToken, QuoteToken>(
         ctx,
     );
 
-    order_info
+    (order_info, base_coin, quote_coin)
 }
 
 /// Creates a market order on DeepBook using input coins for fees
@@ -736,7 +735,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
     client_order_id: u64,
     clock: &Clock,
     ctx: &mut TxContext,
-): (OrderInfo) {
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>) {
     treasury.verify_version();
 
     // Verify the self matching option is self matching allowed. Read more about self matching option
@@ -784,8 +783,8 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
         trading_fee_config,
         pool,
         balance_manager,
-        base_coin,
-        quote_coin,
+        &mut base_coin,
+        &mut quote_coin,
         &order_info,
         order_amount,
         loyalty_fee_discount_rate, // Intentional: only loyalty discount can be applied to input fee orders
@@ -793,7 +792,7 @@ public fun create_market_order_input_fee<BaseToken, QuoteToken>(
         ctx,
     );
 
-    order_info
+    (order_info, base_coin, quote_coin)
 }
 
 /// Cancels an order and settles any associated with the order unsettled fees
@@ -1243,8 +1242,8 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     trading_fee_config: &TradingFeeConfig,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
-    mut base_coin: Coin<BaseToken>,
-    mut quote_coin: Coin<QuoteToken>,
+    base_coin: &mut Coin<BaseToken>,
+    quote_coin: &mut Coin<QuoteToken>,
     order_info: &OrderInfo,
     order_amount: u64,
     discount_rate: u64,
@@ -1287,7 +1286,7 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
         execute_protocol_fee_plan(
             fee_manager,
             balance_manager,
-            &mut quote_coin,
+            quote_coin,
             order_info,
             &fee_plan,
             ctx,
@@ -1296,16 +1295,12 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
         execute_protocol_fee_plan(
             fee_manager,
             balance_manager,
-            &mut base_coin,
+            base_coin,
             order_info,
             &fee_plan,
             ctx,
         );
     };
-
-    // Return unused coins to the caller
-    transfer_if_nonzero(base_coin, ctx.sender());
-    transfer_if_nonzero(quote_coin, ctx.sender());
 }
 
 /// Executes a `ProtocolFeePlan` to collect Deeptrade fees from the user's
@@ -1548,8 +1543,8 @@ public(package) fun prepare_order_execution<
     balance_manager: &mut BalanceManager,
     base_coin: &mut Coin<BaseToken>,
     quote_coin: &mut Coin<QuoteToken>,
-    mut deep_coin: Coin<DEEP>,
-    mut sui_coin: Coin<SUI>,
+    deep_coin: &mut Coin<DEEP>,
+    sui_coin: &mut Coin<SUI>,
     deep_required: u64,
     order_amount: u64,
     is_bid: bool,
@@ -1632,12 +1627,12 @@ public(package) fun prepare_order_execution<
         hundred_percent(),
     );
 
-    execute_deep_plan(treasury, balance_manager, &mut deep_coin, &deep_plan, ctx);
+    execute_deep_plan(treasury, balance_manager, deep_coin, &deep_plan, ctx);
 
     execute_coverage_fee_plan(
         treasury,
         balance_manager,
-        &mut sui_coin,
+        sui_coin,
         &coverage_fee_plan,
         ctx,
     );
@@ -1650,10 +1645,6 @@ public(package) fun prepare_order_execution<
         is_bid,
         ctx,
     );
-
-    // Base and quote coins will be returned after protocol fees charging
-    transfer_if_nonzero(deep_coin, ctx.sender());
-    transfer_if_nonzero(sui_coin, ctx.sender());
 
     // Generate and return proof and protocol fee discount rate
     (balance_manager.generate_proof_as_owner(ctx), total_discount_rate)
