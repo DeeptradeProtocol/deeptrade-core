@@ -291,6 +291,31 @@ fun test_version_management_fails_not_multisig() {
     scenario.end();
 }
 
+#[test]
+#[expected_failure(abort_code = ESenderIsNotMultisig)]
+fun test_version_management_fails_not_multisig() {
+    let (mut scenario, _, admin_cap, mut treasury, _) = setup();
+
+    // Switch to a non-multisig user
+    scenario.next_tx(FAKE_USER);
+    {
+        // Attempt to enable a version from an unauthorized address
+        treasury::disable_version(
+            &mut treasury,
+            &admin_cap,
+            current_version,
+            get_test_multisig_pks(),
+            get_test_multisig_weights(),
+            get_test_multisig_threshold(),
+            scenario.ctx(),
+        );
+    };
+
+    scenario.return_to_sender(admin_cap);
+    test_scenario::return_shared(treasury);
+    scenario.end();
+}
+
 // === Helper Functions ===
 
 #[test_only]
