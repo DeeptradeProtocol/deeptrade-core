@@ -49,6 +49,12 @@ fun success() {
             scenario.ctx(),
         );
 
+        // Record initial balances
+        let initial_balance_manager_base = balance_manager.balance<SUI>();
+        let initial_balance_manager_quote = balance_manager.balance<USDC>();
+        let initial_wallet_base = base_coin.value();
+        let initial_wallet_quote = quote_coin.value();
+
         // Execute limit buy order
         let (order_info, base_coin, quote_coin) = create_limit_order_whitelisted<SUI, USDC>(
             &treasury,
@@ -95,6 +101,19 @@ fun success() {
             order_info.order_id(),
         ) > 0,
         );
+
+        // Verify coin consumption
+
+        let final_balance_manager_base = balance_manager.balance<SUI>();
+        let final_balance_manager_quote = balance_manager.balance<USDC>();
+        let final_wallet_base = base_coin.value();
+        let final_wallet_quote = quote_coin.value();
+
+        // For bid orders, fees should come from quote coins, base coins should remain unchanged
+        assert_eq!(final_balance_manager_base, initial_balance_manager_base);
+        assert!(final_balance_manager_quote <= initial_balance_manager_quote);
+        assert_eq!(final_wallet_base, initial_wallet_base);
+        assert!(final_wallet_quote <= initial_wallet_quote);
 
         // Clean up
         destroy(base_coin);

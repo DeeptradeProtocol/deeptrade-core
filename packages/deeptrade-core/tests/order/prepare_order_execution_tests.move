@@ -163,6 +163,7 @@ fun bid_success() {
         let initial_bm_sui_balance = balance_manager.balance<SUI>();
         let initial_wallet_quote_balance = quote_coin.value();
         let initial_wallet_base_balance = base_coin.value();
+        let initial_wallet_deep_balance = deep_coin.value();
         let initial_treasury_deep_balance = treasury.deep_reserves();
 
         // Execute prepare_order_execution
@@ -204,6 +205,7 @@ fun bid_success() {
         let final_bm_sui_balance = balance_manager.balance<SUI>();
         let final_wallet_quote_balance = quote_coin.value();
         let final_wallet_base_balance = base_coin.value();
+        let final_wallet_deep_balance = deep_coin.value();
         let final_treasury_deep_balance = treasury.deep_reserves();
 
         // Conservation of funds: what was withdrawn equals what was deposited
@@ -217,20 +219,20 @@ fun bid_success() {
         let deep_deposited = final_bm_deep_balance - initial_bm_deep_balance;
         let deep_from_treasury = initial_treasury_deep_balance - final_treasury_deep_balance;
 
-        // DEEP coins are consumed and transferred back to sender, so we can't track wallet changes
-        // But we can verify that DEEP was deposited to balance manager from treasury + wallet
+        // DEEP coins are consumed and we can track wallet changes
+        // We can verify that DEEP was deposited to balance manager from treasury + wallet
         // Total DEEP deposited should be at least the amount taken from treasury
-        assert!(deep_deposited >= deep_from_treasury);
+        let deep_consumed = initial_wallet_deep_balance - final_wallet_deep_balance;
+        assert_eq!(deep_deposited, deep_from_treasury + deep_consumed);
         assert!(deep_from_treasury > 0);
+        assert!(deep_consumed > 0);
 
         // Verify base tokens remain unchanged (not used for bid)
         // Note: Base tokens (SUI) might be used for coverage fees since SUI is both base and coverage fee token
         // So we only verify that wallet base tokens remain unchanged
         assert_eq!(final_wallet_base_balance, initial_wallet_base_balance);
 
-        // Verify SUI balance changes (coverage fees)
-        // SUI coins are consumed and transferred back to sender, so we can't track wallet changes
-        // But we can verify that SUI was taken from balance manager for coverage fees
+        // We can verify that SUI was taken from balance manager for coverage fees
         let sui_taken_from_bm = initial_bm_sui_balance - final_bm_sui_balance;
         let treasury_coverage_fee_balance = treasury.get_deep_reserves_coverage_fee_balance<SUI>();
         // Coverage fees go directly to treasury, not to balance manager
@@ -388,6 +390,7 @@ fun ask_success() {
         let initial_bm_base_balance = balance_manager.balance<SUI>();
         let initial_bm_deep_balance = balance_manager.balance<DEEP>();
         let initial_wallet_base_balance = base_coin.value();
+        let initial_wallet_deep_balance = deep_coin.value();
         let initial_treasury_deep_balance = treasury.deep_reserves();
 
         // Execute prepare_order_execution
@@ -427,6 +430,7 @@ fun ask_success() {
         let final_bm_base_balance = balance_manager.balance<SUI>();
         let final_bm_deep_balance = balance_manager.balance<DEEP>();
         let final_wallet_base_balance = base_coin.value();
+        let final_wallet_deep_balance = deep_coin.value();
         let final_treasury_deep_balance = treasury.deep_reserves();
 
         // For ask orders, SUI is both input coin and coverage fee token
@@ -442,11 +446,13 @@ fun ask_success() {
         let deep_deposited = final_bm_deep_balance - initial_bm_deep_balance;
         let deep_from_treasury = initial_treasury_deep_balance - final_treasury_deep_balance;
 
-        // DEEP coins are consumed and transferred back to sender, so we can't track wallet changes
-        // But we can verify that DEEP was deposited to balance manager from treasury + wallet
+        // DEEP coins are consumed and we can track wallet changes
+        // We can verify that DEEP was deposited to balance manager from treasury + wallet
         // Total DEEP deposited should be at least the amount taken from treasury
-        assert!(deep_deposited >= deep_from_treasury);
+        let deep_consumed = initial_wallet_deep_balance - final_wallet_deep_balance;
+        assert_eq!(deep_deposited, deep_from_treasury + deep_consumed);
         assert!(deep_from_treasury > 0);
+        assert!(deep_consumed > 0);
 
         // Verify quote tokens remain unchanged (not used for ask)
         let final_bm_quote_balance = balance_manager.balance<USDC>();
