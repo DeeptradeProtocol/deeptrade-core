@@ -293,7 +293,7 @@ fun test_version_management_fails_not_multisig() {
 
 #[test]
 #[expected_failure(abort_code = ESenderIsNotMultisig)]
-fun test_version_management_fails_not_multisig() {
+fun test_version_management_fails_not_multisig_disable() {
     let (mut scenario, _, admin_cap, mut treasury, _) = setup();
 
     // Switch to a non-multisig user
@@ -303,7 +303,7 @@ fun test_version_management_fails_not_multisig() {
         treasury::disable_version(
             &mut treasury,
             &admin_cap,
-            current_version,
+            current_version(),
             get_test_multisig_pks(),
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
