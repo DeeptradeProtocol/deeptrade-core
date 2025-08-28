@@ -383,13 +383,16 @@ public(package) fun verify_version(treasury: &Treasury) {
 }
 
 // === Test Functions ===
-/// Get the allowed versions for testing.
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ctx);
+}
+
 #[test_only]
 public fun allowed_versions(treasury: &Treasury): &VecSet<u16> {
     &treasury.allowed_versions
 }
 
-/// Get the disabled versions for testing.
 #[test_only]
 public fun disabled_versions(treasury: &Treasury): &VecSet<u16> {
     &treasury.disabled_versions
@@ -399,6 +402,18 @@ public fun disabled_versions(treasury: &Treasury): &VecSet<u16> {
 #[test_only]
 public fun deep_reserves_coverage_fees(treasury: &Treasury): &Bag {
     &treasury.deep_reserves_coverage_fees
+}
+
+/// Get the deep reserves coverage fee balance for a specific coin type.
+#[test_only]
+public fun get_deep_reserves_coverage_fee_balance<CoinType>(treasury: &Treasury): u64 {
+    let key = ChargedFeeKey<CoinType> {};
+    if (treasury.deep_reserves_coverage_fees.contains(key)) {
+        let balance: &Balance<CoinType> = treasury.deep_reserves_coverage_fees.borrow(key);
+        balance.value()
+    } else {
+        0
+    }
 }
 
 /// Get the protocol fees bag for testing.
@@ -417,12 +432,6 @@ public fun get_protocol_fee_balance<CoinType>(treasury: &Treasury): u64 {
     } else {
         0
     }
-}
-
-/// Initialize the treasury module for testing
-#[test_only]
-public fun init_for_testing(ctx: &mut TxContext) {
-    init(ctx);
 }
 
 #[test_only]
