@@ -8,7 +8,6 @@ use pyth::price_info::PriceInfoObject;
 use std::type_name;
 use std::u64;
 use sui::clock::Clock;
-use sui::coin::Coin;
 use sui::sui::SUI;
 use token::deep::DEEP;
 
@@ -47,15 +46,6 @@ public fun current_version(): u16 { CURRENT_VERSION }
 public fun hundred_percent(): u64 { HUNDRED_PERCENT }
 
 // === Public-Package Functions ===
-/// Helper function to transfer non-zero coins or destroy zero coins
-public(package) fun transfer_if_nonzero<CoinType>(coins: Coin<CoinType>, recipient: address) {
-    if (coins.value() > 0) {
-        transfer::public_transfer(coins, recipient);
-    } else {
-        coins.destroy_zero();
-    };
-}
-
 /// Calculates the total amount of DEEP required for an order using the taker fee rate
 /// Returns 0 for whitelisted pools
 public(package) fun calculate_deep_required<BaseToken, QuoteToken>(
