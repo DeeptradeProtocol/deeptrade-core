@@ -99,6 +99,54 @@ fun test_join_coverage_fee() {
     scenario.end();
 }
 
+#[test]
+fun test_join_zero_value_protocol_fee() {
+    let mut scenario = setup();
+
+    scenario.next_tx(USER);
+    {
+        let mut treasury = scenario.take_shared<Treasury>();
+        let zero_fee_balance = balance::create_for_testing<DUMMY_COIN_1>(0);
+
+        let balance_before = treasury.get_protocol_fee_balance<DUMMY_COIN_1>();
+        assert!(balance_before == 0, 1);
+
+        // This should not abort and should not change the balance
+        treasury.join_protocol_fee(zero_fee_balance);
+
+        let balance_after = treasury.get_protocol_fee_balance<DUMMY_COIN_1>();
+        assert!(balance_after == 0, 2);
+
+        test_scenario::return_shared(treasury);
+    };
+
+    scenario.end();
+}
+
+#[test]
+fun test_join_zero_value_coverage_fee() {
+    let mut scenario = setup();
+
+    scenario.next_tx(USER);
+    {
+        let mut treasury = scenario.take_shared<Treasury>();
+        let zero_fee_balance = balance::create_for_testing<DUMMY_COIN_1>(0);
+
+        let balance_before = treasury.get_deep_reserves_coverage_fee_balance<DUMMY_COIN_1>();
+        assert!(balance_before == 0, 1);
+
+        // This should not abort and should not change the balance
+        treasury.join_coverage_fee(zero_fee_balance);
+
+        let balance_after = treasury.get_deep_reserves_coverage_fee_balance<DUMMY_COIN_1>();
+        assert!(balance_after == 0, 2);
+
+        test_scenario::return_shared(treasury);
+    };
+
+    scenario.end();
+}
+
 // === Helper Functions ===
 
 #[test_only]
