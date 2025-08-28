@@ -17,7 +17,8 @@ use deeptrade_core::treasury::{
     Treasury,
     init_for_testing,
     unwrap_deep_reserves_withdrawn_event,
-    DeepReservesWithdrawn
+    DeepReservesWithdrawn,
+    EInsufficientDeepReserves
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::clock;
@@ -117,6 +118,41 @@ fun test_withdraw_deep_reserves_fails_wrong_ticket_type() {
     test_scenario::return_shared(treasury);
     coin::burn_for_testing(withdrawn_coin);
 
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+#[test]
+#[expected_failure(abort_code = EInsufficientDeepReserves)]
+fun test_withdraw_deep_reserves_fails_insufficient_funds() {
+    let (mut scenario) = setup_with_deposit();
+    let multisig_address = get_test_multisig_address();
+
+    let ticket_type = withdraw_deep_reserves_ticket_type();
+    create_ticket_with_multisig(&mut scenario, ticket_type);
+    let ticket: AdminTicket = scenario.take_shared<AdminTicket>();
+
+    // Advance time to make the ticket ready
+    let delay = get_ticket_delay_duration();
+    let mut clock = clock::create_for_testing(scenario.ctx());
+    clock.increment_for_testing(delay);
+
+    // Attempt the withdrawal, which should fail
+    scenario.next_tx(multisig_address);
+    let mut treasury: Treasury = scenario.take_shared<Treasury>();
+
+    // Attempt to withdraw more than was deposited
+    let withdrawn_coin = treasury::withdraw_deep_reserves(
+        &mut treasury,
+        ticket,
+        DEPOSIT_AMOUNT + 1, // The crucial part
+        &clock,
+        scenario.ctx(),
+    );
+
+    // Cleanup - these lines should not be reached
+    test_scenario::return_shared(treasury);
+    coin::burn_for_testing(withdrawn_coin);
     clock::destroy_for_testing(clock);
     scenario.end();
 }
