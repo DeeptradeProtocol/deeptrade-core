@@ -50,7 +50,7 @@ fun test_withdraw_coverage_fee_success() {
     scenario.next_tx(multisig_address);
     let mut treasury: Treasury = scenario.take_shared<Treasury>();
     let treasury_id = object::id(&treasury);
-    let withdrawn_coin = treasury::withdraw_deep_reserves_coverage_fee<COIN>(
+    let withdrawn_coin = treasury::withdraw_coverage_fee<COIN>(
         &mut treasury,
         ticket,
         &clock,
@@ -97,7 +97,7 @@ fun test_withdraw_coverage_fee_fails_wrong_ticket_type() {
 
     scenario.next_tx(multisig_address);
     let mut treasury: Treasury = scenario.take_shared<Treasury>();
-    let coin = treasury::withdraw_deep_reserves_coverage_fee<COIN>(
+    let coin = treasury::withdraw_coverage_fee<COIN>(
         &mut treasury,
         ticket,
         &clock,

@@ -129,7 +129,7 @@ public fun deposit_into_reserves(treasury: &mut Treasury, deep_coin: Coin<DEEP>)
 ///
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
-public fun withdraw_deep_reserves_coverage_fee<CoinType>(
+public fun withdraw_coverage_fee<CoinType>(
     treasury: &mut Treasury,
     ticket: AdminTicket,
     clock: &Clock,
