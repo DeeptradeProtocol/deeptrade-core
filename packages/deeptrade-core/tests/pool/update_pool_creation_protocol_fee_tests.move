@@ -8,7 +8,9 @@ use deeptrade_core::pool::{
     PoolCreationConfig,
     PoolCreationProtocolFeeUpdated,
     unwrap_pool_creation_protocol_fee_updated_event,
-    default_pool_creation_protocol_fee
+    default_pool_creation_protocol_fee,
+    pool_creation_protocol_fee,
+    EPoolCreationFeeOutOfRange
 };
 use deeptrade_core::pool_init_tests::setup_with_pool_creation_config;
 use deeptrade_core::ticket::{
@@ -24,6 +26,7 @@ use sui::event;
 use sui::test_scenario::{Self, Scenario};
 
 const NEW_FEE: u64 = 200_000_000;
+const FEE_TOO_HIGH: u64 = 500_000_001;
 
 /// Test successful update of the pool creation protocol fee
 #[test]
@@ -60,6 +63,9 @@ fun test_update_pool_creation_protocol_fee_success() {
     assert!(old_fee == default_pool_creation_protocol_fee(), 5);
     assert!(new_fee == NEW_FEE, 6);
 
+    // Verify config state
+    assert!(pool_creation_protocol_fee(&config) == NEW_FEE, 7);
+
     clock::destroy_for_testing(clock);
     test_scenario::return_shared(config);
     scenario.end();
@@ -85,6 +91,32 @@ fun test_update_pool_creation_protocol_fee_fails_wrong_type() {
         &mut config,
         ticket,
         NEW_FEE,
+        &clock,
+        scenario.ctx(),
+    );
+
+    // Cleanup should not be reached
+    clock::destroy_for_testing(clock);
+    test_scenario::return_shared(config);
+    scenario.end();
+}
+
+/// Test failure when updating fee that is too high
+#[test]
+#[expected_failure(abort_code = EPoolCreationFeeOutOfRange)]
+fun test_update_pool_creation_protocol_fee_fails_fee_too_high() {
+    let (mut scenario) = setup();
+    let multisig_address = get_test_multisig_address();
+
+    let ticket_type = update_pool_creation_protocol_fee_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    scenario.next_tx(multisig_address);
+    let mut config: PoolCreationConfig = scenario.take_shared<PoolCreationConfig>();
+    pool::update_pool_creation_protocol_fee(
+        &mut config,
+        ticket,
+        FEE_TOO_HIGH,
         &clock,
         scenario.ctx(),
     );
