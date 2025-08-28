@@ -11,6 +11,10 @@ use deeptrade_core::fee::{
     Self,
     TradingFeeConfig,
     PoolFeesUpdated,
+    EFeeOutOfRange,
+    EInvalidFeeHierarchy,
+    EInvalidFeePrecision,
+    EDiscountOutOfRange,
     new_pool_fee_config,
     unwrap_pool_fees_updated_event,
     get_pool_fee_config,
@@ -40,6 +44,7 @@ const NEW_INPUT_MAKER_FEE: u64 = 50_000;
 const NEW_DISCOUNT_RATE: u64 = 200_000_000;
 
 const MAX_TAKER_FEE_RATE: u64 = 2_000_000;
+const MAX_MAKER_FEE_RATE: u64 = 1_000_000;
 const MAX_DISCOUNT_RATE: u64 = 1_000_000_000;
 
 /// Test successful update of pool-specific fees
@@ -130,6 +135,73 @@ fun test_update_pool_specific_fees_fails_wrong_type() {
     cleanup(scenario, pool, config, clock);
 }
 
+/// Test that updating a pool-specific fee a second time correctly uses the remove logic.
+#[test]
+fun test_update_specific_fees_a_second_time_covers_remove_logic() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    // 1. Set an initial specific fee
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket1, _, clock1) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+    let initial_fees = new_pool_fee_config(
+        100_000, // deep_fee_type_taker_rate
+        100_000, // deep_fee_type_maker_rate
+        100_000, // input_coin_fee_type_taker_rate
+        100_000, // input_coin_fee_type_maker_rate
+        100_000, // max_deep_fee_coverage_discount_rate
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket1,
+        &pool,
+        initial_fees,
+        &clock1,
+        scenario.ctx(),
+    );
+    test_scenario::return_shared(config);
+    test_scenario::return_shared(pool);
+    clock::destroy_for_testing(clock1);
+
+    // 2. Set it a second time with different fees
+    let (ticket2, _, clock2) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+    let new_fees = new_pool_fee_config(
+        240_000, // deep_fee_type_taker_rate
+        220_000, // deep_fee_type_maker_rate
+        260_000, // input_coin_fee_type_taker_rate
+        210_000, // input_coin_fee_type_maker_rate
+        280_000, // max_deep_fee_coverage_discount_rate
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+    let old_fees_from_get = get_pool_fee_config(&config, &pool);
+
+    // This second call will execute the `remove` logic that was previously uncovered.
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket2,
+        &pool,
+        new_fees,
+        &clock2,
+        scenario.ctx(),
+    );
+
+    // Verify that the old fees from the get function match the initial fees we set.
+    assert!(old_fees_from_get == initial_fees, 1);
+
+    let new_fees_from_get = get_pool_fee_config(&config, &pool);
+    assert!(new_fees_from_get == new_fees, 2);
+
+    cleanup(scenario, pool, config, clock2);
+}
+
 // === View Function Logic Tests ===
 /// Test that `get_pool_fee_config` returns the default fees for a pool with no specific config.
 #[test]
@@ -209,7 +281,7 @@ fun test_get_pool_fee_config_returns_specific_fees() {
 
 /// Test that updating specific fees fails if the taker fee rate exceeds the maximum allowed.
 #[test]
-#[expected_failure(abort_code = fee::EFeeOutOfRange)]
+#[expected_failure(abort_code = EFeeOutOfRange)]
 fun test_update_specific_fails_if_taker_fee_exceeds_max() {
     let multisig_address = get_test_multisig_address();
     let (mut scenario, pool_id) = setup(multisig_address);
@@ -218,10 +290,44 @@ fun test_update_specific_fails_if_taker_fee_exceeds_max() {
     let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
 
     let invalid_fees = new_pool_fee_config(
+        0,
+        0,
         MAX_TAKER_FEE_RATE + 1000, // Exceeds the maximum, multiple of 1000
         0,
         0,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket,
+        &pool,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    cleanup(scenario, pool, config, clock);
+}
+
+/// Test that updating specific fees fails if the maker fee rate exceeds the maximum allowed.
+#[test]
+#[expected_failure(abort_code = EFeeOutOfRange)]
+fun test_update_specific_fails_if_maker_fee_exceeds_max() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
         0,
+        0,
+        MAX_TAKER_FEE_RATE, // Valid taker fee
+        MAX_MAKER_FEE_RATE + 1000, // Invalid maker fee
         0,
     );
 
@@ -243,7 +349,7 @@ fun test_update_specific_fails_if_taker_fee_exceeds_max() {
 
 /// Test that updating specific fees fails if the maker fee is greater than the taker fee.
 #[test]
-#[expected_failure(abort_code = fee::EInvalidFeeHierarchy)]
+#[expected_failure(abort_code = EInvalidFeeHierarchy)]
 fun test_update_specific_fails_if_maker_exceeds_taker() {
     let multisig_address = get_test_multisig_address();
     let (mut scenario, pool_id) = setup(multisig_address);
@@ -252,10 +358,10 @@ fun test_update_specific_fails_if_maker_exceeds_taker() {
     let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
 
     let invalid_fees = new_pool_fee_config(
+        0,
+        0,
         500_000,
-        600_000,
-        0,
-        0,
+        600_000, // Maker fee: 6 bps (valid range, but > taker)
         0,
     );
 
@@ -277,7 +383,7 @@ fun test_update_specific_fails_if_maker_exceeds_taker() {
 
 /// Test that updating specific fees fails if a fee rate does not adhere to the precision multiple.
 #[test]
-#[expected_failure(abort_code = fee::EInvalidFeePrecision)]
+#[expected_failure(abort_code = EInvalidFeePrecision)]
 fun test_update_specific_fails_with_invalid_precision() {
     let multisig_address = get_test_multisig_address();
     let (mut scenario, pool_id) = setup(multisig_address);
@@ -285,7 +391,7 @@ fun test_update_specific_fails_with_invalid_precision() {
     let ticket_type = update_pool_specific_fees_ticket_type();
     let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
 
-    let invalid_fees = new_pool_fee_config(1_000_001, 0, 0, 0, 0);
+    let invalid_fees = new_pool_fee_config(0, 0, 1_000_001, 0, 0);
 
     scenario.next_tx(multisig_address);
     let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
@@ -305,7 +411,7 @@ fun test_update_specific_fails_with_invalid_precision() {
 
 /// Test that updating specific fees fails if the discount rate exceeds the maximum.
 #[test]
-#[expected_failure(abort_code = fee::EDiscountOutOfRange)]
+#[expected_failure(abort_code = EDiscountOutOfRange)]
 fun test_update_specific_fails_if_discount_exceeds_max() {
     let multisig_address = get_test_multisig_address();
     let (mut scenario, pool_id) = setup(multisig_address);
@@ -319,6 +425,40 @@ fun test_update_specific_fails_if_discount_exceeds_max() {
         0,
         0,
         MAX_DISCOUNT_RATE + 1000,
+    );
+
+    scenario.next_tx(multisig_address);
+    let mut config: TradingFeeConfig = scenario.take_shared<TradingFeeConfig>();
+    let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+
+    fee::update_pool_specific_fees(
+        &mut config,
+        ticket,
+        &pool,
+        invalid_fees,
+        &clock,
+        scenario.ctx(),
+    );
+
+    cleanup(scenario, pool, config, clock);
+}
+
+/// Test that updating specific fees fails if the maker fee does not adhere to precision.
+#[test]
+#[expected_failure(abort_code = EInvalidFeePrecision)]
+fun test_update_specific_fails_with_invalid_maker_precision() {
+    let multisig_address = get_test_multisig_address();
+    let (mut scenario, pool_id) = setup(multisig_address);
+
+    let ticket_type = update_pool_specific_fees_ticket_type();
+    let (ticket, _, clock) = get_ticket_ready_for_consumption(&mut scenario, ticket_type);
+
+    let invalid_fees = new_pool_fee_config(
+        0,
+        0,
+        1_000_000,
+        1_000_001,
+        0,
     );
 
     scenario.next_tx(multisig_address);
