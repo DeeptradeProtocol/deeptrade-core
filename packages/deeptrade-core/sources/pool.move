@@ -3,7 +3,6 @@ module deeptrade_core::pool;
 use deepbook::constants;
 use deepbook::pool;
 use deepbook::registry::Registry;
-use deeptrade_core::helper::transfer_if_nonzero;
 use deeptrade_core::ticket::{
     AdminTicket,
     update_pool_creation_protocol_fee_ticket_type,
@@ -85,11 +84,11 @@ fun init(ctx: &mut TxContext) {
 /// 2. Verifies user has enough DEEP to cover all fees
 /// 3. Splits the payment into DeepBook fee and protocol fee
 /// 4. Adds protocol fee to the treasury
-/// 5. Returns any unused DEEP coins to caller
-/// 6. Creates the permissionless pool in DeepBook
+/// 5. Creates the permissionless pool in DeepBook
 ///
 /// Returns:
 /// - ID of the newly created pool
+/// - Unused DEEP coin
 ///
 /// Aborts:
 /// - ENotEnoughFee: If user doesn't provide enough DEEP to cover all fees
@@ -102,7 +101,7 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
     lot_size: u64,
     min_size: u64,
     ctx: &mut TxContext,
-): ID {
+): (ID, Coin<DEEP>) {
     treasury.verify_version();
 
     let deepbook_fee = constants::pool_creation_fee();
@@ -116,9 +115,6 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
 
     // Move protocol fee to the treasury
     join_protocol_fee(treasury, protocol_fee_coin.into_balance());
-
-    // Return unused DEEP coins to the caller
-    transfer_if_nonzero(creation_fee, ctx.sender());
 
     // Create the permissionless pool
     let pool_id = pool::create_permissionless_pool<BaseAsset, QuoteAsset>(
@@ -139,7 +135,7 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
         min_size,
     });
 
-    pool_id
+    (pool_id, creation_fee)
 }
 
 /// Update the protocol fee for creating a pool
