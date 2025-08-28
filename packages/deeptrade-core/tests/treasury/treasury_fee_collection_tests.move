@@ -2,7 +2,7 @@
 module deeptrade_core::treasury_fee_collection_tests;
 
 use deeptrade_core::treasury::{Self, Treasury};
-use sui::balance::{Self, Balance};
+use sui::balance;
 use sui::test_scenario::{Self, Scenario};
 
 // Dummy coin types to simulate fees from different assets
