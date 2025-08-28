@@ -26,8 +26,6 @@ const EPoolCreationFeeOutOfRange: u64 = 2;
 const DEEP_SCALING_FACTOR: u64 = 1_000_000;
 // Default protocol fee for creating a pool
 const DEFAULT_POOL_CREATION_PROTOCOL_FEE: u64 = 100 * DEEP_SCALING_FACTOR; // 100 DEEP
-// Minimum protocol fee for creating a pool
-const MIN_POOL_CREATION_PROTOCOL_FEE: u64 = 0; // 0 DEEP
 // Maximum protocol fee for creating a pool
 const MAX_POOL_CREATION_PROTOCOL_FEE: u64 = 500 * DEEP_SCALING_FACTOR; // 500 DEEP
 
@@ -161,10 +159,7 @@ public fun update_pool_creation_protocol_fee(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        new_fee >= MIN_POOL_CREATION_PROTOCOL_FEE && new_fee <= MAX_POOL_CREATION_PROTOCOL_FEE,
-        EPoolCreationFeeOutOfRange,
-    );
+    assert!(new_fee <= MAX_POOL_CREATION_PROTOCOL_FEE, EPoolCreationFeeOutOfRange);
 
     validate_ticket(&ticket, update_pool_creation_protocol_fee_ticket_type(), clock, ctx);
     destroy_ticket(ticket, clock);
