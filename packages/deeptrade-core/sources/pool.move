@@ -3,7 +3,6 @@ module deeptrade_core::pool;
 use deepbook::constants;
 use deepbook::pool;
 use deepbook::registry::Registry;
-use deeptrade_core::helper::transfer_if_nonzero;
 use deeptrade_core::ticket::{
     AdminTicket,
     update_pool_creation_protocol_fee_ticket_type,
@@ -21,6 +20,8 @@ use token::deep::DEEP;
 const ENotEnoughFee: u64 = 1;
 /// Error when the new protocol fee for pool creation is out of the allowed range
 const EPoolCreationFeeOutOfRange: u64 = 2;
+// Error when the user provided  fee is larger than the creation fee
+const ECreationFeeTooLarge: u64 = 3;
 
 // === Constants ===
 const DEEP_SCALING_FACTOR: u64 = 1_000_000;
@@ -107,6 +108,8 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
     let protocol_fee = config.protocol_fee;
     let total_fee = deepbook_fee + protocol_fee;
     assert!(creation_fee.value() >= total_fee, ENotEnoughFee);
+    // This explicit check just for improving dev experience
+    assert!(creation_fee.value() <= total_fee, ECreationFeeTooLarge);
 
     // Take the fee coins from the creation fee
     let deepbook_fee_coin = creation_fee.split(deepbook_fee, ctx);
@@ -114,9 +117,6 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
 
     // Move protocol fee to the treasury
     join_protocol_fee(treasury, protocol_fee_coin.into_balance());
-
-    // Return unused DEEP coins to the caller
-    transfer_if_nonzero(creation_fee, ctx.sender());
 
     // Create the permissionless pool
     let pool_id = pool::create_permissionless_pool<BaseAsset, QuoteAsset>(
@@ -136,6 +136,8 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
         lot_size,
         min_size,
     });
+
+    creation_fee.destroy_zero();
 
     pool_id
 }
