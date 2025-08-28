@@ -101,7 +101,12 @@ fun success() {
         let order_amount = math::mul(quantity, price);
 
         // Execute market buy order
-        let order_info = create_market_order<SUI, USDC, DEEP, SUI>(
+        let (order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_market_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -141,6 +146,10 @@ fun success() {
         assert!(fee_manager.get_protocol_unsettled_fee_balance<USDC>() > 0);
 
         // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -206,7 +215,12 @@ fun unsupported_self_matching_option() {
         let order_amount = math::mul(quantity, price);
 
         // This should fail with ENotSupportedSelfMatchingOption
-        create_market_order<SUI, USDC, DEEP, SUI>(
+        let (_order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_market_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -233,6 +247,10 @@ fun unsupported_self_matching_option() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);

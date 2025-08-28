@@ -142,10 +142,10 @@ fun bid_success() {
 
     // Step 6: Create wallet coins
     scenario.next_tx(ALICE);
-    let base_coin = mint_for_testing<SUI>(wallet_base_amount, scenario.ctx());
-    let quote_coin = mint_for_testing<USDC>(wallet_quote_amount, scenario.ctx());
-    let deep_coin = mint_for_testing<DEEP>(wallet_deep_amount, scenario.ctx());
-    let sui_coin = mint_for_testing<SUI>(wallet_sui_amount, scenario.ctx());
+    let mut base_coin = mint_for_testing<SUI>(wallet_base_amount, scenario.ctx());
+    let mut quote_coin = mint_for_testing<USDC>(wallet_quote_amount, scenario.ctx());
+    let mut deep_coin = mint_for_testing<DEEP>(wallet_deep_amount, scenario.ctx());
+    let mut sui_coin = mint_for_testing<SUI>(wallet_sui_amount, scenario.ctx());
 
     // Step 7: Execute the test
     scenario.next_tx(ALICE);
@@ -156,15 +156,13 @@ fun bid_success() {
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let reference_pool = scenario.take_shared_by_id<Pool<DEEP, SUI>>(reference_pool_id);
         let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(user_bm_id);
-        let mut base_coin_mut = base_coin;
-        let mut quote_coin_mut = quote_coin;
 
         // Record initial balances
         let initial_bm_quote_balance = balance_manager.balance<USDC>();
         let initial_bm_deep_balance = balance_manager.balance<DEEP>();
         let initial_bm_sui_balance = balance_manager.balance<SUI>();
-        let initial_wallet_quote_balance = quote_coin_mut.value();
-        let initial_wallet_base_balance = base_coin_mut.value();
+        let initial_wallet_quote_balance = quote_coin.value();
+        let initial_wallet_base_balance = base_coin.value();
         let initial_treasury_deep_balance = treasury.deep_reserves();
 
         // Execute prepare_order_execution
@@ -177,10 +175,10 @@ fun bid_success() {
             &deep_price,
             &sui_price,
             &mut balance_manager,
-            &mut base_coin_mut,
-            &mut quote_coin_mut,
-            deep_coin,
-            sui_coin,
+            &mut base_coin,
+            &mut quote_coin,
+            &mut deep_coin,
+            &mut sui_coin,
             deep_required,
             order_amount,
             true, // is_bid
@@ -204,8 +202,8 @@ fun bid_success() {
         let final_bm_quote_balance = balance_manager.balance<USDC>();
         let final_bm_deep_balance = balance_manager.balance<DEEP>();
         let final_bm_sui_balance = balance_manager.balance<SUI>();
-        let final_wallet_quote_balance = quote_coin_mut.value();
-        let final_wallet_base_balance = base_coin_mut.value();
+        let final_wallet_quote_balance = quote_coin.value();
+        let final_wallet_base_balance = base_coin.value();
         let final_treasury_deep_balance = treasury.deep_reserves();
 
         // Conservation of funds: what was withdrawn equals what was deposited
@@ -243,8 +241,10 @@ fun bid_success() {
         assert!(sui_taken_from_bm > 0);
 
         // Cleanup
-        destroy(base_coin_mut);
-        destroy(quote_coin_mut);
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(balance_manager);
         return_shared(pool);
         return_shared(reference_pool);
@@ -369,10 +369,10 @@ fun ask_success() {
 
     // Step 6: Create wallet coins
     scenario.next_tx(ALICE);
-    let base_coin = mint_for_testing<SUI>(wallet_base_amount, scenario.ctx());
-    let quote_coin = mint_for_testing<USDC>(wallet_quote_amount, scenario.ctx());
-    let deep_coin = mint_for_testing<DEEP>(wallet_deep_amount, scenario.ctx());
-    let sui_coin = mint_for_testing<SUI>(wallet_sui_amount, scenario.ctx());
+    let mut base_coin = mint_for_testing<SUI>(wallet_base_amount, scenario.ctx());
+    let mut quote_coin = mint_for_testing<USDC>(wallet_quote_amount, scenario.ctx());
+    let mut deep_coin = mint_for_testing<DEEP>(wallet_deep_amount, scenario.ctx());
+    let mut sui_coin = mint_for_testing<SUI>(wallet_sui_amount, scenario.ctx());
 
     // Step 7: Execute the test
     scenario.next_tx(ALICE);
@@ -383,13 +383,11 @@ fun ask_success() {
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let reference_pool = scenario.take_shared_by_id<Pool<DEEP, SUI>>(reference_pool_id);
         let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(user_bm_id);
-        let mut base_coin_mut = base_coin;
-        let mut quote_coin_mut = quote_coin;
 
         // Record initial balances
         let initial_bm_base_balance = balance_manager.balance<SUI>();
         let initial_bm_deep_balance = balance_manager.balance<DEEP>();
-        let initial_wallet_base_balance = base_coin_mut.value();
+        let initial_wallet_base_balance = base_coin.value();
         let initial_treasury_deep_balance = treasury.deep_reserves();
 
         // Execute prepare_order_execution
@@ -402,10 +400,10 @@ fun ask_success() {
             &deep_price,
             &sui_price,
             &mut balance_manager,
-            &mut base_coin_mut,
-            &mut quote_coin_mut,
-            deep_coin,
-            sui_coin,
+            &mut base_coin,
+            &mut quote_coin,
+            &mut deep_coin,
+            &mut sui_coin,
             deep_required,
             order_amount,
             false, // is_ask
@@ -428,7 +426,7 @@ fun ask_success() {
         // Verify side effects: conservation of funds
         let final_bm_base_balance = balance_manager.balance<SUI>();
         let final_bm_deep_balance = balance_manager.balance<DEEP>();
-        let final_wallet_base_balance = base_coin_mut.value();
+        let final_wallet_base_balance = base_coin.value();
         let final_treasury_deep_balance = treasury.deep_reserves();
 
         // For ask orders, SUI is both input coin and coverage fee token
@@ -452,7 +450,7 @@ fun ask_success() {
 
         // Verify quote tokens remain unchanged (not used for ask)
         let final_bm_quote_balance = balance_manager.balance<USDC>();
-        let final_wallet_quote_balance = quote_coin_mut.value();
+        let final_wallet_quote_balance = quote_coin.value();
         assert_eq!(final_bm_quote_balance, balance_manager_quote);
         assert_eq!(final_wallet_quote_balance, wallet_quote_amount);
 
@@ -464,8 +462,10 @@ fun ask_success() {
         assert!(treasury_coverage_fee_balance > 0);
 
         // Cleanup
-        destroy(base_coin_mut);
-        destroy(quote_coin_mut);
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(balance_manager);
         return_shared(pool);
         return_shared(reference_pool);
@@ -563,10 +563,10 @@ fun invalid_owner_aborts() {
 
     // Create wallet coins
     scenario.next_tx(ALICE);
-    let base_coin = mint_for_testing<SUI>(10_000 * SUI_MULTIPLIER, scenario.ctx());
-    let quote_coin = mint_for_testing<USDC>(5_000 * USDC_MULTIPLIER, scenario.ctx());
-    let deep_coin = mint_for_testing<DEEP>(200 * DEEP_MULTIPLIER, scenario.ctx());
-    let sui_coin = mint_for_testing<SUI>(200 * SUI_MULTIPLIER, scenario.ctx());
+    let mut base_coin = mint_for_testing<SUI>(10_000 * SUI_MULTIPLIER, scenario.ctx());
+    let mut quote_coin = mint_for_testing<USDC>(5_000 * USDC_MULTIPLIER, scenario.ctx());
+    let mut deep_coin = mint_for_testing<DEEP>(200 * DEEP_MULTIPLIER, scenario.ctx());
+    let mut sui_coin = mint_for_testing<SUI>(200 * SUI_MULTIPLIER, scenario.ctx());
 
     // Execute the test with BOB (not the owner)
     scenario.next_tx(BOB);
@@ -577,8 +577,6 @@ fun invalid_owner_aborts() {
         let pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
         let reference_pool = scenario.take_shared_by_id<Pool<DEEP, SUI>>(reference_pool_id);
         let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(user_bm_id);
-        let mut base_coin_mut = base_coin;
-        let mut quote_coin_mut = quote_coin;
 
         // This should abort because BOB is not the owner of the balance manager
         prepare_order_execution(
@@ -590,10 +588,10 @@ fun invalid_owner_aborts() {
             &deep_price,
             &sui_price,
             &mut balance_manager,
-            &mut base_coin_mut,
-            &mut quote_coin_mut,
-            deep_coin,
-            sui_coin,
+            &mut base_coin,
+            &mut quote_coin,
+            &mut deep_coin,
+            &mut sui_coin,
             1_000 * DEEP_MULTIPLIER, // deep_required
             5_000 * USDC_MULTIPLIER, // order_amount
             true, // is_bid
@@ -606,8 +604,10 @@ fun invalid_owner_aborts() {
         );
 
         // This line should never be reached
-        destroy(base_coin_mut);
-        destroy(quote_coin_mut);
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(balance_manager);
         return_shared(pool);
         return_shared(reference_pool);

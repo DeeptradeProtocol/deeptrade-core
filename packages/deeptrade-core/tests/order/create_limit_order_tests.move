@@ -68,7 +68,12 @@ fun success() {
         );
 
         // Execute limit buy order
-        let order_info = create_limit_order<SUI, USDC, DEEP, SUI>(
+        let (order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_limit_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -124,6 +129,10 @@ fun success() {
         );
 
         // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -187,7 +196,12 @@ fun not_supported_expire_timestamp() {
         );
 
         // This should fail with ENotSupportedExpireTimestamp
-        let _order_info = create_limit_order<SUI, USDC, DEEP, SUI>(
+        let (_order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_limit_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -217,6 +231,10 @@ fun not_supported_expire_timestamp() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -280,7 +298,12 @@ fun not_supported_self_matching_option() {
         );
 
         // This should fail with ENotSupportedSelfMatchingOption
-        let _order_info = create_limit_order<SUI, USDC, DEEP, SUI>(
+        let (_order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_limit_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -310,6 +333,10 @@ fun not_supported_self_matching_option() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);

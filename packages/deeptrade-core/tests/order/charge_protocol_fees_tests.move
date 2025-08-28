@@ -16,6 +16,7 @@ use std::unit_test::assert_eq;
 use sui::coin::mint_for_testing;
 use sui::sui::SUI;
 use sui::test_scenario::{end, return_shared};
+use sui::test_utils::destroy;
 
 // === Constants ===
 const OWNER: address = @0x1;
@@ -46,8 +47,8 @@ fun deep_fee_type_bid() {
 
     // Step 3: Setup wallet coins with sufficient funds
     scenario.next_tx(ALICE);
-    let base_coin = mint_for_testing<SUI>(0, scenario.ctx()); // No need in base coins for bid order
-    let quote_coin = mint_for_testing<USDC>(0, scenario.ctx()); // No coins in user's wallet
+    let mut base_coin = mint_for_testing<SUI>(0, scenario.ctx()); // No need in base coins for bid order
+    let mut quote_coin = mint_for_testing<USDC>(0, scenario.ctx()); // No coins in user's wallet
 
     // Step 4: Execute the test
     scenario.next_tx(ALICE);
@@ -92,8 +93,8 @@ fun deep_fee_type_bid() {
             &trading_fee_config,
             &pool,
             &mut balance_manager,
-            base_coin,
-            quote_coin,
+            &mut base_coin,
+            &mut quote_coin,
             &order_info,
             ORDER_AMOUNT,
             DISCOUNT_RATE,
@@ -138,6 +139,8 @@ fun deep_fee_type_bid() {
         assert_eq!(maker_fee, 102); // 40% * 0.03% * 1_000_000 * 0.85 = 102
         assert_eq!(total_fee, 408); // (360 + 120) * 0.85 = 408
 
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
         return_shared(pool);
@@ -189,8 +192,8 @@ fun input_coin_fee_type_ask() {
         );
 
         // Mint coins for fees
-        let base_coin = mint_for_testing<SUI>(total_fee * 2, scenario.ctx()); // Sufficient base tokens for fees
-        let quote_coin = mint_for_testing<USDC>(0, scenario.ctx()); // No quote coins needed for ask order
+        let mut base_coin = mint_for_testing<SUI>(total_fee * 2, scenario.ctx()); // Sufficient base tokens for fees
+        let mut quote_coin = mint_for_testing<USDC>(0, scenario.ctx()); // No quote coins needed for ask order
 
         // Record initial balances
         let initial_balance_manager_base = balance_manager.balance<SUI>();
@@ -214,8 +217,8 @@ fun input_coin_fee_type_ask() {
             &trading_fee_config,
             &pool,
             &mut balance_manager,
-            base_coin,
-            quote_coin,
+            &mut base_coin,
+            &mut quote_coin,
             &order_info,
             ORDER_AMOUNT,
             DISCOUNT_RATE,
@@ -252,6 +255,8 @@ fun input_coin_fee_type_ask() {
         assert_eq!(maker_fee, 136); // 160 * 0.85 = 136
         assert_eq!(total_fee, 221); // (100 + 160) * 0.85 = 221
 
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
         return_shared(pool);

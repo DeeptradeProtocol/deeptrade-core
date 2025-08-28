@@ -18,6 +18,7 @@ use sui::clock::Clock;
 use sui::coin;
 use sui::sui::SUI;
 use sui::test_scenario::{end, return_shared};
+use sui::test_utils::destroy;
 
 // === Constants ===
 const ALICE: address = @0xAAAA;
@@ -70,7 +71,7 @@ fun success() {
         let order_amount = math::mul(quantity, price);
 
         // Execute market buy order
-        let order_info = create_market_order_whitelisted<SUI, USDC>(
+        let (order_info, base_coin, quote_coin) = create_market_order_whitelisted<SUI, USDC>(
             &treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -101,6 +102,8 @@ fun success() {
         assert!(fee_manager.get_protocol_unsettled_fee_balance<USDC>() > 0);
 
         // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -141,7 +144,7 @@ fun unsupported_self_matching_option() {
         let order_amount = 100 * constants::float_scaling();
 
         // This should fail with ENotSupportedSelfMatchingOption
-        let _order_info = create_market_order_whitelisted<SUI, USDC>(
+        let (_order_info, base_coin, quote_coin) = create_market_order_whitelisted<SUI, USDC>(
             &treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -159,6 +162,8 @@ fun unsupported_self_matching_option() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
