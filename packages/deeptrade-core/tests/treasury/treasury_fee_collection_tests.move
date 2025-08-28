@@ -80,12 +80,12 @@ fun test_join_coverage_fee() {
         let fee_balance_2 = balance::create_for_testing<DUMMY_COIN_1>(FEE_AMOUNT_2);
 
         // Join first fee
-        treasury.join_deep_reserves_coverage_fee(fee_balance_1);
+        treasury.join_coverage_fee(fee_balance_1);
         let balance_after_1 = treasury.get_deep_reserves_coverage_fee_balance<DUMMY_COIN_1>();
         assert!(balance_after_1 == FEE_AMOUNT_1, 1);
 
         // Join second fee
-        treasury.join_deep_reserves_coverage_fee(fee_balance_2);
+        treasury.join_coverage_fee(fee_balance_2);
         let balance_after_2 = treasury.get_deep_reserves_coverage_fee_balance<DUMMY_COIN_1>();
         assert!(balance_after_2 == FEE_AMOUNT_1 + FEE_AMOUNT_2, 2);
 

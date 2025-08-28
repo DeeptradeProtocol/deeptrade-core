@@ -23,12 +23,7 @@ use deeptrade_core::helper::{
     hundred_percent
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
-use deeptrade_core::treasury::{
-    Treasury,
-    join_deep_reserves_coverage_fee,
-    deep_reserves,
-    split_deep_reserves
-};
+use deeptrade_core::treasury::{Treasury, join_coverage_fee, deep_reserves, split_deep_reserves};
 use pyth::price_info::PriceInfoObject;
 use std::u64;
 use sui::balance;
@@ -1662,7 +1657,7 @@ fun execute_coverage_fee_plan(
     // Collect coverage fee from wallet if needed
     if (fee_plan.from_wallet > 0) {
         let fee = sui_coin.balance_mut().split(fee_plan.from_wallet);
-        treasury.join_deep_reserves_coverage_fee(fee);
+        treasury.join_coverage_fee(fee);
     };
 
     // Collect coverage fee from balance manager if needed
@@ -1671,7 +1666,7 @@ fun execute_coverage_fee_plan(
             fee_plan.from_balance_manager,
             ctx,
         );
-        treasury.join_deep_reserves_coverage_fee(fee.into_balance());
+        treasury.join_coverage_fee(fee.into_balance());
     };
 }
 

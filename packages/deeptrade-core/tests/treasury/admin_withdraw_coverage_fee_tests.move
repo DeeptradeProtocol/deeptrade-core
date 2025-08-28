@@ -17,7 +17,7 @@ use deeptrade_core::treasury::{
     Treasury,
     CoverageFeeWithdrawn,
     init_for_testing,
-    join_deep_reserves_coverage_fee,
+    join_coverage_fee,
     unwrap_coverage_fee_withdrawn_event
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
@@ -126,7 +126,7 @@ fun setup_with_deposit(): Scenario {
     {
         let mut treasury: Treasury = scenario.take_shared<Treasury>();
         let balance = balance::create_for_testing<COIN>(DEPOSIT_AMOUNT);
-        join_deep_reserves_coverage_fee(&mut treasury, balance);
+        join_coverage_fee(&mut treasury, balance);
         test_scenario::return_shared(treasury);
     };
 

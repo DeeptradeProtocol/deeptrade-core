@@ -324,10 +324,7 @@ public fun deep_reserves(treasury: &Treasury): u64 { treasury.deep_reserves.valu
 
 // === Public-Package Functions ===
 /// Add collected deep reserves coverage fees to the treasury's fee storage
-public(package) fun join_deep_reserves_coverage_fee<CoinType>(
-    treasury: &mut Treasury,
-    fee: Balance<CoinType>,
-) {
+public(package) fun join_coverage_fee<CoinType>(treasury: &mut Treasury, fee: Balance<CoinType>) {
     treasury.verify_version();
 
     if (fee.value() == 0) {
