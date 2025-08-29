@@ -254,6 +254,7 @@ fun unsupported_self_matching_option() {
 
 /// Sets up a complete test environment with treasury, deepbook infrastructure, and fee components.
 /// Returns (scenario, pool_id, balance_manager_id, fee_manager_id, reference_pool_id, deep_price, sui_price) ready for testing.
+#[test_only]
 public(package) fun setup_test_environment(): (
     Scenario,
     ID,

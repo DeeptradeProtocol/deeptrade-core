@@ -138,6 +138,7 @@ fun success() {
 /// - Creates funded balance manager for ALICE
 /// - Creates SUI/USDC pool with reference DEEP pricing
 /// - Creates FeeManager for ALICE
+#[test_only]
 public(package) fun setup_test_environment(): (Scenario, ID, ID, ID) {
     let mut scenario = begin(OWNER);
 

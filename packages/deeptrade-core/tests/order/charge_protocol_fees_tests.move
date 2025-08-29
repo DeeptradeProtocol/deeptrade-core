@@ -264,6 +264,7 @@ fun input_coin_fee_type_ask() {
 // === Helper Functions ===
 
 /// Sets up a complete test environment with treasury, fee config, and deepbook infrastructure
+#[test_only]
 fun setup_test_environment(): (
     sui::test_scenario::Scenario,
     sui::object::ID,
@@ -311,6 +312,7 @@ fun setup_test_environment(): (
 }
 
 /// Creates a partially executed bid order for testing (both taker and maker fees apply)
+#[test_only]
 fun create_partially_executed_bid_order(
     original_quantity: u64,
     executed_quantity: u64,
@@ -334,6 +336,7 @@ fun create_partially_executed_bid_order(
 }
 
 /// Creates a partially executed ask order for testing (both taker and maker fees apply)
+#[test_only]
 fun create_partially_executed_ask_order(
     original_quantity: u64,
     executed_quantity: u64,

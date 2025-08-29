@@ -176,6 +176,7 @@ fun mixed_deep_coverage_scenario() {
 
 /// Sets up a complete test environment with treasury, deepbook infrastructure, fee components, and loyalty program.
 /// Returns (scenario, pool_id, balance_manager_id, fee_manager_id, reference_pool_id, deep_price, sui_price, loyalty_program_id) ready for testing.
+#[test_only]
 public(package) fun setup_test_environment(): (
     Scenario,
     ID,
