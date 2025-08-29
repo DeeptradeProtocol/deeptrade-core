@@ -7,7 +7,7 @@ use deeptrade_core::ticket::{
     AdminTicket,
     ETicketTypeMismatch,
     TicketDestroyed,
-    get_ticket_delay_duration,
+    ticket_delay_duration,
     unwrap_ticket_destroyed_event,
     update_default_fees_ticket_type,
     withdraw_deep_reserves_ticket_type
@@ -40,7 +40,7 @@ fun test_withdraw_deep_reserves_success() {
     let ticket_id = object::id(&ticket);
 
     // Advance time to make the ticket ready
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 
@@ -97,7 +97,7 @@ fun test_withdraw_deep_reserves_fails_wrong_ticket_type() {
     create_ticket_with_multisig(&mut scenario, wrong_ticket_type);
 
     // Advance time to make the ticket ready
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 

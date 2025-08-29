@@ -7,7 +7,7 @@ use deeptrade_core::ticket::{
     AdminTicket,
     ETicketTypeMismatch,
     TicketDestroyed,
-    get_ticket_delay_duration,
+    ticket_delay_duration,
     unwrap_ticket_destroyed_event,
     withdraw_coverage_fee_ticket_type,
     withdraw_protocol_fee_ticket_type
@@ -43,7 +43,7 @@ fun test_withdraw_coverage_fee_success() {
     let ticket: AdminTicket = scenario.take_shared<AdminTicket>();
     let ticket_id = object::id(&ticket);
 
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 
@@ -91,7 +91,7 @@ fun test_withdraw_coverage_fee_fails_wrong_ticket_type() {
     create_ticket_with_multisig(&mut scenario, wrong_ticket_type);
     let ticket: AdminTicket = scenario.take_shared<AdminTicket>();
 
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 
