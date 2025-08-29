@@ -123,7 +123,7 @@ fun test_withdraw_coverage_fee_no_fees_returns_zero() {
     create_ticket_with_multisig(&mut scenario, ticket_type);
     let ticket: AdminTicket = scenario.take_shared<AdminTicket>();
 
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 

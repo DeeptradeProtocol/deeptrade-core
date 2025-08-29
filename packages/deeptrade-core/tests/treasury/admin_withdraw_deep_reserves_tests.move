@@ -133,7 +133,7 @@ fun test_withdraw_deep_reserves_fails_insufficient_funds() {
     let ticket: AdminTicket = scenario.take_shared<AdminTicket>();
 
     // Advance time to make the ticket ready
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 
