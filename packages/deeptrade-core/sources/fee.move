@@ -555,12 +555,14 @@ fun validate_discount_rate(discount_rate: u64) {
 public fun init_for_testing(ctx: &mut TxContext) {
     init(ctx)
 }
+
 #[test_only]
 public fun unwrap_pool_fees_updated_event(
     event: &PoolFeesUpdated,
 ): (ID, ID, PoolFeeConfig, PoolFeeConfig) {
     (event.config_id, event.pool_id, event.old_fees, event.new_fees)
 }
+
 #[test_only]
 public fun unwrap_default_fees_updated_event(
     event: &DefaultFeesUpdated,
