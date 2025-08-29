@@ -1249,6 +1249,50 @@ fun huge_price_with_different_exponents() {
     test_scenario::end(scenario);
 }
 
+#[test]
+fun deep_price_larger_exponent_than_sui_price() {
+    let owner = @0x26;
+    let mut scenario = test_scenario::begin(owner);
+    let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
+
+    let current_time = clock::timestamp_ms(&clock);
+
+    // Create DEEP price with larger exponent (10) and different magnitude
+    let deep_price = new_deep_price_object(
+        &mut scenario,
+        500, // price magnitude (different from SUI)
+        false, // price is positive
+        5, // confidence (within valid range)
+        10, // deep_expo (large)
+        true, // exponent is negative
+        current_time,
+    );
+
+    // Create SUI price with smaller exponent (6) and different magnitude
+    let sui_price = new_sui_price_object(
+        &mut scenario,
+        2000, // price magnitude (different from DEEP)
+        false, // price is positive
+        5, // confidence (within valid range)
+        6, // sui_expo (smaller)
+        true, // exponent is negative
+        current_time,
+    );
+
+    // Function should execute second branch: should_multiply_numerator = false
+    // 6 + 3 < 10 → 9 < 10
+    // decimal_adjustment = 10 - 3 - 6 = 1 (safe)
+    // multiplier = 10^1 = 10
+    let result = get_sui_per_deep_from_oracle(&deep_price, &sui_price, &clock);
+    assert_eq!(result, 25_000_000); // Should be 0.000025 with 12 decimals
+
+    // Cleanup
+    clock::destroy_for_testing(clock);
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+    test_scenario::end(scenario);
+}
+
 #[test, expected_failure]
 fun deep_price_expo_is_zero() {
     let owner = @0x26;
@@ -1523,7 +1567,7 @@ fun real_world_price_ratio() {
 }
 
 #[test_only]
-fun new_deep_price_object(
+public fun new_deep_price_object(
     scenario: &mut Scenario,
     price_magnitude: u64,
     price_mag_is_negative: bool,
@@ -1546,7 +1590,7 @@ fun new_deep_price_object(
 }
 
 #[test_only]
-fun new_sui_price_object(
+public fun new_sui_price_object(
     scenario: &mut Scenario,
     price_magnitude: u64,
     price_mag_is_negative: bool,
@@ -1569,7 +1613,7 @@ fun new_sui_price_object(
 }
 
 #[test_only]
-fun new_price_info_object(
+public fun new_price_info_object(
     scenario: &mut Scenario,
     price_id: vector<u8>,
     price_magnitude: u64,
