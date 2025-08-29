@@ -100,8 +100,23 @@ fun success() {
 
         let order_amount = math::mul(quantity, price);
 
+        // Record initial balances
+        let initial_balance_manager_base = balance_manager.balance<SUI>();
+        let initial_balance_manager_quote = balance_manager.balance<USDC>();
+        let initial_balance_manager_deep = balance_manager.balance<DEEP>();
+        let initial_balance_manager_sui = balance_manager.balance<SUI>();
+        let initial_wallet_base = base_coin.value();
+        let initial_wallet_quote = quote_coin.value();
+        let initial_wallet_deep = deep_coin.value();
+        let initial_wallet_sui = sui_coin.value();
+
         // Execute market buy order
-        let order_info = create_market_order<SUI, USDC, DEEP, SUI>(
+        let (order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_market_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -140,7 +155,33 @@ fun success() {
         assert_eq!(fee_manager.has_protocol_unsettled_fee<USDC>(), true);
         assert!(fee_manager.get_protocol_unsettled_fee_balance<USDC>() > 0);
 
+        // Verify coin consumption
+
+        let final_balance_manager_base = balance_manager.balance<SUI>();
+        let final_balance_manager_quote = balance_manager.balance<USDC>();
+        let final_balance_manager_deep = balance_manager.balance<DEEP>();
+        let final_balance_manager_sui = balance_manager.balance<SUI>();
+        let final_wallet_base = base_coin.value();
+        let final_wallet_quote = quote_coin.value();
+        let final_wallet_deep = deep_coin.value();
+        let final_wallet_sui = sui_coin.value();
+
+        // For bid orders, fees and input coins should come from quote coins. Balance manager base balance
+        // should increase due to order execution, while wallet base balance should remain unchanged.
+        assert!(final_balance_manager_base > initial_balance_manager_base);
+        assert!(final_balance_manager_quote < initial_balance_manager_quote);
+        assert!(final_balance_manager_deep <= initial_balance_manager_deep);
+        assert!(final_balance_manager_sui > initial_balance_manager_sui); // SUI is base coin
+        assert_eq!(final_wallet_base, initial_wallet_base);
+        assert!(final_wallet_quote <= initial_wallet_quote);
+        assert!(final_wallet_deep <= initial_wallet_deep);
+        assert_eq!(final_wallet_sui, initial_wallet_sui); // SUI is base coin
+
         // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -206,7 +247,12 @@ fun unsupported_self_matching_option() {
         let order_amount = math::mul(quantity, price);
 
         // This should fail with ENotSupportedSelfMatchingOption
-        create_market_order<SUI, USDC, DEEP, SUI>(
+        let (_order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_market_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -233,6 +279,10 @@ fun unsupported_self_matching_option() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);

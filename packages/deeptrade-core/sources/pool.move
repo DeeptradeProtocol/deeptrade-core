@@ -84,8 +84,7 @@ fun init(ctx: &mut TxContext) {
 /// 2. Verifies user has enough DEEP to cover all fees
 /// 3. Splits the payment into DeepBook fee and protocol fee
 /// 4. Adds protocol fee to the treasury
-/// 5. Returns any unused DEEP coins to caller
-/// 6. Creates the permissionless pool in DeepBook
+/// 5. Creates the permissionless pool in DeepBook
 ///
 /// Returns:
 /// - ID of the newly created pool

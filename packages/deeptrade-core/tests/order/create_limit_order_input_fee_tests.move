@@ -16,6 +16,7 @@ use sui::clock::Clock;
 use sui::coin;
 use sui::sui::SUI;
 use sui::test_scenario::{end, return_shared};
+use sui::test_utils::destroy;
 
 // === Constants ===
 const ALICE: address = @0xAAAA;
@@ -48,8 +49,14 @@ fun success() {
             scenario.ctx(),
         );
 
+        // Record initial balances
+        let initial_balance_manager_base = balance_manager.balance<SUI>();
+        let initial_balance_manager_quote = balance_manager.balance<USDC>();
+        let initial_wallet_base = base_coin.value();
+        let initial_wallet_quote = quote_coin.value();
+
         // Execute limit buy order
-        let order_info = create_limit_order_input_fee<SUI, USDC>(
+        let (order_info, base_coin, quote_coin) = create_limit_order_input_fee<SUI, USDC>(
             &treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -95,7 +102,21 @@ fun success() {
         ) > 0,
         );
 
+        // Verify coin consumption
+        let final_balance_manager_base = balance_manager.balance<SUI>();
+        let final_balance_manager_quote = balance_manager.balance<USDC>();
+        let final_wallet_base = base_coin.value();
+        let final_wallet_quote = quote_coin.value();
+
+        // For bid orders, fees should come from quote coins, base coins should remain unchanged
+        assert_eq!(final_balance_manager_base, initial_balance_manager_base);
+        assert!(final_balance_manager_quote <= initial_balance_manager_quote);
+        assert_eq!(final_wallet_base, initial_wallet_base);
+        assert!(final_wallet_quote <= initial_wallet_quote);
+
         // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -137,7 +158,7 @@ fun test_not_supported_expire_timestamp() {
         );
 
         // This should fail with ENotSupportedExpireTimestamp
-        let _order_info = create_limit_order_input_fee<SUI, USDC>(
+        let (_order_info, base_coin, quote_coin) = create_limit_order_input_fee<SUI, USDC>(
             &treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -158,6 +179,8 @@ fun test_not_supported_expire_timestamp() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -199,7 +222,7 @@ fun test_not_supported_self_matching_option() {
         );
 
         // This should fail with ENotSupportedSelfMatchingOption
-        let _order_info = create_limit_order_input_fee<SUI, USDC>(
+        let (_order_info, base_coin, quote_coin) = create_limit_order_input_fee<SUI, USDC>(
             &treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -220,6 +243,8 @@ fun test_not_supported_self_matching_option() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);

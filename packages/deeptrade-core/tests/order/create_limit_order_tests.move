@@ -67,8 +67,23 @@ fun success() {
             scenario.ctx(),
         );
 
+        // Record initial balances
+        let initial_balance_manager_base = balance_manager.balance<SUI>();
+        let initial_balance_manager_quote = balance_manager.balance<USDC>();
+        let initial_balance_manager_deep = balance_manager.balance<DEEP>();
+        let initial_balance_manager_sui = balance_manager.balance<SUI>();
+        let initial_wallet_base = base_coin.value();
+        let initial_wallet_quote = quote_coin.value();
+        let initial_wallet_deep = deep_coin.value();
+        let initial_wallet_sui = sui_coin.value();
+
         // Execute limit buy order
-        let order_info = create_limit_order<SUI, USDC, DEEP, SUI>(
+        let (order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_limit_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -123,7 +138,31 @@ fun success() {
             ) > 0,
         );
 
+        // Verify coin consumption
+        let final_balance_manager_base = balance_manager.balance<SUI>();
+        let final_balance_manager_quote = balance_manager.balance<USDC>();
+        let final_balance_manager_deep = balance_manager.balance<DEEP>();
+        let final_balance_manager_sui = balance_manager.balance<SUI>();
+        let final_wallet_base = base_coin.value();
+        let final_wallet_quote = quote_coin.value();
+        let final_wallet_deep = deep_coin.value();
+        let final_wallet_sui = sui_coin.value();
+
+        // For bid orders, fees should come from quote coins, base coins should remain unchanged
+        assert_eq!(final_balance_manager_base, initial_balance_manager_base);
+        assert!(final_balance_manager_quote <= initial_balance_manager_quote);
+        assert!(final_balance_manager_deep <= initial_balance_manager_deep);
+        assert!(final_balance_manager_sui <= initial_balance_manager_sui);
+        assert_eq!(final_wallet_base, initial_wallet_base);
+        assert!(final_wallet_quote <= initial_wallet_quote);
+        assert!(final_wallet_deep <= initial_wallet_deep);
+        assert!(final_wallet_sui <= initial_wallet_sui);
+
         // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -187,7 +226,12 @@ fun not_supported_expire_timestamp() {
         );
 
         // This should fail with ENotSupportedExpireTimestamp
-        let _order_info = create_limit_order<SUI, USDC, DEEP, SUI>(
+        let (_order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_limit_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -217,6 +261,10 @@ fun not_supported_expire_timestamp() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -280,7 +328,12 @@ fun not_supported_self_matching_option() {
         );
 
         // This should fail with ENotSupportedSelfMatchingOption
-        let _order_info = create_limit_order<SUI, USDC, DEEP, SUI>(
+        let (_order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_limit_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
             &mut treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -310,6 +363,10 @@ fun not_supported_self_matching_option() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);

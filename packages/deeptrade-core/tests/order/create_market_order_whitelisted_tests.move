@@ -18,6 +18,7 @@ use sui::clock::Clock;
 use sui::coin;
 use sui::sui::SUI;
 use sui::test_scenario::{end, return_shared};
+use sui::test_utils::destroy;
 
 // === Constants ===
 const ALICE: address = @0xAAAA;
@@ -69,8 +70,14 @@ fun success() {
 
         let order_amount = math::mul(quantity, price);
 
+        // Record initial balances
+        let initial_balance_manager_base = balance_manager.balance<SUI>();
+        let initial_balance_manager_quote = balance_manager.balance<USDC>();
+        let initial_wallet_base = base_coin.value();
+        let initial_wallet_quote = quote_coin.value();
+
         // Execute market buy order
-        let order_info = create_market_order_whitelisted<SUI, USDC>(
+        let (order_info, base_coin, quote_coin) = create_market_order_whitelisted<SUI, USDC>(
             &treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -100,7 +107,23 @@ fun success() {
         assert_eq!(fee_manager.has_protocol_unsettled_fee<USDC>(), true);
         assert!(fee_manager.get_protocol_unsettled_fee_balance<USDC>() > 0);
 
+        // Verify coin consumption
+
+        let final_balance_manager_base = balance_manager.balance<SUI>();
+        let final_balance_manager_quote = balance_manager.balance<USDC>();
+        let final_wallet_base = base_coin.value();
+        let final_wallet_quote = quote_coin.value();
+
+        // For bid orders, fees and input coins should come from quote coins. Balance manager base balance
+        // should increase due to order execution, while wallet base balance should remain unchanged.
+        assert!(final_balance_manager_base > initial_balance_manager_base);
+        assert!(final_balance_manager_quote < initial_balance_manager_quote);
+        assert_eq!(final_wallet_base, initial_wallet_base);
+        assert!(final_wallet_quote <= initial_wallet_quote);
+
         // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
@@ -141,7 +164,7 @@ fun unsupported_self_matching_option() {
         let order_amount = 100 * constants::float_scaling();
 
         // This should fail with ENotSupportedSelfMatchingOption
-        let _order_info = create_market_order_whitelisted<SUI, USDC>(
+        let (_order_info, base_coin, quote_coin) = create_market_order_whitelisted<SUI, USDC>(
             &treasury,
             &mut fee_manager,
             &trading_fee_config,
@@ -159,6 +182,8 @@ fun unsupported_self_matching_option() {
         );
 
         // Clean up (this should not be reached due to the expected failure)
+        destroy(base_coin);
+        destroy(quote_coin);
         return_shared(treasury);
         return_shared(fee_manager);
         return_shared(trading_fee_config);
