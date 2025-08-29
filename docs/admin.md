@@ -37,7 +37,7 @@ An administrator must first create a ticket for a specific action by calling `ti
 - **Fund Withdrawal** (`treasury.move`):
   - `withdraw_deep_reserves`: Withdraws DEEP tokens from the protocol's main reserves.
   - `withdraw_protocol_fee`: Withdraws collected protocol fees for a specific coin type.
-  - `withdraw_deep_reserves_coverage_fee`: Withdraws collected coverage fees for a specific coin type.
+  - `withdraw_coverage_fee`: Withdraws collected coverage fees for a specific coin type.
 - **Fee Configuration** (`fee.move`, `pool.move`):
   - `update_pool_creation_protocol_fee`: Changes the protocol fee required to create a new pool.
   - `update_default_fees`: Changes the global, default trading fee configuration.

@@ -25,7 +25,7 @@ const TICKET_OBJECT_ID = "";
   for (const coinType of coinTypes) {
     getWithdrawFeeTx({
       coinType,
-      target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_deep_reserves_coverage_fee`,
+      target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_coverage_fee`,
       ticketId: TICKET_OBJECT_ID,
       user: MULTISIG_CONFIG.address,
       transaction: tx,
