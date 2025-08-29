@@ -606,6 +606,7 @@ fun add_with_unauthorized_user_fails() {
 }
 
 /// Setup a test scenario with an initialized fee manager
+#[test_only]
 public(package) fun setup_fee_manager_test(owner: address): Scenario {
     let mut scenario = test_scenario::begin(owner);
     {
@@ -617,6 +618,7 @@ public(package) fun setup_fee_manager_test(owner: address): Scenario {
 }
 
 /// Create a live OrderInfo for testing
+#[test_only]
 public(package) fun create_live_order_info(
     pool_id: ID,
     balance_manager_id: ID,
@@ -635,10 +637,13 @@ public(package) fun create_live_order_info(
         original_quantity,
         executed_quantity,
         constants::live(),
+        true, // is_bid
+        true, // fee_is_deep
     )
 }
 
 /// Create a partially filled OrderInfo for testing
+#[test_only]
 public(package) fun create_partially_filled_order_info(
     pool_id: ID,
     balance_manager_id: ID,
@@ -657,10 +662,13 @@ public(package) fun create_partially_filled_order_info(
         original_quantity,
         executed_quantity,
         constants::partially_filled(),
+        true, // is_bid
+        true, // fee_is_deep
     )
 }
 
 /// Create a cancelled OrderInfo for testing
+#[test_only]
 public(package) fun create_cancelled_order_info(
     pool_id: ID,
     balance_manager_id: ID,
@@ -679,10 +687,13 @@ public(package) fun create_cancelled_order_info(
         original_quantity,
         executed_quantity,
         constants::canceled(),
+        true, // is_bid
+        true, // fee_is_deep
     )
 }
 
 /// Create a filled OrderInfo for testing
+#[test_only]
 public(package) fun create_filled_order_info(
     pool_id: ID,
     balance_manager_id: ID,
@@ -701,10 +712,13 @@ public(package) fun create_filled_order_info(
         original_quantity,
         executed_quantity,
         constants::filled(),
+        true, // is_bid
+        true, // fee_is_deep
     )
 }
 
 /// Create an expired OrderInfo for testing
+#[test_only]
 public(package) fun create_expired_order_info(
     pool_id: ID,
     balance_manager_id: ID,
@@ -723,5 +737,7 @@ public(package) fun create_expired_order_info(
         original_quantity,
         executed_quantity,
         constants::expired(),
+        true, // is_bid
+        true, // fee_is_deep
     )
 }

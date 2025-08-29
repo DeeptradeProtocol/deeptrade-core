@@ -14,9 +14,9 @@ const ESenderIsNotMultisig: u64 = 5;
 const ETicketNotExpired: u64 = 6;
 
 // === Constants ===
-const SECONDS_PER_DAY: u64 = 86400;
-const TICKET_DELAY_DURATION: u64 = SECONDS_PER_DAY * 2; // 2 days
-const TICKET_ACTIVE_DURATION: u64 = SECONDS_PER_DAY * 3; // 3 days
+const MILLISECONDS_PER_DAY: u64 = 86_400_000;
+const TICKET_DELAY_DURATION: u64 = MILLISECONDS_PER_DAY * 2; // 2 days
+const TICKET_ACTIVE_DURATION: u64 = MILLISECONDS_PER_DAY * 3; // 3 days
 
 /// Ticket types
 const WITHDRAW_DEEP_RESERVES: u8 = 0;
@@ -82,7 +82,7 @@ public fun create_ticket(
         ESenderIsNotMultisig,
     );
 
-    let created_at = clock.timestamp_ms() / 1000;
+    let created_at = clock.timestamp_ms();
 
     let ticket = AdminTicket {
         id: object::new(ctx),
@@ -110,15 +110,19 @@ public fun cleanup_expired_ticket(ticket: AdminTicket, clock: &Clock) {
 // === Public-View Functions ===
 /// Check if ticket is ready for execution (past delay period)
 public fun is_ticket_ready(ticket: &AdminTicket, clock: &Clock): bool {
-    let current_time = clock.timestamp_ms() / 1000;
+    let current_time = clock.timestamp_ms();
     current_time >= ticket.created_at + TICKET_DELAY_DURATION
 }
 
 /// Check if ticket is expired (past active period)
 public fun is_ticket_expired(ticket: &AdminTicket, clock: &Clock): bool {
-    let current_time = clock.timestamp_ms() / 1000;
+    let current_time = clock.timestamp_ms();
     current_time >= ticket.created_at + TICKET_DELAY_DURATION + TICKET_ACTIVE_DURATION
 }
+
+public fun ticket_delay_duration(): u64 { TICKET_DELAY_DURATION }
+
+public fun ticket_active_duration(): u64 { TICKET_ACTIVE_DURATION }
 
 public fun withdraw_deep_reserves_ticket_type(): u8 { WITHDRAW_DEEP_RESERVES }
 
@@ -163,4 +167,24 @@ public(package) fun validate_ticket(
     assert!(!is_ticket_expired(ticket, clock), ETicketExpired);
     // Check if ready
     assert!(is_ticket_ready(ticket, clock), ETicketNotReady);
+}
+
+// === Test Functions ===
+#[test_only]
+public fun owner(ticket: &AdminTicket): address { ticket.owner }
+
+#[test_only]
+public fun created_at(ticket: &AdminTicket): u64 { ticket.created_at }
+
+#[test_only]
+public fun ticket_type(ticket: &AdminTicket): u8 { ticket.ticket_type }
+
+#[test_only]
+public fun unwrap_ticket_created_event(event: &TicketCreated): (ID, u8) {
+    (event.ticket_id, event.ticket_type)
+}
+
+#[test_only]
+public fun unwrap_ticket_destroyed_event(event: &TicketDestroyed): (ID, u8, bool) {
+    (event.ticket_id, event.ticket_type, event.is_expired)
 }

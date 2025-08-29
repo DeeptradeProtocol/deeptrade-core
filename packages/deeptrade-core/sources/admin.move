@@ -23,3 +23,9 @@ fun init(ctx: &mut TxContext) {
 public fun get_admin_cap_for_testing(ctx: &mut TxContext): AdminCap {
     AdminCap { id: object::new(ctx) }
 }
+
+// Init AdminCap for testing
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ctx)
+}

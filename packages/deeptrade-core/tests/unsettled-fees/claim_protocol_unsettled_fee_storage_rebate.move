@@ -12,14 +12,14 @@ use deeptrade_core::fee_manager::{
     EProtocolUnsettledFeeNotEmpty,
     ESenderIsNotMultisig
 };
-use deeptrade_core::grant_user_level_tests::{
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold,
-    get_test_multisig_address
-};
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
 use deeptrade_core::treasury::Treasury;
+use multisig::multisig_test_utils::{
+    get_test_multisig_address,
+    get_test_multisig_pks,
+    get_test_multisig_weights,
+    get_test_multisig_threshold
+};
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::sui::SUI;
@@ -206,9 +206,9 @@ fun non_multisig_admin_claim_fails() {
     end(scenario);
 }
 
-#[test_only]
 /// Sets up a test scenario where a protocol fee has been settled, leaving an empty
 /// `Balance` object ready for a storage rebate claim.
+#[test_only]
 public(package) fun setup_protocol_fee_for_rebate(): (Scenario, ID) {
     let (mut scenario, _pool_id, _balance_manager_id, fee_manager_id) = setup_test_environment();
 

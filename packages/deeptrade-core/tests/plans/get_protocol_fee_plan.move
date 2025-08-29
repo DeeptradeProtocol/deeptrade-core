@@ -806,5 +806,7 @@ fun create_mock_order_info(original_quantity: u64, executed_quantity: u64, statu
         original_quantity,
         executed_quantity,
         status,
+        true, // is_bid
+        true, // fee_is_deep
     )
 }

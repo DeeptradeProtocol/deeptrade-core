@@ -1,18 +1,18 @@
 #[test_only]
 module deeptrade_core::add_loyalty_level_tests;
 
-use deeptrade_core::grant_user_level_tests::{
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold,
-    get_test_multisig_address
-};
 use deeptrade_core::loyalty::{
     Self,
     LoyaltyProgram,
     ELoyaltyLevelAlreadyExists,
     EInvalidFeeDiscountRate,
     ESenderIsNotMultisig
+};
+use multisig::multisig_test_utils::{
+    get_test_multisig_address,
+    get_test_multisig_pks,
+    get_test_multisig_weights,
+    get_test_multisig_threshold
 };
 use std::unit_test::assert_eq;
 use sui::test_scenario::{Scenario, begin, end, return_shared};
@@ -519,6 +519,7 @@ fun add_level_then_grant_to_user() {
 
 /// Sets up a test environment with loyalty program but without pre-added levels.
 /// Returns (scenario) ready for testing.
+#[test_only]
 public(package) fun setup_test_environment(): Scenario {
     let mut scenario = begin(OWNER);
 
