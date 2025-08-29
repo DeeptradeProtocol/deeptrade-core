@@ -8,7 +8,7 @@ use deeptrade_core::ticket::{
     AdminTicket,
     ESenderIsNotMultisig,
     TicketCreated,
-    get_ticket_delay_duration
+    ticket_delay_duration
 };
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
@@ -145,7 +145,7 @@ public fun get_ticket_ready_for_consumption(
     let ticket = scenario.take_shared<AdminTicket>();
     let ticket_id = object::id(&ticket);
 
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 

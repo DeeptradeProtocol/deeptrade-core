@@ -121,9 +121,9 @@ public fun is_ticket_expired(ticket: &AdminTicket, clock: &Clock): bool {
     current_time >= ticket.created_at + TICKET_DELAY_DURATION + TICKET_ACTIVE_DURATION
 }
 
-public fun get_ticket_delay_duration(): u64 { TICKET_DELAY_DURATION }
+public fun ticket_delay_duration(): u64 { TICKET_DELAY_DURATION }
 
-public fun get_ticket_active_duration(): u64 { TICKET_ACTIVE_DURATION }
+public fun ticket_active_duration(): u64 { TICKET_ACTIVE_DURATION }
 
 public fun withdraw_deep_reserves_ticket_type(): u8 { WITHDRAW_DEEP_RESERVES }
 

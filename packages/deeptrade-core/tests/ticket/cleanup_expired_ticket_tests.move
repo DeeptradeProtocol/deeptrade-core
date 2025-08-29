@@ -85,6 +85,6 @@ fun test_cleanup_fails_if_not_expired() {
 #[test]
 /// Test that the constants in the ticket module are in sync with the constants in this test module
 fun test_constants_are_in_sync() {
-    assert!(TICKET_DELAY_DURATION == ticket::get_ticket_delay_duration(), 0);
-    assert!(TICKET_ACTIVE_DURATION == ticket::get_ticket_active_duration(), 1);
+    assert!(TICKET_DELAY_DURATION == ticket::ticket_delay_duration(), 0);
+    assert!(TICKET_ACTIVE_DURATION == ticket::ticket_active_duration(), 1);
 }

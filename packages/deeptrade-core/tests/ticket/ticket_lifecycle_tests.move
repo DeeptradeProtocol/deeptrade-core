@@ -10,8 +10,8 @@ use deeptrade_core::ticket::{
     ETicketNotReady,
     ETicketOwnerMismatch,
     ETicketTypeMismatch,
-    get_ticket_active_duration,
-    get_ticket_delay_duration,
+    ticket_active_duration,
+    ticket_delay_duration,
     update_default_fees_ticket_type,
     update_pool_creation_protocol_fee_ticket_type,
     update_pool_specific_fees_ticket_type,
@@ -38,7 +38,7 @@ fun test_is_ticket_ready() {
     assert!(!ticket.is_ticket_ready(&clock), 1);
 
     // Advance time to just before it's ready
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     clock.increment_for_testing(delay - 1);
     assert!(!ticket.is_ticket_ready(&clock), 2);
 
@@ -66,7 +66,7 @@ fun test_is_ticket_expired() {
     assert!(!ticket.is_ticket_expired(&clock), 1);
 
     // Advance time to just before it expires
-    let total_duration = get_ticket_delay_duration() + get_ticket_active_duration();
+    let total_duration = ticket_delay_duration() + ticket_active_duration();
     clock.increment_for_testing(total_duration - 1);
     assert!(!ticket.is_ticket_expired(&clock), 2);
 
@@ -115,7 +115,7 @@ fun test_validate_ticket_fails_wrong_owner() {
 
     scenario.next_tx(@0xFACE); // Switch user
 
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 
@@ -137,7 +137,7 @@ fun test_validate_ticket_fails_wrong_type() {
     let ticket_type = withdraw_deep_reserves_ticket_type();
     let ticket = create_and_take_ticket(&mut scenario, ticket_type);
 
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);
 
@@ -181,7 +181,7 @@ fun test_validate_ticket_fails_expired() {
     let ticket = create_and_take_ticket(&mut scenario, ticket_type);
 
     // Advance time to make it expire
-    let total_duration = get_ticket_delay_duration() + get_ticket_active_duration();
+    let total_duration = ticket_delay_duration() + ticket_active_duration();
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(total_duration);
 
@@ -205,7 +205,7 @@ fun create_and_take_ticket(scenario: &mut Scenario, ticket_type: u8): AdminTicke
 #[test_only]
 fun run_validate_ticket_success(scenario: &mut Scenario, ticket_type: u8) {
     let ticket = create_and_take_ticket(scenario, ticket_type);
-    let delay = get_ticket_delay_duration();
+    let delay = ticket_delay_duration();
 
     let mut clock = clock::create_for_testing(scenario.ctx());
     clock.increment_for_testing(delay);

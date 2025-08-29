@@ -20,7 +20,7 @@ use token::deep::DEEP;
 const ENotEnoughFee: u64 = 1;
 /// Error when the new protocol fee for pool creation is out of the allowed range
 const EPoolCreationFeeOutOfRange: u64 = 2;
-// Error when the user provided  fee is larger than the creation fee
+// Error when the user provided fee is larger than the creation fee
 const ECreationFeeTooLarge: u64 = 3;
 
 // === Constants ===
