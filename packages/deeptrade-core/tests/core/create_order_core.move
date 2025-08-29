@@ -24,9 +24,9 @@ const AMOUNT_HUGE: u64 = 1_000_000_000_000; // 1 trillion
 // SUI per DEEP
 const SUI_PER_DEEP: u64 = 37_815_000_000;
 
-// ===== Helper Function for Testing =====
-
+// ===== Helper Functions =====
 /// Helper function to assert all three plans match expected values
+#[test_only]
 public fun assert_order_plans_eq(
     deep_plan: DeepPlan,
     coverage_fee_plan: CoverageFeePlan,

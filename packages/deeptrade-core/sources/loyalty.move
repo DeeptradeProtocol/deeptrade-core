@@ -276,8 +276,8 @@ public fun levels(loyalty_program: &LoyaltyProgram): &Table<u8, LoyaltyLevel> {
     &loyalty_program.levels
 }
 
-#[test_only]
 /// Get a reference to the `user_levels` table for testing purposes.
+#[test_only]
 public fun user_levels(loyalty_program: &LoyaltyProgram): &Table<address, u8> {
     &loyalty_program.user_levels
 }

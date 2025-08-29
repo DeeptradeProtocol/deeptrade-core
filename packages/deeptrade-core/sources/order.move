@@ -1308,195 +1308,6 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     transfer_if_nonzero(quote_coin, ctx.sender());
 }
 
-/// Executes a `ProtocolFeePlan` to collect Deeptrade fees from the user's
-/// wallet and balance manager.
-///
-/// Taker fees are collected immediately into the Deeptrade's protocol fees. Maker
-/// fees are added to an unsettled list for future settlement by the user or protocol.
-///
-/// Aborts if the plan indicates the user has insufficient funds.
-public(package) fun execute_protocol_fee_plan<CoinType>(
-    fee_manager: &mut FeeManager,
-    balance_manager: &mut BalanceManager,
-    coin: &mut Coin<CoinType>,
-    order_info: &OrderInfo,
-    fee_plan: &ProtocolFeePlan,
-    ctx: &mut TxContext,
-) {
-    // Verify that the user has enough funds to cover the protocol fees
-    assert!(fee_plan.user_covers_fee, EInsufficientFee);
-
-    let mut taker_fee = balance::zero<CoinType>();
-
-    // Join taker fee from wallet to total taker fee if needed
-    if (fee_plan.taker_fee_from_wallet > 0) {
-        let fee = coin.balance_mut().split(fee_plan.taker_fee_from_wallet);
-        taker_fee.join(fee);
-    };
-
-    // Join taker fee from balance manager to total taker fee if needed
-    if (fee_plan.taker_fee_from_balance_manager > 0) {
-        let fee = balance_manager.withdraw<CoinType>(
-            fee_plan.taker_fee_from_balance_manager,
-            ctx,
-        );
-        taker_fee.join(fee.into_balance());
-    };
-
-    // Collect taker fee and emit event if needed
-    let taker_fee_value = taker_fee.value();
-    if (taker_fee_value > 0) {
-        fee_manager.add_to_protocol_unsettled_fees(taker_fee, ctx);
-
-        event::emit(TakerFeeCharged<CoinType> {
-            pool_id: order_info.pool_id(),
-            balance_manager_id: order_info.balance_manager_id(),
-            order_id: order_info.order_id(),
-            client_order_id: order_info.client_order_id(),
-            taker_fee: taker_fee_value,
-        });
-    } else {
-        // The taker fee is zero for fully maker orders (e.g., Post-Only, resting GTC),
-        // or when the taker fee rate is zero
-        taker_fee.destroy_zero();
-    };
-
-    let mut maker_fee = balance::zero<CoinType>();
-
-    // Join maker fee from wallet to total maker fee if needed
-    if (fee_plan.maker_fee_from_wallet > 0) {
-        let fee = coin.balance_mut().split(fee_plan.maker_fee_from_wallet);
-        maker_fee.join(fee);
-    };
-
-    // Join maker fee from balance manager to total maker fee if needed
-    if (fee_plan.maker_fee_from_balance_manager > 0) {
-        let fee = balance_manager.withdraw<CoinType>(
-            fee_plan.maker_fee_from_balance_manager,
-            ctx,
-        );
-        maker_fee.join(fee.into_balance());
-    };
-
-    if (maker_fee.value() > 0) {
-        fee_manager.add_to_user_unsettled_fees(
-            maker_fee,
-            order_info,
-            ctx,
-        );
-    } else {
-        // Maker fee is zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
-        // or when the order is filled on creation
-        maker_fee.destroy_zero();
-    }
-}
-
-/// Executes the DEEP coin sourcing plan by acquiring coins from specified sources
-/// Sources DEEP coins from user wallet and/or treasury reserves based on the deep plan
-/// Deposits all acquired DEEP coins to the user's balance manager for order placement
-///
-/// Steps performed:
-/// 1. Verifies the treasury has enough DEEP reserves
-/// 2. Takes DEEP coins from user wallet when specified in the plan
-/// 3. Takes DEEP coins from treasury reserves when needed
-/// 4. Deposits all acquired DEEP coins to the balance manager
-public(package) fun execute_deep_plan(
-    treasury: &mut Treasury,
-    balance_manager: &mut BalanceManager,
-    deep_coin: &mut Coin<DEEP>,
-    deep_plan: &DeepPlan,
-    ctx: &mut TxContext,
-) {
-    treasury.verify_version();
-
-    // Check if there is enough DEEP in the treasury reserves
-    assert!(deep_plan.deep_reserves_cover_order, EInsufficientDeepReserves);
-
-    // Take DEEP from wallet if needed
-    if (deep_plan.from_user_wallet > 0) {
-        let payment = deep_coin.split(deep_plan.from_user_wallet, ctx);
-        balance_manager.deposit(payment, ctx);
-    };
-
-    // Take DEEP from treasury reserves if needed
-    if (deep_plan.from_deep_reserves > 0) {
-        let reserve_payment = treasury.split_deep_reserves(deep_plan.from_deep_reserves, ctx);
-        balance_manager.deposit(reserve_payment, ctx);
-    };
-}
-
-/// Executes the input coin deposit plan by transferring coins to the balance manager
-/// Deposits required input coins from user wallet to balance manager based on the plan
-/// Handles different coin types based on order type: quote coins for bid orders, base coins for ask orders
-///
-/// Steps performed:
-/// 1. Verifies the user has enough input coins to satisfy the deposit requirements
-/// 2. For bid orders: transfers quote coins from user wallet to balance manager
-/// 3. For ask orders: transfers base coins from user wallet to balance manager
-public(package) fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
-    balance_manager: &mut BalanceManager,
-    base_coin: &mut Coin<BaseToken>,
-    quote_coin: &mut Coin<QuoteToken>,
-    deposit_plan: &InputCoinDepositPlan,
-    is_bid: bool,
-    ctx: &mut TxContext,
-) {
-    // Verify there are enough coins to satisfy the deposit requirements
-    assert!(deposit_plan.user_has_enough_input_coin, EInsufficientInput);
-
-    // Deposit coins from wallet if needed
-    if (deposit_plan.from_user_wallet > 0) {
-        if (is_bid) {
-            // Quote coins for bid
-            let payment = quote_coin.split(deposit_plan.from_user_wallet, ctx);
-            balance_manager.deposit(payment, ctx);
-        } else {
-            // Base coins for ask
-            let payment = base_coin.split(deposit_plan.from_user_wallet, ctx);
-            balance_manager.deposit(payment, ctx);
-        };
-    };
-}
-
-/// Executes the coverage fee charging plan by taking SUI coins from specified sources
-///
-/// Parameters:
-/// - treasury: Main treasury object that will receive the fees
-/// - balance_manager: User's balance manager to withdraw fees from
-/// - sui_coin: User's SUI coins to take fees from
-/// - fee_plan: Plan that specifies how much to take from each source
-/// - ctx: Transaction context
-///
-/// Aborts:
-/// - EInsufficientFee: If user cannot cover the fees
-public(package) fun execute_coverage_fee_plan(
-    treasury: &mut Treasury,
-    balance_manager: &mut BalanceManager,
-    sui_coin: &mut Coin<SUI>,
-    fee_plan: &CoverageFeePlan,
-    ctx: &mut TxContext,
-) {
-    treasury.verify_version();
-
-    // Verify that the user has enough funds to cover the coverage fee
-    assert!(fee_plan.user_covers_fee, EInsufficientFee);
-
-    // Collect coverage fee from wallet if needed
-    if (fee_plan.from_wallet > 0) {
-        let fee = sui_coin.balance_mut().split(fee_plan.from_wallet);
-        treasury.join_deep_reserves_coverage_fee(fee);
-    };
-
-    // Collect coverage fee from balance manager if needed
-    if (fee_plan.from_balance_manager > 0) {
-        let fee = balance_manager.withdraw<SUI>(
-            fee_plan.from_balance_manager,
-            ctx,
-        );
-        treasury.join_deep_reserves_coverage_fee(fee.into_balance());
-    };
-}
-
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
 /// 2. Creates plans for DEEP sourcing, coverage fee collection, and input coin deposit
@@ -1793,6 +1604,195 @@ public(package) fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
     );
 
     balance_manager.generate_proof_as_owner(ctx)
+}
+
+/// Executes the DEEP coin sourcing plan by acquiring coins from specified sources
+/// Sources DEEP coins from user wallet and/or treasury reserves based on the deep plan
+/// Deposits all acquired DEEP coins to the user's balance manager for order placement
+///
+/// Steps performed:
+/// 1. Verifies the treasury has enough DEEP reserves
+/// 2. Takes DEEP coins from user wallet when specified in the plan
+/// 3. Takes DEEP coins from treasury reserves when needed
+/// 4. Deposits all acquired DEEP coins to the balance manager
+public(package) fun execute_deep_plan(
+    treasury: &mut Treasury,
+    balance_manager: &mut BalanceManager,
+    deep_coin: &mut Coin<DEEP>,
+    deep_plan: &DeepPlan,
+    ctx: &mut TxContext,
+) {
+    treasury.verify_version();
+
+    // Check if there is enough DEEP in the treasury reserves
+    assert!(deep_plan.deep_reserves_cover_order, EInsufficientDeepReserves);
+
+    // Take DEEP from wallet if needed
+    if (deep_plan.from_user_wallet > 0) {
+        let payment = deep_coin.split(deep_plan.from_user_wallet, ctx);
+        balance_manager.deposit(payment, ctx);
+    };
+
+    // Take DEEP from treasury reserves if needed
+    if (deep_plan.from_deep_reserves > 0) {
+        let reserve_payment = treasury.split_deep_reserves(deep_plan.from_deep_reserves, ctx);
+        balance_manager.deposit(reserve_payment, ctx);
+    };
+}
+
+/// Executes the coverage fee charging plan by taking SUI coins from specified sources
+///
+/// Parameters:
+/// - treasury: Main treasury object that will receive the fees
+/// - balance_manager: User's balance manager to withdraw fees from
+/// - sui_coin: User's SUI coins to take fees from
+/// - fee_plan: Plan that specifies how much to take from each source
+/// - ctx: Transaction context
+///
+/// Aborts:
+/// - EInsufficientFee: If user cannot cover the fees
+public(package) fun execute_coverage_fee_plan(
+    treasury: &mut Treasury,
+    balance_manager: &mut BalanceManager,
+    sui_coin: &mut Coin<SUI>,
+    fee_plan: &CoverageFeePlan,
+    ctx: &mut TxContext,
+) {
+    treasury.verify_version();
+
+    // Verify that the user has enough funds to cover the coverage fee
+    assert!(fee_plan.user_covers_fee, EInsufficientFee);
+
+    // Collect coverage fee from wallet if needed
+    if (fee_plan.from_wallet > 0) {
+        let fee = sui_coin.balance_mut().split(fee_plan.from_wallet);
+        treasury.join_deep_reserves_coverage_fee(fee);
+    };
+
+    // Collect coverage fee from balance manager if needed
+    if (fee_plan.from_balance_manager > 0) {
+        let fee = balance_manager.withdraw<SUI>(
+            fee_plan.from_balance_manager,
+            ctx,
+        );
+        treasury.join_deep_reserves_coverage_fee(fee.into_balance());
+    };
+}
+
+/// Executes a `ProtocolFeePlan` to collect Deeptrade fees from the user's
+/// wallet and balance manager.
+///
+/// Taker fees are collected immediately into the Deeptrade's protocol fees. Maker
+/// fees are added to an unsettled list for future settlement by the user or protocol.
+///
+/// Aborts if the plan indicates the user has insufficient funds.
+public(package) fun execute_protocol_fee_plan<CoinType>(
+    fee_manager: &mut FeeManager,
+    balance_manager: &mut BalanceManager,
+    coin: &mut Coin<CoinType>,
+    order_info: &OrderInfo,
+    fee_plan: &ProtocolFeePlan,
+    ctx: &mut TxContext,
+) {
+    // Verify that the user has enough funds to cover the protocol fees
+    assert!(fee_plan.user_covers_fee, EInsufficientFee);
+
+    let mut taker_fee = balance::zero<CoinType>();
+
+    // Join taker fee from wallet to total taker fee if needed
+    if (fee_plan.taker_fee_from_wallet > 0) {
+        let fee = coin.balance_mut().split(fee_plan.taker_fee_from_wallet);
+        taker_fee.join(fee);
+    };
+
+    // Join taker fee from balance manager to total taker fee if needed
+    if (fee_plan.taker_fee_from_balance_manager > 0) {
+        let fee = balance_manager.withdraw<CoinType>(
+            fee_plan.taker_fee_from_balance_manager,
+            ctx,
+        );
+        taker_fee.join(fee.into_balance());
+    };
+
+    // Collect taker fee and emit event if needed
+    let taker_fee_value = taker_fee.value();
+    if (taker_fee_value > 0) {
+        fee_manager.add_to_protocol_unsettled_fees(taker_fee, ctx);
+
+        event::emit(TakerFeeCharged<CoinType> {
+            pool_id: order_info.pool_id(),
+            balance_manager_id: order_info.balance_manager_id(),
+            order_id: order_info.order_id(),
+            client_order_id: order_info.client_order_id(),
+            taker_fee: taker_fee_value,
+        });
+    } else {
+        // The taker fee is zero for fully maker orders (e.g., Post-Only, resting GTC),
+        // or when the taker fee rate is zero
+        taker_fee.destroy_zero();
+    };
+
+    let mut maker_fee = balance::zero<CoinType>();
+
+    // Join maker fee from wallet to total maker fee if needed
+    if (fee_plan.maker_fee_from_wallet > 0) {
+        let fee = coin.balance_mut().split(fee_plan.maker_fee_from_wallet);
+        maker_fee.join(fee);
+    };
+
+    // Join maker fee from balance manager to total maker fee if needed
+    if (fee_plan.maker_fee_from_balance_manager > 0) {
+        let fee = balance_manager.withdraw<CoinType>(
+            fee_plan.maker_fee_from_balance_manager,
+            ctx,
+        );
+        maker_fee.join(fee.into_balance());
+    };
+
+    if (maker_fee.value() > 0) {
+        fee_manager.add_to_user_unsettled_fees(
+            maker_fee,
+            order_info,
+            ctx,
+        );
+    } else {
+        // Maker fee is zero for IOC/FOK orders (which don't act as makers), or when maker fee rate is zero,
+        // or when the order is filled on creation
+        maker_fee.destroy_zero();
+    }
+}
+
+/// Executes the input coin deposit plan by transferring coins to the balance manager
+/// Deposits required input coins from user wallet to balance manager based on the plan
+/// Handles different coin types based on order type: quote coins for bid orders, base coins for ask orders
+///
+/// Steps performed:
+/// 1. Verifies the user has enough input coins to satisfy the deposit requirements
+/// 2. For bid orders: transfers quote coins from user wallet to balance manager
+/// 3. For ask orders: transfers base coins from user wallet to balance manager
+public(package) fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
+    balance_manager: &mut BalanceManager,
+    base_coin: &mut Coin<BaseToken>,
+    quote_coin: &mut Coin<QuoteToken>,
+    deposit_plan: &InputCoinDepositPlan,
+    is_bid: bool,
+    ctx: &mut TxContext,
+) {
+    // Verify there are enough coins to satisfy the deposit requirements
+    assert!(deposit_plan.user_has_enough_input_coin, EInsufficientInput);
+
+    // Deposit coins from wallet if needed
+    if (deposit_plan.from_user_wallet > 0) {
+        if (is_bid) {
+            // Quote coins for bid
+            let payment = quote_coin.split(deposit_plan.from_user_wallet, ctx);
+            balance_manager.deposit(payment, ctx);
+        } else {
+            // Base coins for ask
+            let payment = base_coin.split(deposit_plan.from_user_wallet, ctx);
+            balance_manager.deposit(payment, ctx);
+        };
+    };
 }
 
 // === Private Functions ===
