@@ -590,8 +590,3 @@ public fun default_fees(config: &TradingFeeConfig): PoolFeeConfig {
 public fun pool_specific_fees(config: &TradingFeeConfig): &Table<ID, PoolFeeConfig> {
     &config.pool_specific_fees
 }
-
-// === Test Functions ===
-/// Initialize the fee module for testing
-#[test_only]
-public fun init_for_testing(ctx: &mut TxContext) { init(ctx); }
