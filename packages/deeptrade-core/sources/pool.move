@@ -20,13 +20,13 @@ use token::deep::DEEP;
 const ENotEnoughFee: u64 = 1;
 /// Error when the new protocol fee for pool creation is out of the allowed range
 const EPoolCreationFeeOutOfRange: u64 = 2;
+// Error when the user provided fee is larger than the creation fee
+const ECreationFeeTooLarge: u64 = 3;
 
 // === Constants ===
 const DEEP_SCALING_FACTOR: u64 = 1_000_000;
 // Default protocol fee for creating a pool
 const DEFAULT_POOL_CREATION_PROTOCOL_FEE: u64 = 100 * DEEP_SCALING_FACTOR; // 100 DEEP
-// Minimum protocol fee for creating a pool
-const MIN_POOL_CREATION_PROTOCOL_FEE: u64 = 0; // 0 DEEP
 // Maximum protocol fee for creating a pool
 const MAX_POOL_CREATION_PROTOCOL_FEE: u64 = 500 * DEEP_SCALING_FACTOR; // 500 DEEP
 
@@ -88,7 +88,6 @@ fun init(ctx: &mut TxContext) {
 ///
 /// Returns:
 /// - ID of the newly created pool
-/// - Unused DEEP coin
 ///
 /// Aborts:
 /// - ENotEnoughFee: If user doesn't provide enough DEEP to cover all fees
@@ -101,13 +100,15 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
     lot_size: u64,
     min_size: u64,
     ctx: &mut TxContext,
-): (ID, Coin<DEEP>) {
+): ID {
     treasury.verify_version();
 
     let deepbook_fee = constants::pool_creation_fee();
     let protocol_fee = config.protocol_fee;
     let total_fee = deepbook_fee + protocol_fee;
     assert!(creation_fee.value() >= total_fee, ENotEnoughFee);
+    // This explicit check just for improving dev experience
+    assert!(creation_fee.value() <= total_fee, ECreationFeeTooLarge);
 
     // Take the fee coins from the creation fee
     let deepbook_fee_coin = creation_fee.split(deepbook_fee, ctx);
@@ -135,7 +136,9 @@ public fun create_permissionless_pool<BaseAsset, QuoteAsset>(
         min_size,
     });
 
-    (pool_id, creation_fee)
+    creation_fee.destroy_zero();
+
+    pool_id
 }
 
 /// Update the protocol fee for creating a pool
@@ -157,10 +160,7 @@ public fun update_pool_creation_protocol_fee(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        new_fee >= MIN_POOL_CREATION_PROTOCOL_FEE && new_fee <= MAX_POOL_CREATION_PROTOCOL_FEE,
-        EPoolCreationFeeOutOfRange,
-    );
+    assert!(new_fee <= MAX_POOL_CREATION_PROTOCOL_FEE, EPoolCreationFeeOutOfRange);
 
     validate_ticket(&ticket, update_pool_creation_protocol_fee_ticket_type(), clock, ctx);
     destroy_ticket(ticket, clock);
@@ -178,3 +178,29 @@ public fun update_pool_creation_protocol_fee(
 // === Public-View Functions ===
 /// Get the current protocol fee for creating a pool
 public fun pool_creation_protocol_fee(config: &PoolCreationConfig): u64 { config.protocol_fee }
+
+// === Test Functions ===
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ctx);
+}
+
+/// Get the default protocol fee for creating a pool
+#[test_only]
+public fun default_pool_creation_protocol_fee(): u64 {
+    DEFAULT_POOL_CREATION_PROTOCOL_FEE
+}
+
+#[test_only]
+public fun unwrap_pool_created_event<BaseAsset, QuoteAsset>(
+    event: &PoolCreated<BaseAsset, QuoteAsset>,
+): (ID, ID, u64, u64, u64) {
+    (event.config_id, event.pool_id, event.tick_size, event.lot_size, event.min_size)
+}
+
+#[test_only]
+public fun unwrap_pool_creation_protocol_fee_updated_event(
+    event: &PoolCreationProtocolFeeUpdated,
+): (ID, u64, u64) {
+    (event.config_id, event.old_fee, event.new_fee)
+}

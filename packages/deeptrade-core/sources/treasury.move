@@ -67,7 +67,7 @@ public struct ProtocolFeeWithdrawn<phantom CoinType> has copy, drop {
 }
 
 /// Event emitted when DEEP coins are deposited into the treasury's reserves
-public struct DeepReservesDeposited has copy, drop {
+public struct DeepReservesDeposited<phantom DEEP> has copy, drop {
     treasury_id: ID,
     amount: u64,
 }
@@ -107,7 +107,7 @@ public fun deposit_into_reserves(treasury: &mut Treasury, deep_coin: Coin<DEEP>)
         return
     };
 
-    event::emit(DeepReservesDeposited {
+    event::emit(DeepReservesDeposited<DEEP> {
         treasury_id: treasury.id.to_inner(),
         amount: deep_coin.value(),
     });
@@ -129,7 +129,7 @@ public fun deposit_into_reserves(treasury: &mut Treasury, deep_coin: Coin<DEEP>)
 ///
 /// Aborts:
 /// - With ticket-related errors if ticket is invalid, expired, not ready, or wrong type
-public fun withdraw_deep_reserves_coverage_fee<CoinType>(
+public fun withdraw_coverage_fee<CoinType>(
     treasury: &mut Treasury,
     ticket: AdminTicket,
     clock: &Clock,
@@ -324,10 +324,7 @@ public fun deep_reserves(treasury: &Treasury): u64 { treasury.deep_reserves.valu
 
 // === Public-Package Functions ===
 /// Add collected deep reserves coverage fees to the treasury's fee storage
-public(package) fun join_deep_reserves_coverage_fee<CoinType>(
-    treasury: &mut Treasury,
-    fee: Balance<CoinType>,
-) {
+public(package) fun join_coverage_fee<CoinType>(treasury: &mut Treasury, fee: Balance<CoinType>) {
     treasury.verify_version();
 
     if (fee.value() == 0) {
@@ -383,13 +380,16 @@ public(package) fun verify_version(treasury: &Treasury) {
 }
 
 // === Test Functions ===
-/// Get the allowed versions for testing.
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ctx);
+}
+
 #[test_only]
 public fun allowed_versions(treasury: &Treasury): &VecSet<u16> {
     &treasury.allowed_versions
 }
 
-/// Get the disabled versions for testing.
 #[test_only]
 public fun disabled_versions(treasury: &Treasury): &VecSet<u16> {
     &treasury.disabled_versions
@@ -399,6 +399,18 @@ public fun disabled_versions(treasury: &Treasury): &VecSet<u16> {
 #[test_only]
 public fun deep_reserves_coverage_fees(treasury: &Treasury): &Bag {
     &treasury.deep_reserves_coverage_fees
+}
+
+/// Get the deep reserves coverage fee balance for a specific coin type.
+#[test_only]
+public fun get_deep_reserves_coverage_fee_balance<CoinType>(treasury: &Treasury): u64 {
+    let key = ChargedFeeKey<CoinType> {};
+    if (treasury.deep_reserves_coverage_fees.contains(key)) {
+        let balance: &Balance<CoinType> = treasury.deep_reserves_coverage_fees.borrow(key);
+        balance.value()
+    } else {
+        0
+    }
 }
 
 /// Get the protocol fees bag for testing.
@@ -419,10 +431,38 @@ public fun get_protocol_fee_balance<CoinType>(treasury: &Treasury): u64 {
     }
 }
 
-/// Initialize the treasury module for testing
 #[test_only]
-public fun init_for_testing(ctx: &mut TxContext) {
-    init(ctx);
+public fun unwrap_deep_reserves_withdrawn_event(event: &DeepReservesWithdrawn<DEEP>): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_coverage_fee_withdrawn_event<CoinType>(
+    event: &CoverageFeeWithdrawn<CoinType>,
+): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_protocol_fee_withdrawn_event<CoinType>(
+    event: &ProtocolFeeWithdrawn<CoinType>,
+): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_deep_reserves_deposited_event(event: &DeepReservesDeposited<DEEP>): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_version_enabled_event(event: &VersionEnabled): (ID, u16) {
+    (event.treasury_id, event.version)
+}
+
+#[test_only]
+public fun unwrap_version_disabled_event(event: &VersionDisabled): (ID, u16) {
+    (event.treasury_id, event.version)
 }
 
 /// Check if deep reserves coverage fees exist for a specific coin type
@@ -430,12 +470,4 @@ public fun init_for_testing(ctx: &mut TxContext) {
 public fun has_deep_reserves_coverage_fee<CoinType>(treasury: &Treasury): bool {
     let key = ChargedFeeKey<CoinType> {};
     treasury.deep_reserves_coverage_fees.contains(key)
-}
-
-/// Get the deep reserves coverage fee balance for a specific coin type
-#[test_only]
-public fun get_deep_reserves_coverage_fee_balance<CoinType>(treasury: &Treasury): u64 {
-    let key = ChargedFeeKey<CoinType> {};
-    let balance: &Balance<CoinType> = treasury.deep_reserves_coverage_fees.borrow(key);
-    balance.value()
 }

@@ -46,6 +46,7 @@ public struct TicketCreated has copy, drop {
 public struct TicketDestroyed has copy, drop {
     ticket_id: ID,
     ticket_type: u8,
+    // Whether the ticket was expired (true) or consumed (false)
     is_expired: bool,
 }
 
@@ -120,6 +121,10 @@ public fun is_ticket_expired(ticket: &AdminTicket, clock: &Clock): bool {
     current_time >= ticket.created_at + TICKET_DELAY_DURATION + TICKET_ACTIVE_DURATION
 }
 
+public fun ticket_delay_duration(): u64 { TICKET_DELAY_DURATION }
+
+public fun ticket_active_duration(): u64 { TICKET_ACTIVE_DURATION }
+
 public fun withdraw_deep_reserves_ticket_type(): u8 { WITHDRAW_DEEP_RESERVES }
 
 public fun withdraw_protocol_fee_ticket_type(): u8 { WITHDRAW_PROTOCOL_FEE }
@@ -174,3 +179,13 @@ public fun created_at(ticket: &AdminTicket): u64 { ticket.created_at }
 
 #[test_only]
 public fun ticket_type(ticket: &AdminTicket): u8 { ticket.ticket_type }
+
+#[test_only]
+public fun unwrap_ticket_created_event(event: &TicketCreated): (ID, u8) {
+    (event.ticket_id, event.ticket_type)
+}
+
+#[test_only]
+public fun unwrap_ticket_destroyed_event(event: &TicketDestroyed): (ID, u8, bool) {
+    (event.ticket_id, event.ticket_type, event.is_expired)
+}
