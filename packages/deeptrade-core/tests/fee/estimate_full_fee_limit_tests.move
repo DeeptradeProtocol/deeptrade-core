@@ -14,6 +14,7 @@ use multisig::multisig_test_utils::{
     get_test_multisig_threshold
 };
 use pyth::price_info;
+use std::unit_test::assert_eq;
 use sui::clock;
 use sui::sui::SUI;
 use sui::test_scenario::{end, return_shared};
@@ -215,6 +216,107 @@ fun sell_order_scenario() {
 
         return_shared(pool);
         return_shared(reference_pool);
+        return_shared(trading_fee_config);
+        return_shared(loyalty_program);
+        return_shared(clock);
+    };
+
+    // Clean up price info objects
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+
+    end(scenario);
+}
+
+#[test]
+fun whitelisted_pool_scenario() {
+    let (
+        mut scenario,
+        _pool_id,
+        _balance_manager_id,
+        _fee_manager_id,
+        reference_pool_id, // This is the whitelisted DEEP/SUI pool
+        deep_price,
+        sui_price,
+        loyalty_program_id,
+    ) = setup_test_environment();
+
+    // Grant user loyalty level (Gold = 50% discount)
+    let multisig_address = get_test_multisig_address();
+    scenario.next_tx(multisig_address);
+    {
+        let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+
+        loyalty::grant_user_level(
+            &mut loyalty_program,
+            &admin_cap,
+            ALICE,
+            LEVEL_GOLD,
+            get_test_multisig_pks(),
+            get_test_multisig_weights(),
+            get_test_multisig_threshold(),
+            scenario.ctx(),
+        );
+
+        destroy(admin_cap);
+        return_shared(loyalty_program);
+    };
+
+    // Test the estimate_full_fee_limit function for a whitelisted pool (DEEP/SUI)
+    scenario.next_tx(ALICE);
+    {
+        // Use the reference pool (DEEP/SUI) as the main pool since it's whitelisted
+        let whitelisted_pool = scenario.take_shared_by_id<Pool<DEEP, SUI>>(reference_pool_id);
+        let trading_fee_config = scenario.take_shared<TradingFeeConfig>();
+        let loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
+        let clock = scenario.take_shared<clock::Clock>();
+
+        // User has 2 DEEP in balance manager + 1 DEEP in wallet = 3 DEEP total
+        let deep_in_balance_manager = 2 * DEEP_MULTIPLIER; // 2 DEEP
+        let deep_in_wallet = DEEP_MULTIPLIER; // 1 DEEP
+
+        let (
+            deep_reserves_coverage_fee,
+            protocol_fee,
+            deep_required,
+            discount_rate,
+        ) = fee::estimate_full_fee_limit<DEEP, SUI, DEEP, SUI>(
+            &whitelisted_pool,
+            &whitelisted_pool, // Use same pool as reference (whitelisted pools don't need separate reference)
+            &deep_price,
+            &sui_price,
+            &trading_fee_config,
+            &loyalty_program,
+            deep_in_balance_manager,
+            deep_in_wallet,
+            ORDER_QUANTITY * constants::float_scaling(),
+            ORDER_PRICE * constants::float_scaling(),
+            true, // is_bid (buy order)
+            &clock,
+            scenario.ctx(),
+        );
+
+        // Verify the function returns reasonable values
+        // For whitelisted pools, deep_required should be 0 since they don't charge DEEP fees
+        assert_eq!(deep_required, 0);
+        assert!(discount_rate >= 0);
+        assert!(protocol_fee >= 0);
+
+        // For whitelisted pools, the deep_reserves_coverage_fee should be 0
+        // since whitelisted pools don't charge DEEP fees and don't need coverage
+        assert_eq!(deep_reserves_coverage_fee, 0);
+
+        // Test specific scenario: User has 3 DEEP total
+        // With Gold loyalty level (50% discount) and whitelisted pool benefits
+        // The total discount should be at least 50% (loyalty discount)
+        assert!(discount_rate >= 500_000_000); // At least 50% for Gold level
+
+        // Verify that the whitelisted pool behavior is correct
+        // Whitelisted pools should have maximum DEEP fee coverage discount
+        // since they don't require DEEP fees at all
+
+        return_shared(whitelisted_pool);
         return_shared(trading_fee_config);
         return_shared(loyalty_program);
         return_shared(clock);
