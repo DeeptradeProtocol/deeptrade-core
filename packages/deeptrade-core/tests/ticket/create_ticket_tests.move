@@ -10,6 +10,7 @@ use multisig::multisig_test_utils::{
     get_test_multisig_weights,
     get_test_multisig_threshold
 };
+use std::unit_test::assert_eq;
 use sui::clock;
 use sui::event;
 use sui::test_scenario::{Self, Scenario, return_shared};
@@ -40,7 +41,7 @@ fun create_ticket_success_with_multisig() {
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
             &clock,
-            test_scenario::ctx(&mut scenario),
+            scenario.ctx(),
         );
 
         // Check that the event was emitted correctly
@@ -57,10 +58,10 @@ fun create_ticket_success_with_multisig() {
 
     scenario.next_tx(multisig_address);
     {
-        let ticket = test_scenario::take_shared<AdminTicket>(&scenario);
-        assert!(ticket.owner() == multisig_address, 1);
-        assert!(ticket.ticket_type() == TICKET_TYPE, 2);
-        assert!(ticket.created_at() == CLOCK_TIMESTAMP_MS, 3);
+        let ticket = scenario.take_shared<AdminTicket>();
+        assert_eq!(ticket.owner(), multisig_address);
+        assert_eq!(ticket.ticket_type(), TICKET_TYPE);
+        assert_eq!(ticket.created_at(), CLOCK_TIMESTAMP_MS);
 
         assert!(ticket_id_from_event == object::id(&ticket), 2);
         assert!(ticket_type_from_event == ticket.ticket_type(), 3);
@@ -71,8 +72,7 @@ fun create_ticket_success_with_multisig() {
     scenario.end();
 }
 
-#[test]
-#[expected_failure(abort_code = ESenderIsNotMultisig)]
+#[test, expected_failure(abort_code = ESenderIsNotMultisig)]
 /// Test that ticket creation fails if the sender is not the derived multisig address.
 fun create_ticket_fails_if_sender_not_multisig() {
     let owner = @0xDEED;
@@ -80,7 +80,7 @@ fun create_ticket_fails_if_sender_not_multisig() {
 
     // NOTE: We do NOT switch the sender. The sender remains the OWNER,
     // which does not match the derived multisig address.
-    test_scenario::next_tx(&mut scenario, owner);
+    scenario.next_tx(owner);
     {
         let clock = clock::create_for_testing(scenario.ctx());
         let admin_cap = scenario.take_from_sender<AdminCap>();
@@ -93,7 +93,7 @@ fun create_ticket_fails_if_sender_not_multisig() {
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
             &clock,
-            test_scenario::ctx(&mut scenario),
+            scenario.ctx(),
         );
 
         clock::destroy_for_testing(clock);
