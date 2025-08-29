@@ -67,7 +67,7 @@ public struct ProtocolFeeWithdrawn<phantom CoinType> has copy, drop {
 }
 
 /// Event emitted when DEEP coins are deposited into the treasury's reserves
-public struct DeepReservesDeposited has copy, drop {
+public struct DeepReservesDeposited<phantom DEEP> has copy, drop {
     treasury_id: ID,
     amount: u64,
 }
@@ -107,7 +107,7 @@ public fun deposit_into_reserves(treasury: &mut Treasury, deep_coin: Coin<DEEP>)
         return
     };
 
-    event::emit(DeepReservesDeposited {
+    event::emit(DeepReservesDeposited<DEEP> {
         treasury_id: treasury.id.to_inner(),
         amount: deep_coin.value(),
     });
@@ -423,4 +423,38 @@ public fun get_protocol_fee_balance<CoinType>(treasury: &Treasury): u64 {
 #[test_only]
 public fun init_for_testing(ctx: &mut TxContext) {
     init(ctx);
+}
+
+#[test_only]
+public fun unwrap_deep_reserves_withdrawn_event(event: &DeepReservesWithdrawn<DEEP>): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_coverage_fee_withdrawn_event<CoinType>(
+    event: &CoverageFeeWithdrawn<CoinType>,
+): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_protocol_fee_withdrawn_event<CoinType>(
+    event: &ProtocolFeeWithdrawn<CoinType>,
+): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_deep_reserves_deposited_event(event: &DeepReservesDeposited<DEEP>): (ID, u64) {
+    (event.treasury_id, event.amount)
+}
+
+#[test_only]
+public fun unwrap_version_enabled_event(event: &VersionEnabled): (ID, u16) {
+    (event.treasury_id, event.version)
+}
+
+#[test_only]
+public fun unwrap_version_disabled_event(event: &VersionDisabled): (ID, u16) {
+    (event.treasury_id, event.version)
 }

@@ -38,14 +38,10 @@ const EZeroOrderAmount: u64 = 7;
 // === Constants ===
 /// The multiple that fee rates must adhere to, aligned with DeepBook (0.01 bps = 0.0001%)
 const FEE_PRECISION_MULTIPLE: u64 = 1000;
-/// The minimum allowed fee rate (0 bps)
-const MIN_FEE_RATE: u64 = 0;
 /// The maximum allowed taker fee rate (20 bps = 0.20%)
 const MAX_TAKER_FEE_RATE: u64 = 2_000_000;
 /// The maximum allowed maker fee rate (10 bps = 0.10%)
 const MAX_MAKER_FEE_RATE: u64 = 1_000_000;
-/// The minimum allowed discount rate (0%)
-const MIN_DISCOUNT_RATE: u64 = 0;
 /// The maximum allowed discount rate (100%)
 const MAX_DISCOUNT_RATE: u64 = 1_000_000_000;
 
@@ -539,8 +535,8 @@ fun validate_fee_pair(taker_rate: u64, maker_rate: u64) {
     assert!(maker_rate % FEE_PRECISION_MULTIPLE == 0, EInvalidFeePrecision);
 
     // Range Checks
-    assert!(taker_rate >= MIN_FEE_RATE && taker_rate <= MAX_TAKER_FEE_RATE, EFeeOutOfRange);
-    assert!(maker_rate >= MIN_FEE_RATE && maker_rate <= MAX_MAKER_FEE_RATE, EFeeOutOfRange);
+    assert!(taker_rate <= MAX_TAKER_FEE_RATE, EFeeOutOfRange);
+    assert!(maker_rate <= MAX_MAKER_FEE_RATE, EFeeOutOfRange);
 
     // Hierarchy Check
     assert!(maker_rate <= taker_rate, EInvalidFeeHierarchy);
@@ -551,8 +547,46 @@ fun validate_discount_rate(discount_rate: u64) {
     // Precision Check
     assert!(discount_rate % FEE_PRECISION_MULTIPLE == 0, EInvalidDiscountPrecision);
     // Range Check
-    assert!(
-        discount_rate >= MIN_DISCOUNT_RATE && discount_rate <= MAX_DISCOUNT_RATE,
-        EDiscountOutOfRange,
-    );
+    assert!(discount_rate <= MAX_DISCOUNT_RATE, EDiscountOutOfRange);
+}
+
+// === Test Functions ===
+#[test_only]
+public fun init_for_testing(ctx: &mut TxContext) {
+    init(ctx)
+}
+
+#[test_only]
+public fun unwrap_pool_fees_updated_event(
+    event: &PoolFeesUpdated,
+): (ID, ID, PoolFeeConfig, PoolFeeConfig) {
+    (event.config_id, event.pool_id, event.old_fees, event.new_fees)
+}
+
+#[test_only]
+public fun unwrap_default_fees_updated_event(
+    event: &DefaultFeesUpdated,
+): (ID, PoolFeeConfig, PoolFeeConfig) {
+    (event.config_id, event.old_fees, event.new_fees)
+}
+
+#[test_only]
+public fun get_fee_defaults(): (u64, u64, u64, u64, u64) {
+    (
+        DEFAULT_DEEP_TAKER_FEE_BPS,
+        DEFAULT_DEEP_MAKER_FEE_BPS,
+        DEFAULT_INPUT_COIN_TAKER_FEE_BPS,
+        DEFAULT_INPUT_COIN_MAKER_FEE_BPS,
+        DEFAULT_MAX_DEEP_FEE_COVERAGE_DISCOUNT_RATE,
+    )
+}
+
+#[test_only]
+public fun default_fees(config: &TradingFeeConfig): PoolFeeConfig {
+    config.default_fees
+}
+
+#[test_only]
+public fun pool_specific_fees(config: &TradingFeeConfig): &Table<ID, PoolFeeConfig> {
+    &config.pool_specific_fees
 }

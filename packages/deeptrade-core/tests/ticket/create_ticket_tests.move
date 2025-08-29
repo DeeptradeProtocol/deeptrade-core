@@ -3,14 +3,20 @@ module deeptrade_core::create_ticket_tests;
 
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
-use deeptrade_core::ticket::{Self, AdminTicket, ESenderIsNotMultisig, TicketCreated};
+use deeptrade_core::ticket::{
+    Self,
+    AdminTicket,
+    ESenderIsNotMultisig,
+    TicketCreated,
+    ticket_delay_duration
+};
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
     get_test_multisig_pks,
     get_test_multisig_weights,
     get_test_multisig_threshold
 };
-use sui::clock;
+use sui::clock::{Self, Clock};
 use sui::event;
 use sui::test_scenario::{Self, Scenario, return_shared};
 
@@ -103,7 +109,7 @@ fun create_ticket_fails_if_sender_not_multisig() {
     scenario.end();
 }
 
-// === Helper functions ===
+// === Helper Functions ===
 #[test_only]
 public fun create_ticket_with_multisig(scenario: &mut Scenario, ticket_type: u8) {
     let multisig_address = get_test_multisig_address();
@@ -124,4 +130,24 @@ public fun create_ticket_with_multisig(scenario: &mut Scenario, ticket_type: u8)
 
     clock::destroy_for_testing(clock);
     scenario.return_to_sender(admin_cap);
+
+    // We keep it here to make sure the ticket is available from Global Inventory in the next test
+    scenario.next_tx(multisig_address);
+}
+
+/// Create a ticket and increment the clock to make it ready for consumption.
+#[test_only]
+public fun get_ticket_ready_for_consumption(
+    scenario: &mut Scenario,
+    ticket_type: u8,
+): (AdminTicket, ID, Clock) {
+    create_ticket_with_multisig(scenario, ticket_type);
+    let ticket = scenario.take_shared<AdminTicket>();
+    let ticket_id = object::id(&ticket);
+
+    let delay = ticket_delay_duration();
+    let mut clock = clock::create_for_testing(scenario.ctx());
+    clock.increment_for_testing(delay);
+
+    (ticket, ticket_id, clock)
 }
