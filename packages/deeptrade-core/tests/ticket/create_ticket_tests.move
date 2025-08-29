@@ -19,7 +19,7 @@ use multisig::multisig_test_utils::{
 use std::unit_test::assert_eq;
 use sui::clock::{Self, Clock};
 use sui::event;
-use sui::test_scenario::{Self, Scenario, return_shared};
+use sui::test_scenario::{Scenario, return_shared};
 
 const TICKET_TYPE: u8 = 0;
 const CLOCK_TIMESTAMP_MS: u64 = 1756071906000;
