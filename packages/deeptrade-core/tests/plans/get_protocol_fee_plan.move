@@ -661,6 +661,56 @@ public fun balance_manager_exactly_one_token_short_with_empty_wallet() {
     );
 }
 
+#[test]
+public fun zero_fee_order_returns_zero_plan() {
+    let order_info = create_zero_execution_order();
+
+    // Calculate expected fees for zero execution order
+    let (taker_ratio, maker_ratio) = calculate_order_taker_maker_ratio(
+        order_info.original_quantity(),
+        order_info.executed_quantity(),
+        order_info.status(),
+    );
+
+    let (total_fee, taker_fee, maker_fee) = calculate_protocol_fees(
+        taker_ratio,
+        maker_ratio,
+        TAKER_FEE_RATE,
+        MAKER_FEE_RATE,
+        ORDER_AMOUNT,
+        DISCOUNT_RATE,
+    );
+
+    // Verify that fees are zero for zero execution order
+    assert!(total_fee == 0);
+    assert!(taker_fee == 0);
+    assert!(maker_fee == 0);
+
+    let coin_in_wallet = 1000; // Some coins in wallet
+    let coin_in_balance_manager = 1000; // Some coins in balance manager
+
+    let plan = get_protocol_fee_plan(
+        &order_info,
+        TAKER_FEE_RATE,
+        MAKER_FEE_RATE,
+        coin_in_wallet,
+        coin_in_balance_manager,
+        ORDER_AMOUNT,
+        DISCOUNT_RATE,
+    );
+
+    // Should return zero protocol fee plan when total_fee == 0
+    // This can occur for IOC orders that don't find matching orders, resulting in zero execution
+    assert_protocol_fee_plan_eq(
+        plan,
+        0, // taker_fee_from_wallet
+        0, // taker_fee_from_balance_manager
+        0, // maker_fee_from_wallet
+        0, // maker_fee_from_balance_manager
+        true, // user_covers_fee (true for zero fee plans)
+    );
+}
+
 // ===== Fee Rate Variations =====
 
 #[test]
@@ -769,6 +819,7 @@ public fun fully_executed_order_only_taker_fees() {
 // ===== Helper Functions =====
 
 /// Creates a fully executed order for testing
+#[test_only]
 fun create_fully_executed_order(): OrderInfo {
     let original_quantity = 1_000_000;
     let executed_quantity = 1_000_000;
@@ -778,6 +829,7 @@ fun create_fully_executed_order(): OrderInfo {
 }
 
 /// Creates a partially executed order for testing
+#[test_only]
 fun create_partially_executed_order(): OrderInfo {
     let original_quantity = 1_000_000;
     let executed_quantity = 500_000; // 50% executed
@@ -787,6 +839,7 @@ fun create_partially_executed_order(): OrderInfo {
 }
 
 /// Creates a cancelled order for testing (with partial execution)
+#[test_only]
 fun create_cancelled_order(): OrderInfo {
     let original_quantity = 1_000_000;
     let executed_quantity = 300_000; // 30% executed before cancellation
@@ -795,7 +848,19 @@ fun create_cancelled_order(): OrderInfo {
     create_mock_order_info(original_quantity, executed_quantity, status)
 }
 
+/// Creates an order with zero execution quantity for testing
+/// This simulates an IOC order that doesn't find matching orders
+#[test_only]
+fun create_zero_execution_order(): OrderInfo {
+    let original_quantity = 1_000_000;
+    let executed_quantity = 0; // Zero execution
+    let status = constants::canceled(); // Cancelled status (no execution)
+
+    create_mock_order_info(original_quantity, executed_quantity, status)
+}
+
 /// Helper to create mock OrderInfo using the test function from deepbook
+#[test_only]
 fun create_mock_order_info(original_quantity: u64, executed_quantity: u64, status: u8): OrderInfo {
     order_info::create_order_info_for_tests(
         id_from_address(POOL_ID),

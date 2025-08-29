@@ -190,6 +190,8 @@ public(package) fun get_sui_per_deep<ReferenceBaseAsset, ReferenceQuoteAsset>(
     // Choose maximum (best for treasury - users pay more SUI for DEEP)
     let sui_per_deep = u64::max(oracle_sui_per_deep, reference_sui_per_deep);
 
+    // Sanity check: reference pool price must be positive here because `get_pool_first_ask_price`
+    // aborts with `ENoAskPrice` if no ask price exists, otherwise returns a positive price.
     assert!(sui_per_deep > 0, EInvalidSuiPerDeep);
 
     sui_per_deep
@@ -231,20 +233,14 @@ public(package) fun get_sui_per_deep_from_reference_pool<ReferenceBaseAsset, Ref
     let reference_quote_type = type_name::get<ReferenceQuoteAsset>();
     let deep_type = type_name::get<DEEP>();
     let sui_type = type_name::get<SUI>();
+    let is_deep_sui_pool = reference_base_type == deep_type && reference_quote_type == sui_type;
+    let is_sui_deep_pool = reference_base_type == sui_type && reference_quote_type == deep_type;
 
-    assert!(
-        (reference_base_type == deep_type && reference_quote_type == sui_type) ||
-            (reference_base_type == sui_type && reference_quote_type == deep_type),
-        EIneligibleReferencePool,
-    );
+    assert!(is_deep_sui_pool || is_sui_deep_pool, EIneligibleReferencePool);
 
-    let reference_deep_is_base = reference_base_type == deep_type;
-
-    // For DEEP/SUI pool, reference_deep_is_base is true, SUI per DEEP is
-    // reference_pool_price
-    // For SUI/DEEP pool, reference_deep_is_base is false, DEEP per SUI is
-    // reference_pool_price
-    let sui_per_deep = if (reference_deep_is_base) {
+    // For DEEP/SUI pool, SUI per DEEP is reference_pool_price
+    // For SUI/DEEP pool, DEEP per SUI is reference_pool_price
+    let sui_per_deep = if (is_deep_sui_pool) {
         reference_pool_price
     } else {
         math::div(1_000_000_000, reference_pool_price)

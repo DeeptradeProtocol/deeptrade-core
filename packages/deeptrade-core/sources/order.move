@@ -1303,7 +1303,6 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
     transfer_if_nonzero(quote_coin, ctx.sender());
 }
 
-// === Private Functions ===
 /// Prepares order execution by handling all common order creation logic:
 /// 1. Verifies the caller owns the balance manager
 /// 2. Creates plans for DEEP sourcing, coverage fee collection, and input coin deposit
@@ -1339,7 +1338,12 @@ public(package) fun charge_protocol_fees<BaseToken, QuoteToken>(
 /// - estimated_sui_fee: Estimated SUI fee which we can take as a protocol for the order creation
 /// - estimated_sui_fee_slippage: Maximum acceptable slippage for estimated SUI fee in billionths (e.g., 10_000_000 = 1%)
 /// - clock: System clock for timestamp verification
-fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
+public(package) fun prepare_order_execution<
+    BaseToken,
+    QuoteToken,
+    ReferenceBaseAsset,
+    ReferenceQuoteAsset,
+>(
     treasury: &mut Treasury,
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
@@ -1479,7 +1483,7 @@ fun prepare_order_execution<BaseToken, QuoteToken, ReferenceBaseAsset, Reference
 /// - quote_coin: Quote token coins from user's wallet
 /// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
 /// - is_bid: True for buy orders, false for sell orders
-fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
+public(package) fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
     trading_fee_config: &TradingFeeConfig,
     loyalty_program: &LoyaltyProgram,
     pool: &Pool<BaseToken, QuoteToken>,
@@ -1549,7 +1553,7 @@ fun prepare_whitelisted_order_execution<BaseToken, QuoteToken>(
 /// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
 /// - is_bid: True for buy orders, false for sell orders
 /// - ctx: Transaction context
-fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
+public(package) fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &mut BalanceManager,
     base_coin: &mut Coin<BaseToken>,
@@ -1606,7 +1610,7 @@ fun prepare_input_fee_order_execution<BaseToken, QuoteToken>(
 /// 2. Takes DEEP coins from user wallet when specified in the plan
 /// 3. Takes DEEP coins from treasury reserves when needed
 /// 4. Deposits all acquired DEEP coins to the balance manager
-fun execute_deep_plan(
+public(package) fun execute_deep_plan(
     treasury: &mut Treasury,
     balance_manager: &mut BalanceManager,
     deep_coin: &mut Coin<DEEP>,
@@ -1642,7 +1646,7 @@ fun execute_deep_plan(
 ///
 /// Aborts:
 /// - EInsufficientFee: If user cannot cover the fees
-fun execute_coverage_fee_plan(
+public(package) fun execute_coverage_fee_plan(
     treasury: &mut Treasury,
     balance_manager: &mut BalanceManager,
     sui_coin: &mut Coin<SUI>,
@@ -1677,7 +1681,7 @@ fun execute_coverage_fee_plan(
 /// fees are added to an unsettled list for future settlement by the user or protocol.
 ///
 /// Aborts if the plan indicates the user has insufficient funds.
-fun execute_protocol_fee_plan<CoinType>(
+public(package) fun execute_protocol_fee_plan<CoinType>(
     fee_manager: &mut FeeManager,
     balance_manager: &mut BalanceManager,
     coin: &mut Coin<CoinType>,
@@ -1761,7 +1765,7 @@ fun execute_protocol_fee_plan<CoinType>(
 /// 1. Verifies the user has enough input coins to satisfy the deposit requirements
 /// 2. For bid orders: transfers quote coins from user wallet to balance manager
 /// 3. For ask orders: transfers base coins from user wallet to balance manager
-fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
+public(package) fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
     balance_manager: &mut BalanceManager,
     base_coin: &mut Coin<BaseToken>,
     quote_coin: &mut Coin<QuoteToken>,
@@ -1786,6 +1790,7 @@ fun execute_input_coin_deposit_plan<BaseToken, QuoteToken>(
     };
 }
 
+// === Private Functions ===
 /// Creates a coverage fee plan with no fees and user_covers_fee set to true
 /// Used when no coverage fees are required
 fun zero_coverage_fee_plan(): CoverageFeePlan {
@@ -1894,3 +1899,50 @@ public fun assert_input_coin_deposit_plan_eq(
     assert_eq!(actual.from_user_wallet, expected_from_user_wallet);
     assert_eq!(actual.user_has_enough_input_coin, expected_sufficient);
 }
+
+#[test_only]
+public fun taker_fee_from_wallet(plan: &ProtocolFeePlan): u64 { plan.taker_fee_from_wallet }
+
+#[test_only]
+public fun taker_fee_from_balance_manager(plan: &ProtocolFeePlan): u64 {
+    plan.taker_fee_from_balance_manager
+}
+
+#[test_only]
+public fun maker_fee_from_wallet(plan: &ProtocolFeePlan): u64 { plan.maker_fee_from_wallet }
+
+#[test_only]
+public fun maker_fee_from_balance_manager(plan: &ProtocolFeePlan): u64 {
+    plan.maker_fee_from_balance_manager
+}
+
+#[test_only]
+public fun user_covers_fee(plan: &ProtocolFeePlan): bool { plan.user_covers_fee }
+
+#[test_only]
+public fun from_user_wallet(plan: &DeepPlan): u64 { plan.from_user_wallet }
+
+#[test_only]
+public fun from_deep_reserves(plan: &DeepPlan): u64 { plan.from_deep_reserves }
+
+#[test_only]
+public fun deep_reserves_cover_order(plan: &DeepPlan): bool {
+    plan.deep_reserves_cover_order
+}
+
+#[test_only]
+public fun from_user_wallet_icdp(plan: &InputCoinDepositPlan): u64 { plan.from_user_wallet }
+
+#[test_only]
+public fun user_has_enough_input_coin_icdp(plan: &InputCoinDepositPlan): bool {
+    plan.user_has_enough_input_coin
+}
+
+#[test_only]
+public fun from_wallet_cfp(plan: &CoverageFeePlan): u64 { plan.from_wallet }
+
+#[test_only]
+public fun from_balance_manager_cfp(plan: &CoverageFeePlan): u64 { plan.from_balance_manager }
+
+#[test_only]
+public fun user_covers_fee_cfp(plan: &CoverageFeePlan): bool { plan.user_covers_fee }
