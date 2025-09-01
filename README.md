@@ -89,6 +89,7 @@ Discounts from the [Loyalty Program](docs/loyalty.md) also apply to swap fees.
 0xc49f720f4e8427cbd3955846ca9231441dab8ccda6c3da6e9d44ed6f9dcf865c
 0x2356885eae212599c0c7a42d648cc2100dedfa4698f8fc58fc6b9f67806f2bfc
 0x03aafc54af513d592bcb91136d61b94ea40b0f9b50477f24a3a9a38fca625174
+0x232b6dccf004919ce5deb1a7ee3d0e9f1c71170c9402ec1918aa212754baadb3
 ```
 
 ## Upgrade Cap:
