@@ -47,11 +47,86 @@ Short operational notes for developers: deployment, upgrade, and development too
 
 ## Running Tests
 
-We prefer using remote dependencies in `[dependencies]` section of `Move.toml`, to ensure that we maintain clarity for external observers and avoid potential integrity issues that could arise from using modified local versions of dependencies in long-term.
+This section describes how to run the test suite for the `deeptrade-core` package. For information on generating coverage reports, see the "Test Coverage Reports" section below.
 
-To run tests for the `deeptrade-core` package, you need to use the development dependencies. In `packages/deeptrade-core/Move.toml`, uncomment the `deepbook` and `Pyth` dependencies under `[dev-dependencies]` section and then run `sui move test`.
+We prefer using remote dependencies in `[dependencies]` section of `Move.toml`, to ensure that we
+maintain clarity for external observers and avoid potential integrity issues that could arise from
+using modified local versions of dependencies in long-term.
 
-These dependencies are kept commented by default due to a bug in the Sui compiler, which causes build failures when they are active ([Sui issue #23173](https://github.com/MystenLabs/sui/issues/23173)). You should only uncomment them when you need to run tests using `sui move test`.
+The core issue affecting testing is a Sui compiler bug ([Sui issue #23173](https://github.com/MystenLabs/sui/issues/23173)) that prevents the project from building when development dependencies are active (uncommented).
+
+Therefore, running tests always requires temporarily uncommenting these dependencies.
+
+### Manual Testing Steps
+
+1.  **Uncomment Dependencies**: In `packages/deeptrade-core/Move.toml`, find the `[dev-dependencies]` section and uncomment the lines for `deepbook` and `Pyth`.
+
+2.  **Run Tests**: From the root of the project, run the test command.
+    - To run all tests:
+      ```bash
+      (cd packages/deeptrade-core && sui move test)
+      ```
+    - To run specific tests, you can add a filter string that matches the test function name:
+      ```bash
+      (cd packages/deeptrade-core && sui move test <FILTER_STRING>)
+      ```
+
+3.  **Re-comment Dependencies**: After testing is complete, remember to comment the `[dev-dependencies]` in `Move.toml` back out to avoid build issues.
+
+## Test Coverage Reports
+
+There are three ways to generate and view test coverage reports. The automated scripts are recommended for convenience and reliability.
+
+### Method 1: Automated Terminal Summary (Recommended)
+
+This script runs all tests, generates coverage data, and prints a summary directly in your terminal. It handles dependency management for you.
+
+1.  **Run the script:**
+    ```bash
+    sh scripts/run-coverage.sh
+    ```
+2.  **Review the summary:** The script will print a summary table of test coverage.
+3.  **(Optional) Explore manually:** The script also generates the necessary coverage data. You can then manually inspect the coverage for any specific module. For example:
+    ```bash
+    (cd packages/deeptrade-core && sui move coverage source --module pool)
+    ```
+
+### Method 2: Automated HTML Report Generation
+
+This method is ideal for detailed reviews or for providing reports to auditors. It generates a full, browsable HTML coverage report.
+
+1.  **Prerequisite: Install `aha`**: This tool converts terminal output to HTML. You only need to do this once.
+    - On macOS: `brew install aha`
+    - On Debian/Ubuntu: `sudo apt-get install aha`
+2.  **Run the script:**
+    ```bash
+    sh scripts/generate-coverage-report.sh
+    ```
+3.  **View the Report:** The script will generate a `coverage-reports` directory and provide a command to start a local web server to view the files. Open the `index.html` file in your browser to see the report.
+
+### Method 3: Manual Coverage Analysis
+
+If you prefer to run everything manually, follow these steps:
+
+1.  **Uncomment Dependencies**: In `packages/deeptrade-core/Move.toml`, find the `[dev-dependencies]` section and uncomment the lines for `deepbook` and `Pyth`.
+
+2.  **Run Tests with Coverage**: From the root of the project, run the test command with the `--coverage` flag.
+
+    ```bash
+    (cd packages/deeptrade-core && sui move test --coverage)
+    ```
+
+3.  **Re-comment Dependencies**: After testing is complete, remember to comment the `[dev-dependencies]` in `Move.toml` back out.
+
+4.  **View Coverage Results**:
+    - For a summary:
+      ```bash
+      (cd packages/deeptrade-core && sui move coverage summary)
+      ```
+    - For a specific module:
+      ```bash
+      (cd packages/deeptrade-core && sui move coverage source --module pool)
+      ```
 
 ## Treasury Operations (Admin Only)
 
