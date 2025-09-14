@@ -68,8 +68,7 @@ fun get_discount_rate_for_user_with_valid_level() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant BRONZE level to ALICE
         loyalty::grant_user_level(
@@ -137,8 +136,7 @@ fun get_discount_rate_after_level_changes() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant BRONZE level to ALICE
         loyalty::grant_user_level(
@@ -166,8 +164,7 @@ fun get_discount_rate_after_level_changes() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::revoke_user_level(
             &mut loyalty_program,
@@ -193,8 +190,7 @@ fun get_discount_rate_after_level_changes() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant GOLD level to ALICE
         loyalty::grant_user_level(
@@ -267,7 +263,6 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
         return_shared(loyalty_admin_cap);
     };
 
-
     // Verify the discount rate works correctly
     scenario.next_tx(OWNER);
     {
@@ -334,8 +329,7 @@ fun get_discount_rate_multiple_users_same_level() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant GOLD level to multiple users
         loyalty::grant_user_level(
@@ -389,8 +383,7 @@ fun get_discount_rate_consistency_with_view_functions() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant SILVER level to ALICE
         loyalty::grant_user_level(

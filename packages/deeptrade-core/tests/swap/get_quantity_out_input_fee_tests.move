@@ -50,14 +50,13 @@ const QUOTE_AMOUNT: u64 = 500 * SCALE; // 500 tokens
 
 #[test]
 fun base_quantity_greater_than_zero() {
-    let (mut scenario, pool_id, _, _, ) = setup_test_environment();
+    let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to ALICE
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
@@ -107,14 +106,13 @@ fun base_quantity_greater_than_zero() {
 
 #[test]
 fun quote_quantity_greater_than_zero() {
-    let (mut scenario, pool_id, _, _, ) = setup_test_environment();
+    let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to BOB
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
@@ -202,14 +200,13 @@ fun very_small_quantities() {
 
 #[test]
 fun different_loyalty_levels() {
-    let (mut scenario, pool_id, _, _, ) = setup_test_environment();
+    let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant different loyalty levels
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant BRONZE level to ALICE
         loyalty::grant_user_level(

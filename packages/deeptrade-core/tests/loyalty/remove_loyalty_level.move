@@ -340,8 +340,7 @@ fun remove_level_with_members_fails() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant a level to a user (this creates a member)
         loyalty::grant_user_level(
@@ -415,8 +414,7 @@ fun remove_level_after_revoking_all_users() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant to multiple users
         loyalty::grant_user_level(
@@ -443,8 +441,7 @@ fun remove_level_after_revoking_all_users() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::revoke_user_level(
             &mut loyalty_program,

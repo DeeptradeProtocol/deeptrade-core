@@ -27,8 +27,7 @@ fun successful_owner_update() {
     // 1. Update owner to ALICE
     scenario.next_tx(multisig_address);
     {
-        let mut loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let mut loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
         let admin_cap = admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::update_loyalty_admin_cap_owner(
@@ -38,7 +37,7 @@ fun successful_owner_update() {
             get_test_multisig_pks(),
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
-            scenario.ctx()
+            scenario.ctx(),
         );
 
         assert_eq!(loyalty_admin_cap.owner_for_testing(), ALICE);
@@ -61,7 +60,7 @@ fun successful_owner_update() {
             get_test_multisig_pks(),
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
-            scenario.ctx()
+            scenario.ctx(),
         );
         destroy(admin_cap);
         return_shared(loyalty_program);
@@ -91,8 +90,7 @@ fun old_owner_cannot_grant_level() {
     // 1. Update owner to ALICE
     scenario.next_tx(multisig_address);
     {
-        let mut loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let mut loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
         let admin_cap = admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::update_loyalty_admin_cap_owner(
@@ -102,7 +100,7 @@ fun old_owner_cannot_grant_level() {
             get_test_multisig_pks(),
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
-            scenario.ctx()
+            scenario.ctx(),
         );
 
         destroy(admin_cap);
@@ -122,7 +120,7 @@ fun old_owner_cannot_grant_level() {
             get_test_multisig_pks(),
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
-            scenario.ctx()
+            scenario.ctx(),
         );
         destroy(admin_cap);
         return_shared(loyalty_program);
@@ -149,8 +147,7 @@ fun non_multisig_sender_fails() {
 
     scenario.next_tx(OWNER);
     {
-        let mut loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let mut loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
         let admin_cap = admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::update_loyalty_admin_cap_owner(
@@ -160,7 +157,7 @@ fun non_multisig_sender_fails() {
             get_test_multisig_pks(),
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
-            scenario.ctx()
+            scenario.ctx(),
         );
 
         destroy(admin_cap);
@@ -177,8 +174,7 @@ fun update_to_same_owner() {
 
     scenario.next_tx(multisig_address);
     {
-        let mut loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let mut loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
         let admin_cap = admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::update_loyalty_admin_cap_owner(
@@ -188,7 +184,7 @@ fun update_to_same_owner() {
             get_test_multisig_pks(),
             get_test_multisig_weights(),
             get_test_multisig_threshold(),
-            scenario.ctx()
+            scenario.ctx(),
         );
 
         assert_eq!(loyalty_admin_cap.owner_for_testing(), OWNER);

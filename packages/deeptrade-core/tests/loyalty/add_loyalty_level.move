@@ -487,8 +487,7 @@ fun add_level_then_grant_to_user() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,

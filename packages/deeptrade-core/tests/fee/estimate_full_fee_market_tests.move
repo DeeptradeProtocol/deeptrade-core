@@ -70,8 +70,7 @@ fun mixed_deep_coverage_scenario() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let loyalty_admin_cap =
-            scenario.take_shared<LoyaltyAdminCap>();
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
