@@ -5,19 +5,13 @@ use deepbook::balance_manager_tests::USDC;
 use deepbook::pool::{Pool, EInvalidQuantityIn};
 use deeptrade_core::fee::TradingFeeConfig;
 use deeptrade_core::get_quantity_out_input_fee_tests::setup_test_environment;
-use deeptrade_core::loyalty::{Self, LoyaltyProgram};
+use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram};
 use deeptrade_core::swap::{
     swap_exact_base_for_quote_input_fee,
     swap_exact_quote_for_base_input_fee,
     EInsufficientOutputAmount
 };
 use deeptrade_core::treasury;
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
 use sui::clock::Clock;
 use sui::coin::mint_for_testing;
 use sui::sui::SUI;
@@ -25,6 +19,7 @@ use sui::test_scenario::{end, return_shared, take_shared};
 use sui::test_utils::destroy;
 
 // === Constants ===
+const OWNER: address = @0x1;
 const ALICE: address = @0xAAAA;
 
 // Test loyalty levels
@@ -46,25 +41,22 @@ fun base_to_quote_success() {
     let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to ALICE
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create base coin for ALICE
@@ -119,25 +111,22 @@ fun quote_to_base_success() {
     let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to ALICE
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create quote coin for ALICE
@@ -192,25 +181,22 @@ fun minimum_output_validation_failure() {
     let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to ALICE
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create base coin for ALICE
@@ -272,25 +258,22 @@ fun quote_to_base_minimum_output_validation_failure() {
     let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to ALICE
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create quote coin for ALICE
@@ -352,25 +335,22 @@ fun base_to_quote_zero_input() {
     let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to ALICE
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create zero base coin for ALICE
@@ -422,25 +402,22 @@ fun quote_to_base_zero_input() {
     let (mut scenario, pool_id, _, _) = setup_test_environment();
 
     // Grant loyalty level to ALICE
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create zero quote coin for ALICE
@@ -536,25 +513,22 @@ fun loyalty_level_comparison() {
     };
 
     // === Phase 2: Grant Bronze loyalty level (10% discount) ===
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             1, // LEVEL_BRONZE
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create base coin for ALICE - use smaller amount to avoid liquidity impact
@@ -599,36 +573,31 @@ fun loyalty_level_comparison() {
     };
 
     // === Phase 3: Revoke Bronze and grant Gold loyalty level (50% discount) ===
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         // Revoke Bronze level
         loyalty::revoke_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         // Grant Gold level
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             3, // LEVEL_GOLD
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create base coin for ALICE - use smaller amount to avoid liquidity impact
@@ -726,25 +695,22 @@ fun loyalty_level_comparison_quote_to_base() {
     };
 
     // === Phase 2: Grant Bronze loyalty level (10% discount) ===
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             1, // LEVEL_BRONZE
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create quote coin for ALICE - use smaller amount to avoid liquidity impact
@@ -789,36 +755,31 @@ fun loyalty_level_comparison_quote_to_base() {
     };
 
     // === Phase 3: Revoke Bronze and grant Gold loyalty level (50% discount) ===
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         // Revoke Bronze level
         loyalty::revoke_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         // Grant Gold level
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             3, // LEVEL_GOLD
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Create quote coin for ALICE - use smaller amount to avoid liquidity impact

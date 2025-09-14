@@ -3,6 +3,7 @@ module deeptrade_core::add_loyalty_level_tests;
 
 use deeptrade_core::loyalty::{
     Self,
+    LoyaltyAdminCap,
     LoyaltyProgram,
     ELoyaltyLevelAlreadyExists,
     EInvalidFeeDiscountRate,
@@ -483,19 +484,17 @@ fun add_level_then_grant_to_user() {
     };
 
     // Grant the new level to a user
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             @0xAAAA,
             LEVEL_PLATINUM,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -508,8 +507,8 @@ fun add_level_then_grant_to_user() {
         let member_count = loyalty::get_level_member_count(&loyalty_program, LEVEL_PLATINUM);
         assert_eq!(member_count, 1);
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     end(scenario);

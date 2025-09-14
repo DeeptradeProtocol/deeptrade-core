@@ -19,7 +19,7 @@ use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
     new_deep_price_object,
     new_sui_price_object
 };
-use deeptrade_core::loyalty::{Self, LoyaltyProgram};
+use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram};
 use deeptrade_core::treasury;
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
@@ -67,25 +67,22 @@ fun mixed_deep_coverage_scenario() {
     ) = setup_test_environment();
 
     // Grant user loyalty level (Silver = 25% discount)
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Place a limit sell order to create liquidity for market order testing

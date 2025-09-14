@@ -319,3 +319,9 @@ public fun levels(loyalty_program: &LoyaltyProgram): &Table<u8, LoyaltyLevel> {
 public fun user_levels(loyalty_program: &LoyaltyProgram): &Table<address, u8> {
     &loyalty_program.user_levels
 }
+
+/// Get the owner of the `LoyaltyAdminCap` for testing purposes.
+#[test_only]
+public fun owner_for_testing(loyalty_admin_cap: &LoyaltyAdminCap): address {
+    loyalty_admin_cap.owner
+}

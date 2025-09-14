@@ -2,7 +2,7 @@
 module deeptrade_core::get_user_discount_rate_tests;
 
 use deeptrade_core::grant_user_level_tests::setup_test_environment;
-use deeptrade_core::loyalty::{Self, LoyaltyProgram};
+use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram};
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
     get_test_multisig_pks,
@@ -64,52 +64,42 @@ fun get_discount_rate_for_user_with_no_level() {
 fun get_discount_rate_for_user_with_valid_level() {
     let (mut scenario, loyalty_program_id) = setup_test_environment();
 
-    let multisig_address = get_test_multisig_address();
-
     // Grant different levels to different users
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant BRONZE level to ALICE
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_BRONZE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         // Grant SILVER level to BOB
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             BOB,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         // Grant GOLD level to CHARLIE
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             CHARLIE,
             LEVEL_GOLD,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Test discount rates for users with different levels
@@ -143,28 +133,24 @@ fun get_discount_rate_for_user_with_valid_level() {
 fun get_discount_rate_after_level_changes() {
     let (mut scenario, loyalty_program_id) = setup_test_environment();
 
-    let multisig_address = get_test_multisig_address();
-
     // Grant initial level
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant BRONZE level to ALICE
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_BRONZE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Verify initial discount rate
@@ -177,23 +163,21 @@ fun get_discount_rate_after_level_changes() {
     };
 
     // Revoke the level
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::revoke_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Verify discount rate is now 0
@@ -206,25 +190,23 @@ fun get_discount_rate_after_level_changes() {
     };
 
     // Grant a different level
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant GOLD level to ALICE
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_GOLD,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Verify new discount rate
@@ -263,21 +245,28 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
             scenario.ctx(),
         );
 
-        // Grant the new level to ALICE
-        loyalty::grant_user_level(
-            &mut loyalty_program,
-            &admin_cap,
-            ALICE,
-            LEVEL_PLATINUM,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
-            scenario.ctx(),
-        );
-
         destroy(admin_cap);
         return_shared(loyalty_program);
     };
+
+    // Grant the new level to ALICE
+    scenario.next_tx(OWNER);
+    {
+        let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
+
+        loyalty::grant_user_level(
+            &mut loyalty_program,
+            &loyalty_admin_cap,
+            ALICE,
+            LEVEL_PLATINUM,
+            scenario.ctx(),
+        );
+
+        return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
+    };
+
 
     // Verify the discount rate works correctly
     scenario.next_tx(OWNER);
@@ -288,24 +277,29 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
         return_shared(loyalty_program);
     };
 
-    // First revoke ALICE's level, then remove the level
+    // First revoke ALICE's level
+    scenario.next_tx(OWNER);
+    {
+        let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
+
+        loyalty::revoke_user_level(
+            &mut loyalty_program,
+            &loyalty_admin_cap,
+            ALICE,
+            scenario.ctx(),
+        );
+
+        return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
+    };
+
+    // Now remove the level
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
-        // First revoke ALICE's level
-        loyalty::revoke_user_level(
-            &mut loyalty_program,
-            &admin_cap,
-            ALICE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
-            scenario.ctx(),
-        );
-
-        // Now remove the level
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
             &admin_cap,
@@ -336,50 +330,40 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
 fun get_discount_rate_multiple_users_same_level() {
     let (mut scenario, loyalty_program_id) = setup_test_environment();
 
-    let multisig_address = get_test_multisig_address();
-
     // Grant same level to multiple users
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant GOLD level to multiple users
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_GOLD,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             BOB,
             LEVEL_GOLD,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             CHARLIE,
             LEVEL_GOLD,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Verify all users get the same discount rate
@@ -401,28 +385,24 @@ fun get_discount_rate_multiple_users_same_level() {
 fun get_discount_rate_consistency_with_view_functions() {
     let (mut scenario, loyalty_program_id) = setup_test_environment();
 
-    let multisig_address = get_test_multisig_address();
-
     // Grant level to user
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap =
+            scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant SILVER level to ALICE
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Verify consistency between get_user_discount_rate and the individual view functions
