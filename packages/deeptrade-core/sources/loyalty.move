@@ -20,6 +20,7 @@ const EUserAlreadyHasLoyaltyLevel: u64 = 4;
 const EUserHasNoLoyaltyLevel: u64 = 5;
 const EInvalidFeeDiscountRate: u64 = 6;
 const ESenderIsNotMultisig: u64 = 7;
+const ESenderIsNotLoyaltyAdmin: u64 = 8;
 
 // === Constants ===
 const MAX_FEE_DISCOUNT_RATE: u64 = 1_000_000_000; // 100% in billionths
@@ -40,6 +41,13 @@ public struct LoyaltyLevel has copy, drop, store {
     fee_discount_rate: u64,
     /// The total number of members currently at this level.
     member_count: u64,
+}
+
+/// A capability to grant and revoke user loyalty levels without protocol admin participation.
+/// This avoids the need for multisig approval, allowing for frequent user level updates.
+public struct LoyaltyAdminCap has key {
+    id: UID,
+    owner: address,
 }
 
 // === Events ===
@@ -66,32 +74,63 @@ public struct LoyaltyLevelRemoved has copy, drop {
     level: u8,
 }
 
+public struct LoyaltyAdminCapOwnerUpdated has copy, drop {
+    loyalty_admin_cap_id: ID,
+    old_owner: address,
+    new_owner: address,
+}
+
 fun init(ctx: &mut TxContext) {
     let loyalty_program = LoyaltyProgram {
         id: object::new(ctx),
         user_levels: table::new(ctx),
         levels: table::new(ctx),
     };
+    let admin_cap = LoyaltyAdminCap {
+        id: object::new(ctx),
+        owner: ctx.sender(),
+    };
+
+    transfer::share_object(admin_cap);
     transfer::share_object(loyalty_program);
 }
 
 // === Public-Mutative Functions ===
-/// Grant a user a loyalty level
-public fun grant_user_level(
-    loyalty_program: &mut LoyaltyProgram,
-    _admin: &AdminCap,
-    user: address,
-    level: u8,
+/// Assign a new loyalty admin by updating the owner of the loyalty admin cap.
+/// A protocol admin operation.
+public fun update_loyalty_admin_cap_owner(
+    loyalty_admin_cap: &mut LoyaltyAdminCap,
+    _admin_cap: &AdminCap,
+    new_owner: address,
     pks: vector<vector<u8>>,
     weights: vector<u8>,
     threshold: u16,
     ctx: &mut TxContext,
 ) {
-    // Validate multisig
     assert!(
         multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
         ESenderIsNotMultisig,
     );
+
+    let old_owner = loyalty_admin_cap.owner;
+    loyalty_admin_cap.owner = new_owner;
+
+    event::emit(LoyaltyAdminCapOwnerUpdated {
+        loyalty_admin_cap_id: loyalty_admin_cap.id.to_inner(),
+        old_owner,
+        new_owner,
+    });
+}
+
+/// Grant a user a loyalty level
+public fun grant_user_level(
+    loyalty_program: &mut LoyaltyProgram,
+    admin: &LoyaltyAdminCap,
+    user: address,
+    level: u8,
+    ctx: &mut TxContext,
+) {
+    validate_loyalty_admin_cap(admin, ctx);
 
     // Validate level exists
     assert!(loyalty_program.levels.contains(level), ELoyaltyLevelNotFound);
@@ -117,18 +156,11 @@ public fun grant_user_level(
 /// Revoke a user's loyalty level
 public fun revoke_user_level(
     loyalty_program: &mut LoyaltyProgram,
-    _admin: &AdminCap,
+    admin: &LoyaltyAdminCap,
     user: address,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
-    // Validate multisig
-    assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
-    );
+    validate_loyalty_admin_cap(admin, ctx);
 
     // Check user has a level assigned
     assert!(loyalty_program.user_levels.contains(user), EUserHasNoLoyaltyLevel);
@@ -265,6 +297,12 @@ public fun total_loyalty_program_members(loyalty_program: &LoyaltyProgram): u64 
     loyalty_program.user_levels.length()
 }
 
+// === Private Functions ===
+/// Validate that the sender is the owner of the loyalty admin cap
+fun validate_loyalty_admin_cap(loyalty_admin_cap: &LoyaltyAdminCap, ctx: &TxContext) {
+    assert!(loyalty_admin_cap.owner == ctx.sender(), ESenderIsNotLoyaltyAdmin);
+}
+
 // === Test Functions ===
 /// Initialize the loyalty program for testing
 #[test_only]
@@ -280,4 +318,10 @@ public fun levels(loyalty_program: &LoyaltyProgram): &Table<u8, LoyaltyLevel> {
 #[test_only]
 public fun user_levels(loyalty_program: &LoyaltyProgram): &Table<address, u8> {
     &loyalty_program.user_levels
+}
+
+/// Get the owner of the `LoyaltyAdminCap` for testing purposes.
+#[test_only]
+public fun owner_for_testing(loyalty_admin_cap: &LoyaltyAdminCap): address {
+    loyalty_admin_cap.owner
 }

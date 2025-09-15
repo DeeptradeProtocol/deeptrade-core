@@ -6,22 +6,16 @@ use deepbook::constants;
 use deepbook::pool::Pool;
 use deeptrade_core::estimate_full_fee_market_tests::setup_test_environment;
 use deeptrade_core::fee::{Self, TradingFeeConfig};
-use deeptrade_core::loyalty::{Self, LoyaltyProgram};
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
+use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram};
 use pyth::price_info;
 use std::unit_test::assert_eq;
 use sui::clock;
 use sui::sui::SUI;
 use sui::test_scenario::{end, return_shared};
-use sui::test_utils::destroy;
 use token::deep::DEEP;
 
 // === Constants ===
+const OWNER: address = @0x1;
 const ALICE: address = @0xAAAA;
 
 // Test loyalty levels
@@ -47,25 +41,21 @@ fun mixed_deep_coverage_scenario() {
     ) = setup_test_environment();
 
     // Grant user loyalty level (Silver = 25% discount)
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_SILVER,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Test the estimate_full_fee_limit function
@@ -149,25 +139,21 @@ fun sell_order_scenario() {
     ) = setup_test_environment();
 
     // Grant user loyalty level (Gold = 50% discount)
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_GOLD,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Test the estimate_full_fee_limit function for a sell order
@@ -242,25 +228,21 @@ fun whitelisted_pool_scenario() {
     ) = setup_test_environment();
 
     // Grant user loyalty level (Gold = 50% discount)
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_GOLD,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Test the estimate_full_fee_limit function for a whitelisted pool (DEEP/SUI)

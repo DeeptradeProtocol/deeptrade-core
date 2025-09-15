@@ -4,6 +4,7 @@ module deeptrade_core::remove_loyalty_level_tests;
 use deeptrade_core::grant_user_level_tests::setup_test_environment;
 use deeptrade_core::loyalty::{
     Self,
+    LoyaltyAdminCap,
     LoyaltyProgram,
     ELoyaltyLevelNotFound,
     ELoyaltyLevelHasUsers,
@@ -336,29 +337,26 @@ fun remove_nonexistent_level_fails() {
 fun remove_level_with_members_fails() {
     let (mut scenario, loyalty_program_id) = setup_test_environment();
 
-    let multisig_address = get_test_multisig_address();
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant a level to a user (this creates a member)
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_BRONZE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Try to remove the level that has a member
+    let multisig_address = get_test_multisig_address();
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
@@ -412,72 +410,59 @@ fun non_multisig_sender_fails() {
 fun remove_level_after_revoking_all_users() {
     let (mut scenario, loyalty_program_id) = setup_test_environment();
 
-    let multisig_address = get_test_multisig_address();
-
     // Grant level to multiple users
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         // Grant to multiple users
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
             LEVEL_BRONZE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::grant_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             BOB,
             LEVEL_BRONZE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Revoke all users from the level
-    scenario.next_tx(multisig_address);
+    scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
-        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let loyalty_admin_cap = scenario.take_shared<LoyaltyAdminCap>();
 
         loyalty::revoke_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             ALICE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::revoke_user_level(
             &mut loyalty_program,
-            &admin_cap,
+            &loyalty_admin_cap,
             BOB,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
-        destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(loyalty_admin_cap);
     };
 
     // Now remove the level (should succeed since no members)
+    let multisig_address = get_test_multisig_address();
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);

@@ -4,7 +4,7 @@ A critical aspect of this protocol's design is the guarantee that administrative
 
 ### The Goal: A Permanent, On-Chain Guarantee
 
-Our primary goal is to provide a permanent, on-chain guarantee that the `AdminCap` can never be controlled by a single key. We want any external observer to be able to verify, at any time, that all administrative actions are subject to a multi-signature policy.
+Our primary goal is to provide a permanent, on-chain guarantee that the `AdminCap` can never be controlled by a single key. We want any external observer to be able to verify, at any time, that all sensitive administrative actions are subject to a multi-signature policy.
 
 ### The Problem with Standard Multi-Sig
 
