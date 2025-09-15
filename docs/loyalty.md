@@ -37,7 +37,7 @@ Core changes to the loyalty program structure require multisig approval to ensur
 
 ### User-Level Management (Delegated)
 
-Assigning or revoking loyalty levels for individual users is a frequent task. To streamline this, these actions can be performed by the holder of the `LoyaltyAdminCap` without multisig approval.
+Assigning or revoking loyalty levels for individual users is a frequent task. To streamline this, these actions can be performed by the owner of the `LoyaltyAdminCap` without multisig approval.
 
 - Granting a level to a user (`grant_user_level`)
 - Revoking a level from a user (`revoke_user_level`)
