@@ -28,6 +28,8 @@ For operations that are considered lower-risk or require immediate execution for
 - **Operational Flexibility:** The loyalty program is designed to be managed dynamically. We consider these operations to be low-risk, as the primary impact is on user fee discounts rather than a direct risk to locked funds. This flexibility allows us to manage the program efficiently without the delay of a timelock.
 - **System Maintenance:** Administrative functions for claiming storage rebates are low-risk cleanup operations. They do not move user or protocol funds but instead recover storage costs from objects that are no longer in use. A timelock for such routine maintenance would add unnecessary overhead.
 
+---
+
 ## 2. Timelocked Operations (`AdminTicket`)
 
 For more sensitive operations, especially those involving the movement of funds, we introduce a mandatory timelock mechanism through the use of an `AdminTicket`.
@@ -49,6 +51,8 @@ An administrator must first create a ticket for a specific action by calling `ti
 
 1.  **Observability and Trust:** The timelock system provides transparency. By emitting a `TicketCreated` event with a specific `ticket_type`, we signal our intent for sensitive actions to the community in advance. This gives users, external auditors, and other stakeholders time to review and react if necessary, building trust in the protocol's governance.
 2.  **Internal Security Layer:** The delay acts as a critical security buffer. If the administrative `AdminCap` were ever compromised, the attacker could not immediately drain funds. The creation of a malicious withdrawal ticket would be a public event, giving our team and the community a window of opportunity to take corrective action.
+
+---
 
 ## 3. Loyalty Admin Operations (`LoyaltyAdminCap`)
 
