@@ -25,7 +25,22 @@ Where:
 
 ## Administration
 
-All actions with loyalty levels - creating levels, granting them to users, and revoking them - can only be performed by administrators with multisig approval. This ensures the system remains secure and controlled.
+Management of the loyalty program is split into two categories to balance security with operational efficiency.
+
+### Protocol-Level Management (Multisig Required)
+
+Core changes to the loyalty program structure require multisig approval to ensure they are secure and deliberate. These actions include:
+
+- Creating new loyalty levels (`add_loyalty_level`)
+- Removing existing loyalty levels (`remove_loyalty_level`)
+- Transferring the `LoyaltyAdminCap` to a new owner
+
+### User-Level Management (Delegated)
+
+Assigning or revoking loyalty levels for individual users is a frequent task. To streamline this, these actions can be performed by the holder of the `LoyaltyAdminCap` without multisig approval.
+
+- Granting a level to a user (`grant_user_level`)
+- Revoking a level from a user (`revoke_user_level`)
 
 ## Integration with Trading
 
@@ -51,4 +66,5 @@ The system estimates fees including loyalty discounts by:
 
 - Users can only have one loyalty level at a time
 - Levels cannot be removed if they have members
-- All administrative actions require multisig approval
+- Creating or removing loyalty levels requires multisig approval
+- Granting or revoking user levels can be done by a designated Loyalty Admin
