@@ -33,7 +33,7 @@ Core changes to the loyalty program structure require multisig approval to ensur
 
 - Creating new loyalty levels (`add_loyalty_level`)
 - Removing existing loyalty levels (`remove_loyalty_level`)
-- Transferring the `LoyaltyAdminCap` to a new owner
+- Assigning `LoyaltyAdminCap` to a new owner
 
 ### User-Level Management (Delegated)
 
