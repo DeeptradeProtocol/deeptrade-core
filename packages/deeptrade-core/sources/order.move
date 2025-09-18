@@ -1883,11 +1883,13 @@ fun create_empty_protocol_fee_plan(user_covers_fee: bool): ProtocolFeePlan {
 public fun assert_deep_plan_eq(
     actual: DeepPlan,
     expected_from_wallet: u64,
+    expected_from_balance_manager: u64,
     expected_from_treasury: u64,
     expected_sufficient: bool,
 ) {
     use std::unit_test::assert_eq;
     assert_eq!(actual.from_user_wallet, expected_from_wallet);
+    assert_eq!(actual.from_balance_manager, expected_from_balance_manager);
     assert_eq!(actual.from_deep_reserves, expected_from_treasury);
     assert_eq!(actual.deep_reserves_cover_order, expected_sufficient);
 }
