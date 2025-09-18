@@ -24,6 +24,7 @@ use deeptrade_core::helper::{
 use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::treasury::{Treasury, join_coverage_fee, deep_reserves, split_deep_reserves};
 use pyth::price_info::PriceInfoObject;
+use std::type_name;
 use std::u64;
 use sui::balance;
 use sui::clock::Clock;
@@ -53,6 +54,7 @@ const ENotSupportedSelfMatchingOption: u64 = 8;
 const EInvalidSuiPerDeep: u64 = 9;
 /// Error when the slippage is invalid (greater than 100% in billionths)
 const EInvalidSlippage: u64 = 10;
+const EInvalidInputCoinType: u64 = 11;
 
 // === Structs ===
 /// A plan for allocating DEEP tokens for an order's DeepBook fees.
@@ -62,6 +64,8 @@ const EInvalidSlippage: u64 = 10;
 public struct DeepPlan has copy, drop {
     /// Amount of DEEP to take from user's wallet
     from_user_wallet: u64,
+    /// Amount of DEEP to take from user's balance manager
+    from_balance_manager: u64,
     /// Amount of DEEP to take from treasury reserves
     from_deep_reserves: u64,
     /// Whether treasury DEEP reserves has enough DEEP to cover the order
@@ -843,6 +847,8 @@ public fun cancel_order_and_settle_fees<BaseAsset, QuoteAsset, UnsettledFeeCoinT
 /// - treasury_deep_reserves: Amount of DEEP available in treasury reserves
 /// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
 /// - sui_per_deep: Current DEEP/SUI price from reference pool
+/// - input_coin_is_sui: Whether the input coin is SUI
+/// - input_coin_is_deep: Whether the input coin is DEEP
 ///
 /// Returns a tuple with three structured plans:
 /// - DeepPlan: Coordinates DEEP coin sourcing from user wallet and treasury reserves
@@ -853,14 +859,19 @@ public(package) fun create_order_core(
     deep_required: u64,
     balance_manager_deep: u64,
     balance_manager_sui: u64,
-    balance_manager_input_coin: u64,
+    mut balance_manager_input_coin: u64,
     deep_in_wallet: u64,
     sui_in_wallet: u64,
     wallet_input_coin: u64,
     treasury_deep_reserves: u64,
     order_amount: u64,
     sui_per_deep: u64,
+    input_coin_is_sui: bool,
+    input_coin_is_deep: bool,
 ): (DeepPlan, CoverageFeePlan, InputCoinDepositPlan) {
+    // Sanity check: input coin cannot be flagged as both SUI and DEEP. Either one of them, or none
+    assert!(!(input_coin_is_sui && input_coin_is_deep), EInvalidInputCoinType);
+
     // Step 1: Determine DEEP requirements
     let deep_plan = get_deep_plan(
         is_pool_whitelisted,
@@ -870,6 +881,13 @@ public(package) fun create_order_core(
         treasury_deep_reserves,
     );
 
+    // If input coin is DEEP, `balance_manager_input_coin` and `balance_manager_deep` are the same balance amounts.
+    // So, if the `balance_manager_deep` is planned to be consumed by the DeepPlan, we need to decrease
+    // the `balance_manager_input_coin` correspondingly for further calculations of the InputCoinDepositPlan
+    if (input_coin_is_deep && deep_plan.from_balance_manager > 0) {
+        balance_manager_input_coin = balance_manager_input_coin - deep_plan.from_balance_manager;
+    };
+
     // Step 2: Determine coverage fee charging plan
     let coverage_fee_plan = get_coverage_fee_plan(
         deep_plan.from_deep_reserves,
@@ -878,6 +896,14 @@ public(package) fun create_order_core(
         sui_in_wallet,
         balance_manager_sui,
     );
+
+    // If input coin is SUI, `balance_manager_input_coin` and `balance_manager_sui` are the same balance amounts.
+    // So, if the `balance_manager_sui` is planned to be consumed by the CoverageFeePlan, we need to decrease
+    // the `balance_manager_input_coin` correspondingly for further calculations of the InputCoinDepositPlan
+    if (input_coin_is_sui && coverage_fee_plan.from_balance_manager > 0) {
+        balance_manager_input_coin =
+            balance_manager_input_coin - coverage_fee_plan.from_balance_manager;
+    };
 
     // Step 3: Determine input coin deposit plan
     let deposit_plan = get_input_coin_deposit_plan(
@@ -895,6 +921,7 @@ public(package) fun create_order_core(
 ///
 /// Returns a DeepPlan structure with the following information:
 /// - from_user_wallet: Amount of DEEP to take from user's wallet
+/// - from_balance_manager: Amount of DEEP to take from user's balance manager
 /// - from_deep_reserves: Amount of DEEP to take from treasury reserves
 /// - deep_reserves_cover_order: Whether treasury has enough DEEP to cover what's needed
 public(package) fun get_deep_plan(
@@ -908,6 +935,7 @@ public(package) fun get_deep_plan(
     if (is_pool_whitelisted) {
         return DeepPlan {
             from_user_wallet: 0,
+            from_balance_manager: 0,
             from_deep_reserves: 0,
             deep_reserves_cover_order: true,
         }
@@ -918,27 +946,32 @@ public(package) fun get_deep_plan(
 
     if (user_deep_total >= deep_required) {
         // User has enough DEEP
-        // Determine how much to take from wallet based on what's available
-        let from_wallet = if (balance_manager_deep >= deep_required) {
-            0 // Nothing needed from wallet if balance manager has enough
+        // Determine how much to take from wallet and balance manager based on what's available
+        let (from_wallet, from_balance_manager) = if (balance_manager_deep >= deep_required) {
+            // Nothing needed from wallet if balance manager has enough
+            (0, deep_required)
         } else {
-            deep_required - balance_manager_deep
+            // All from balance manager, remainder from wallet
+            (deep_required - balance_manager_deep, balance_manager_deep)
         };
 
         DeepPlan {
             from_user_wallet: from_wallet,
+            from_balance_manager,
             from_deep_reserves: 0,
             deep_reserves_cover_order: true,
         }
     } else {
         // Need treasury DEEP since user doesn't have enough
         let from_wallet = deep_in_wallet; // Take all from wallet
+        let from_balance_manager = balance_manager_deep; // Take all from balance manager
         let still_needed = deep_required - user_deep_total;
         let has_enough = treasury_deep_reserves >= still_needed;
 
         if (!has_enough) {
             return DeepPlan {
                 from_user_wallet: 0,
+                from_balance_manager: 0,
                 from_deep_reserves: 0,
                 deep_reserves_cover_order: false,
             }
@@ -946,6 +979,7 @@ public(package) fun get_deep_plan(
 
         DeepPlan {
             from_user_wallet: from_wallet,
+            from_balance_manager,
             from_deep_reserves: still_needed,
             deep_reserves_cover_order: true,
         }
@@ -1395,6 +1429,12 @@ public(package) fun prepare_order_execution<
         .get_pool_fee_config(pool)
         .max_deep_fee_coverage_discount_rate();
 
+    // Determine input coin type
+    let input_coin_is_sui = if (is_bid) type_name::get<QuoteToken>() == type_name::get<SUI>()
+    else type_name::get<BaseToken>() == type_name::get<SUI>();
+    let input_coin_is_deep = if (is_bid) type_name::get<QuoteToken>() == type_name::get<DEEP>()
+    else type_name::get<BaseToken>() == type_name::get<DEEP>();
+
     let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
         deep_required,
@@ -1407,6 +1447,8 @@ public(package) fun prepare_order_execution<
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     validate_fees_against_max(
@@ -1841,11 +1883,13 @@ fun create_empty_protocol_fee_plan(user_covers_fee: bool): ProtocolFeePlan {
 public fun assert_deep_plan_eq(
     actual: DeepPlan,
     expected_from_wallet: u64,
+    expected_from_balance_manager: u64,
     expected_from_treasury: u64,
     expected_sufficient: bool,
 ) {
     use std::unit_test::assert_eq;
     assert_eq!(actual.from_user_wallet, expected_from_wallet);
+    assert_eq!(actual.from_balance_manager, expected_from_balance_manager);
     assert_eq!(actual.from_deep_reserves, expected_from_treasury);
     assert_eq!(actual.deep_reserves_cover_order, expected_sufficient);
 }
