@@ -68,6 +68,7 @@ fun deep_from_both_wallet_and_treasury_reserves() {
     assert_deep_plan_eq(
         deep_plan,
         expected_from_wallet,
+        balance_manager_deep,
         expected_from_treasury,
         true, // deep_reserves_cover_order
     );
@@ -172,6 +173,7 @@ fun insufficient_deep_reserves_aborts() {
     assert_deep_plan_eq(
         deep_plan,
         0, // from_user_wallet should be 0 when insufficient
+        0, // from_balance_manager should be 0 when insufficient
         0, // from_deep_reserves should be 0 when insufficient
         false, // deep_reserves_cover_order should be false
     );
@@ -256,6 +258,7 @@ fun deep_only_from_treasury_reserves() {
     assert_deep_plan_eq(
         deep_plan,
         expected_from_wallet,
+        balance_manager_deep,
         expected_from_treasury,
         true, // deep_reserves_cover_order
     );
@@ -361,6 +364,7 @@ fun deep_only_from_wallet() {
     assert_deep_plan_eq(
         deep_plan,
         expected_from_wallet,
+        balance_manager_deep,
         expected_from_treasury,
         true, // deep_reserves_cover_order
     );
