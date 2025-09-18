@@ -10,7 +10,8 @@ use deeptrade_core::order::{
     assert_input_coin_deposit_plan_eq,
     DeepPlan,
     CoverageFeePlan,
-    InputCoinDepositPlan
+    InputCoinDepositPlan,
+    EInvalidInputCoinType
 };
 use std::unit_test::assert_eq;
 
@@ -77,6 +78,8 @@ public fun bid_order_sufficient_resources() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances
     let deep_required = AMOUNT_SMALL;
@@ -110,6 +113,8 @@ public fun bid_order_sufficient_resources() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -138,6 +143,8 @@ public fun bid_order_with_treasury_deep() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - not enough DEEP in wallet or balance manager
     let deep_required = AMOUNT_MEDIUM;
@@ -188,6 +195,8 @@ public fun bid_order_with_treasury_deep() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -216,6 +225,8 @@ public fun bid_order_whitelisted_pool() {
     let is_bid = true;
     let is_pool_whitelisted = true; // Whitelisted pool!
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances
     let deep_required = AMOUNT_SMALL;
@@ -249,6 +260,8 @@ public fun bid_order_whitelisted_pool() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -277,6 +290,8 @@ public fun bid_order_coverage_fee_from_both_sources() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances
     let deep_required = AMOUNT_MEDIUM;
@@ -322,6 +337,8 @@ public fun bid_order_coverage_fee_from_both_sources() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -350,6 +367,8 @@ public fun bid_order_insufficient_deep_no_treasury() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - not enough DEEP anywhere
     let deep_required = AMOUNT_MEDIUM;
@@ -378,6 +397,8 @@ public fun bid_order_insufficient_deep_no_treasury() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -406,6 +427,8 @@ public fun bid_order_quote_only_in_balance_manager() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - all resources in balance manager
     let deep_required = AMOUNT_SMALL;
@@ -434,6 +457,8 @@ public fun bid_order_quote_only_in_balance_manager() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -462,6 +487,8 @@ public fun bid_order_large_values() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Make sure we have enough resources for this large order
     let deep_required = AMOUNT_MEDIUM;
@@ -498,6 +525,8 @@ public fun bid_order_large_values() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -526,6 +555,8 @@ public fun bid_order_exact_resources() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - exactly what's needed
     let deep_required = AMOUNT_SMALL;
@@ -554,6 +585,8 @@ public fun bid_order_exact_resources() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -584,6 +617,8 @@ public fun ask_order_sufficient_resources() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances
     let deep_required = AMOUNT_SMALL;
@@ -619,6 +654,8 @@ public fun ask_order_sufficient_resources() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -647,6 +684,8 @@ public fun ask_order_whitelisted_pool() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = true; // Whitelisted pool!
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances
     let deep_required = AMOUNT_SMALL;
@@ -680,6 +719,8 @@ public fun ask_order_whitelisted_pool() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -708,6 +749,8 @@ public fun ask_order_insufficient_deep_and_base() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - not enough DEEP anywhere
     let deep_required = AMOUNT_MEDIUM;
@@ -736,6 +779,8 @@ public fun ask_order_insufficient_deep_and_base() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -764,6 +809,8 @@ public fun ask_order_base_only_in_balance_manager() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - base coins only in balance manager
     let deep_required = AMOUNT_SMALL;
@@ -800,6 +847,8 @@ public fun ask_order_base_only_in_balance_manager() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -828,6 +877,8 @@ public fun ask_order_large_values() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Make sure we have enough resources for this large order
     let deep_required = AMOUNT_MEDIUM;
@@ -865,6 +916,8 @@ public fun ask_order_large_values() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -893,6 +946,8 @@ public fun ask_order_exact_resources() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Set up resources to exactly match what's needed
     let deep_required = AMOUNT_SMALL;
@@ -921,6 +976,8 @@ public fun ask_order_exact_resources() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -949,6 +1006,8 @@ public fun ask_order_complex_distribution() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - split between wallet and balance manager
     let deep_required = AMOUNT_MEDIUM;
@@ -977,6 +1036,8 @@ public fun ask_order_complex_distribution() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -1005,6 +1066,8 @@ public fun ask_order_insufficient_base() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - not enough DEEP to force using treasury DEEP
     let deep_required = AMOUNT_MEDIUM;
@@ -1041,6 +1104,8 @@ public fun ask_order_insufficient_base() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -1069,6 +1134,8 @@ public fun ask_order_with_treasury_deep() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - not enough DEEP in wallet or balance manager
     let deep_required = AMOUNT_MEDIUM;
@@ -1105,6 +1172,8 @@ public fun ask_order_with_treasury_deep() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -1133,6 +1202,8 @@ public fun ask_order_coverage_fee_from_both_sources() {
     let is_bid = false; // Ask order
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances - not enough DEEP to avoid using treasury
     let deep_required = AMOUNT_MEDIUM;
@@ -1184,6 +1255,8 @@ public fun ask_order_coverage_fee_from_both_sources() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     assert_order_plans_eq(
@@ -1214,6 +1287,8 @@ public fun zero_quantity_order() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances
     let deep_required = AMOUNT_SMALL;
@@ -1242,6 +1317,8 @@ public fun zero_quantity_order() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     // For this test case, order amount should be zero
@@ -1271,6 +1348,8 @@ public fun zero_price_order() {
     let is_bid = true;
     let is_pool_whitelisted = false;
     let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = false;
 
     // Resource balances
     let deep_required = AMOUNT_SMALL;
@@ -1299,11 +1378,462 @@ public fun zero_price_order() {
         treasury_deep_reserves,
         order_amount,
         sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
     );
 
     // For bid orders with zero price, order amount should be zero
     let order_amount = calculate_order_amount(quantity, price, is_bid);
     assert_eq!(order_amount, 0);
+
+    assert_order_plans_eq(
+        deep_plan,
+        coverage_fee_plan,
+        input_coin_deposit_plan,
+        // DeepPlan expectations
+        0, // expected_deep_from_wallet
+        0, // expected_deep_from_reserves
+        true, // expected_deep_sufficient
+        // CoverageFeePlan expectations
+        0, // expected_coverage_fee_from_wallet
+        0, // expected_coverage_fee_from_balance_manager
+        true, // expected_user_covers_fee
+        // InputCoinDepositPlan expectations
+        0, // expected_deposit_from_wallet
+        true, // expected_deposit_sufficient
+    );
+}
+
+#[test]
+public fun ask_order_input_coin_is_sui() {
+    // Tests an ask order where the input coin is SUI.
+    // Verifies that when the balance manager has enough SUI to cover the order amount,
+    // a portion of it is first allocated to the coverage fee. The remaining balance
+    // is then used for the order amount, and the deficit is covered by the wallet.
+    // Order parameters
+    let quantity = 1_000_000_000;
+    let price = 1_000_000_000;
+    let is_bid = false;
+    let is_pool_whitelisted = false;
+    let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = true;
+    let input_coin_is_deep = false;
+
+    // Resource balances
+    let deep_required = AMOUNT_SMALL;
+    let balance_manager_deep = 0;
+    let balance_manager_sui = 1_000_000_000;
+    let balance_manager_input_coin = 1_000_000_000;
+
+    let deep_in_wallet = 0;
+    let sui_in_wallet = 0;
+    // Make wallet sufficient to cover the deficit
+    let wallet_input_coin = AMOUNT_LARGE;
+
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
+
+    // Calculate expected values
+    let order_amount = calculate_order_amount(quantity, price, is_bid);
+
+    // Deep will be sourced from treasury, so a coverage fee is required
+    let deep_from_reserves = deep_required;
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_reserves,
+    );
+
+    // The amount needed from the wallet is the order amount minus what's left
+    // in the balance manager after the coverage fee is paid.
+    let expected_deposit_from_wallet = order_amount - (balance_manager_input_coin - coverage_fee);
+
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
+
+    assert_order_plans_eq(
+        deep_plan,
+        coverage_fee_plan,
+        input_coin_deposit_plan,
+        // DeepPlan expectations
+        0, // expected_deep_from_wallet
+        deep_from_reserves, // expected_deep_from_reserves
+        true, // expected_deep_sufficient
+        // CoverageFeePlan expectations
+        0, // expected_coverage_fee_from_wallet
+        coverage_fee, // expected_coverage_fee_from_balance_manager
+        true, // expected_user_covers_fee
+        // InputCoinDepositPlan expectations
+        expected_deposit_from_wallet, // expected_deposit_from_wallet
+        true, // expected_deposit_sufficient
+    );
+}
+
+#[test]
+public fun ask_order_input_coin_is_deep() {
+    // Tests an ask order where the input coin is DEEP.
+    // Verifies that DEEP from the balance manager is first used for the deep requirement,
+    // and the remainder is applied to the order amount. The wallet covers the rest.
+    // Order parameters
+    let quantity = 1_000_000_000;
+    let price = 1_000_000_000;
+    let is_bid = false;
+    let is_pool_whitelisted = false;
+    let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = true;
+
+    // Resource balances
+    let deep_required = AMOUNT_SMALL;
+    let balance_manager_deep = 1_000_000_000;
+    let balance_manager_sui = 0;
+    let balance_manager_input_coin = 1_000_000_000;
+
+    let deep_in_wallet = 0;
+    let sui_in_wallet = 0;
+    let wallet_input_coin = AMOUNT_MEDIUM;
+
+    let treasury_deep_reserves = AMOUNT_MEDIUM;
+
+    // Calculate expected values
+    let order_amount = calculate_order_amount(quantity, price, is_bid);
+    let deep_from_balance_manager = deep_required;
+    let expected_deposit_from_wallet =
+        order_amount - (balance_manager_deep - deep_from_balance_manager);
+
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
+
+    assert_order_plans_eq(
+        deep_plan,
+        coverage_fee_plan,
+        input_coin_deposit_plan,
+        // DeepPlan expectations
+        0, // expected_deep_from_wallet
+        0, // expected_deep_from_reserves
+        true, // expected_deep_sufficient
+        // CoverageFeePlan expectations
+        0, // expected_coverage_fee_from_wallet
+        0, // expected_coverage_fee_from_balance_manager
+        true, // expected_user_covers_fee
+        // InputCoinDepositPlan expectations
+        expected_deposit_from_wallet, // expected_deposit_from_wallet
+        true, // expected_deposit_sufficient
+    );
+}
+
+#[test, expected_failure(abort_code = EInvalidInputCoinType)]
+public fun invalid_input_coin_flags() {
+    // Tests that create_order_core aborts if both input_coin_is_sui and
+    // input_coin_is_deep are true.
+    // Order parameters
+    let quantity = 1_000_000_000;
+    let price = 1_000_000_000;
+    let is_bid = false;
+    let is_pool_whitelisted = false;
+    let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = true;
+    let input_coin_is_deep = true;
+
+    // Resource balances (can be minimal since the function should abort early)
+    let deep_required = 0;
+    let balance_manager_deep = 0;
+    let balance_manager_sui = 0;
+    let balance_manager_input_coin = 0;
+    let deep_in_wallet = 0;
+    let sui_in_wallet = 0;
+    let wallet_input_coin = 0;
+    let treasury_deep_reserves = 0;
+    let order_amount = calculate_order_amount(quantity, price, is_bid);
+
+    create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
+}
+
+#[test]
+public fun bid_order_sui_input_insufficient_wallet() {
+    // Tests a bid order where the input coin is SUI and the wallet has insufficient
+    // funds to cover the deposit after the balance manager pays the coverage fee.
+    // Order parameters
+    let quantity = 10_000_000;
+    let price = 1_000_000_000;
+    let is_bid = true;
+    let is_pool_whitelisted = false;
+    let sui_per_deep = 1_000_000_000; // 1 SUI per DEEP for simplicity
+    let input_coin_is_sui = true;
+    let input_coin_is_deep = false;
+
+    // Resource balances
+    let deep_required = 1_000_000;
+    let balance_manager_deep = 0;
+    let deep_in_wallet = 0;
+    let treasury_deep_reserves = AMOUNT_LARGE;
+
+    // Trigger coverage fee
+    let deep_from_reserves = deep_required;
+    let coverage_fee = calculate_deep_reserves_coverage_order_fee(
+        sui_per_deep,
+        deep_from_reserves,
+    ); // Should be 1,000,000
+
+    // BM can cover the fee, but not the whole order
+    let balance_manager_sui = 2_000_000;
+    let balance_manager_input_coin = balance_manager_sui;
+
+    let order_amount = calculate_order_amount(quantity, price, is_bid); // 10,000,000
+    let sui_left_in_bm = balance_manager_sui - coverage_fee; // 1,000,000
+    let deposit_needed_from_wallet = order_amount - sui_left_in_bm; // 9,000,000
+
+    // Wallet is insufficient
+    let wallet_input_coin = deposit_needed_from_wallet - 1; // 8,999,999
+    let sui_in_wallet = wallet_input_coin;
+
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
+
+    assert_order_plans_eq(
+        deep_plan,
+        coverage_fee_plan,
+        input_coin_deposit_plan,
+        // DeepPlan expectations
+        0, // expected_deep_from_wallet
+        deep_from_reserves, // expected_deep_from_reserves
+        true, // expected_deep_sufficient
+        // CoverageFeePlan expectations
+        0, // expected_coverage_fee_from_wallet
+        coverage_fee, // expected_coverage_fee_from_balance_manager
+        true, // expected_user_covers_fee
+        // InputCoinDepositPlan expectations
+        0, // expected_deposit_from_wallet
+        false, // expected_deposit_sufficient
+    );
+}
+
+#[test]
+public fun ask_order_deep_input_insufficient_wallet() {
+    // Tests an ask order where the input coin is DEEP and the wallet has insufficient
+    // funds to cover the deposit after the balance manager pays the deep requirement.
+    // Order parameters
+    let quantity = 10_000_000;
+    let price = 1_000_000_000;
+    let is_bid = false;
+    let is_pool_whitelisted = false;
+    let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = true;
+
+    // Resource balances
+    let deep_required = 1_000_000;
+    // BM can cover the deep requirement, but not the whole order
+    let balance_manager_deep = 2_000_000;
+    let balance_manager_input_coin = balance_manager_deep;
+    let balance_manager_sui = 0;
+
+    let order_amount = calculate_order_amount(quantity, price, is_bid); // 10,000,000
+    let deep_left_in_bm = balance_manager_deep - deep_required; // 1,000,000
+    let deposit_needed_from_wallet = order_amount - deep_left_in_bm; // 9,000,000
+
+    // Wallet is insufficient
+    let wallet_input_coin = deposit_needed_from_wallet - 1; // 8,999,999
+    let deep_in_wallet = wallet_input_coin;
+    let sui_in_wallet = 0;
+    let treasury_deep_reserves = 0; // No treasury deep needed
+
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
+
+    assert_order_plans_eq(
+        deep_plan,
+        coverage_fee_plan,
+        input_coin_deposit_plan,
+        // DeepPlan expectations
+        0, // expected_deep_from_wallet
+        0, // expected_deep_from_reserves
+        true, // expected_deep_sufficient
+        // CoverageFeePlan expectations
+        0, // expected_coverage_fee_from_wallet
+        0, // expected_coverage_fee_from_balance_manager
+        true, // expected_user_covers_fee
+        // InputCoinDepositPlan expectations
+        0, // expected_deposit_from_wallet
+        false, // expected_deposit_sufficient
+    );
+}
+
+#[test]
+public fun bid_order_sui_input_no_coverage_fee() {
+    // Tests that when input coin is SUI and no coverage fee is needed,
+    // the balance_manager_sui is not reduced for fees and is fully
+    // available for the order deposit.
+    // Order parameters
+    let quantity = 1_000_000;
+    let price = 1_000_000_000;
+    let is_bid = true;
+    let is_pool_whitelisted = false;
+    let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = true;
+    let input_coin_is_deep = false;
+
+    // Resource balances
+    // User has enough DEEP, so no treasury DEEP is needed
+    let deep_required = AMOUNT_SMALL;
+    let balance_manager_deep = AMOUNT_SMALL / 2;
+    let deep_in_wallet = AMOUNT_SMALL / 2;
+    let treasury_deep_reserves = AMOUNT_LARGE;
+
+    // No coverage fee will be generated
+    let deep_from_reserves = 0;
+    let coverage_fee = 0;
+
+    // BM has enough to cover the full order
+    let order_amount = calculate_order_amount(quantity, price, is_bid); // 1,000,000
+    let balance_manager_sui = order_amount;
+    let balance_manager_input_coin = balance_manager_sui;
+
+    let sui_in_wallet = 0;
+    let wallet_input_coin = 0;
+
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
+
+    assert_order_plans_eq(
+        deep_plan,
+        coverage_fee_plan,
+        input_coin_deposit_plan,
+        // DeepPlan expectations
+        deep_in_wallet, // expected_deep_from_wallet
+        deep_from_reserves, // expected_deep_from_reserves
+        true, // expected_deep_sufficient
+        // CoverageFeePlan expectations
+        coverage_fee, // expected_coverage_fee_from_wallet
+        0, // expected_coverage_fee_from_balance_manager
+        true, // expected_user_covers_fee
+        // InputCoinDepositPlan expectations
+        0, // expected_deposit_from_wallet
+        true, // expected_deposit_sufficient
+    );
+}
+
+#[test]
+public fun ask_order_deep_input_whitelisted_pool() {
+    // Tests that when input coin is DEEP and the pool is whitelisted,
+    // the balance_manager_deep is not reduced for deep requirements and
+    // is fully available for the order deposit.
+    // Order parameters
+    let quantity = 1_000_000;
+    let price = 1_000_000_000;
+    let is_bid = false;
+    let is_pool_whitelisted = true; // Whitelisted pool
+    let sui_per_deep = SUI_PER_DEEP;
+    let input_coin_is_sui = false;
+    let input_coin_is_deep = true;
+
+    // Resource balances
+    // For a whitelisted pool, deep is not required.
+    let deep_required = AMOUNT_SMALL; // This will be ignored
+
+    // BM has enough to cover the full order
+    let order_amount = calculate_order_amount(quantity, price, is_bid); // 1,000,000
+    let balance_manager_deep = order_amount;
+    let balance_manager_input_coin = balance_manager_deep;
+    let balance_manager_sui = 0;
+
+    let deep_in_wallet = 0;
+    let sui_in_wallet = 0;
+    let wallet_input_coin = 0;
+    let treasury_deep_reserves = 0;
+
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
 
     assert_order_plans_eq(
         deep_plan,
