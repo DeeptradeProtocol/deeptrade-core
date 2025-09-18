@@ -979,7 +979,7 @@ public(package) fun get_deep_plan(
 
         DeepPlan {
             from_user_wallet: from_wallet,
-            from_balance_manager: from_balance_manager,
+            from_balance_manager,
             from_deep_reserves: still_needed,
             deep_reserves_cover_order: true,
         }
