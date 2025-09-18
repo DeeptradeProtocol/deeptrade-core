@@ -2,7 +2,7 @@
 module deeptrade_core::create_limit_order_tests;
 
 use deepbook::balance_manager::BalanceManager;
-use deepbook::balance_manager_tests::USDC;
+use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
 use deepbook::constants;
 use deepbook::pool::Pool;
 use deeptrade_core::create_market_order_tests::setup_test_environment;
@@ -378,6 +378,131 @@ fun not_supported_self_matching_option() {
     };
 
     // Clean up price info objects (this should not be reached due to the expected failure)
+    destroy(deep_price);
+    destroy(sui_price);
+
+    end(scenario);
+}
+
+#[test]
+fun sell_order_from_balance_manager() {
+    let (
+        mut scenario,
+        pool_id,
+        _balance_manager_id,
+        fee_manager_id,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+    ) = setup_test_environment();
+
+    let balance_manager_id = create_acct_and_share_with_funds(ALICE, 0, &mut scenario);
+
+    let quantity = 1 * constants::float_scaling();
+    let price = 2 * constants::float_scaling();
+
+    scenario.next_tx(ALICE);
+    {
+        let mut treasury = scenario.take_shared<treasury::Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let trading_fee_config = scenario.take_shared<TradingFeeConfig>();
+        let loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let mut pool = scenario.take_shared_by_id<Pool<SUI, USDC>>(pool_id);
+        let reference_pool = scenario.take_shared_by_id<Pool<DEEP, SUI>>(reference_pool_id);
+        let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
+        let clock = scenario.take_shared<clock::Clock>();
+
+        // Set up wallet balances as specified
+        let base_coin = coin::mint_for_testing<SUI>(
+            1000 * constants::float_scaling(),
+            scenario.ctx(),
+        );
+        let quote_coin = coin::mint_for_testing<USDC>(0, scenario.ctx());
+        let deep_coin = coin::mint_for_testing<DEEP>(0, scenario.ctx());
+        let sui_coin = coin::mint_for_testing<SUI>(0, scenario.ctx());
+
+        // Set up Balance Manager balance
+        let bm_sui = coin::mint_for_testing<SUI>(
+            1 * constants::float_scaling(),
+            scenario.ctx(),
+        );
+        balance_manager.deposit(bm_sui, scenario.ctx());
+
+        let initial_wallet_base_balance = coin::value(&base_coin);
+        let initial_bm_sui_balance = balance_manager.balance<SUI>();
+
+        // Execute limit sell order
+        let (order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_limit_order<
+            SUI,
+            USDC,
+            DEEP,
+            SUI,
+        >(
+            &mut treasury,
+            &mut fee_manager,
+            &trading_fee_config,
+            &loyalty_program,
+            &mut pool,
+            &reference_pool,
+            &deep_price,
+            &sui_price,
+            &mut balance_manager,
+            base_coin,
+            quote_coin,
+            deep_coin,
+            sui_coin,
+            price,
+            quantity,
+            false, // is_bid (sell order)
+            constants::max_u64(),
+            constants::no_restriction(),
+            constants::self_matching_allowed(),
+            1, // client_order_id
+            50 * constants::float_scaling(), // estimated_deep_required
+            10_000_000, // estimated_deep_required_slippage (1%)
+            10 * constants::float_scaling(), // estimated_sui_fee
+            10_000_000, // estimated_sui_fee_slippage (1%)
+            &clock,
+            scenario.ctx(),
+        );
+
+        // 1. Verify order placement
+        let open_orders = pool.account_open_orders(&balance_manager);
+        assert_eq!(open_orders.size(), 1);
+
+        // 2. Verify BM SUI balance is now 0
+        let final_bm_sui_balance = balance_manager.balance<SUI>();
+        assert_eq!(final_bm_sui_balance, initial_bm_sui_balance - quantity);
+
+        // 3. Verify unsettled fees are registered
+        assert_eq!(
+            fee_manager.has_user_unsettled_fee(
+                order_info.pool_id(),
+                order_info.balance_manager_id(),
+                order_info.order_id(),
+            ),
+            true,
+        );
+
+        // 4. Verify base wallet balance decrease by coverage fee
+        let final_wallet_base_balance = coin::value(&base_coin);
+        assert!(final_wallet_base_balance < initial_wallet_base_balance);
+
+        // Clean up
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(trading_fee_config);
+        return_shared(loyalty_program);
+        return_shared(pool);
+        return_shared(reference_pool);
+        return_shared(balance_manager);
+        return_shared(clock);
+    };
+
     destroy(deep_price);
     destroy(sui_price);
 
