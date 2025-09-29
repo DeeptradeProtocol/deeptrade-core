@@ -8,7 +8,7 @@ use deeptrade_core::loyalty::{
     LoyaltyProgram,
     ELoyaltyLevelNotFound,
     ELoyaltyLevelHasUsers,
-    ESenderIsNotMultisig
+    ESenderIsNotValidMultisig
 };
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
@@ -379,7 +379,7 @@ fun remove_level_with_members_fails() {
     end(scenario);
 }
 
-#[test, expected_failure(abort_code = ESenderIsNotMultisig)]
+#[test, expected_failure(abort_code = ESenderIsNotValidMultisig)]
 fun non_multisig_sender_fails() {
     let (mut scenario, loyalty_program_id) = setup_test_environment();
 

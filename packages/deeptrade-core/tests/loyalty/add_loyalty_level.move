@@ -7,7 +7,7 @@ use deeptrade_core::loyalty::{
     LoyaltyProgram,
     ELoyaltyLevelAlreadyExists,
     EInvalidFeeDiscountRate,
-    ESenderIsNotMultisig
+    ESenderIsNotValidMultisig
 };
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
@@ -349,7 +349,7 @@ fun add_level_with_invalid_discount_rate_fails() {
     end(scenario);
 }
 
-#[test, expected_failure(abort_code = ESenderIsNotMultisig)]
+#[test, expected_failure(abort_code = ESenderIsNotValidMultisig)]
 fun non_multisig_sender_fails() {
     let mut scenario = setup_test_environment();
 

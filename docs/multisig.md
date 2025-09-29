@@ -32,7 +32,7 @@ public fun update_pool_creation_protocol_fee(
     // This assertion guarantees the sender is the expected multi-sig wallet.
     assert!(
         multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
+        ESenderIsNotValidMultisig,
     );
 
     config.protocol_fee = new_fee;

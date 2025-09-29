@@ -141,7 +141,7 @@ fun old_owner_cannot_grant_level() {
     end(scenario);
 }
 
-#[test, expected_failure(abort_code = loyalty::ESenderIsNotMultisig)]
+#[test, expected_failure(abort_code = loyalty::ESenderIsNotValidMultisig)]
 fun non_multisig_sender_fails() {
     let mut scenario = setup_test_environment();
 

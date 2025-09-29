@@ -10,7 +10,7 @@ use deeptrade_core::fee_manager::{
     start_protocol_fee_settlement,
     EInvalidOwner,
     EProtocolUnsettledFeeNotEmpty,
-    ESenderIsNotMultisig
+    ESenderIsNotValidMultisig
 };
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
 use deeptrade_core::treasury::Treasury;
@@ -176,7 +176,7 @@ fun admin_claims_rebate_successfully() {
     end(scenario);
 }
 
-#[test, expected_failure(abort_code = ESenderIsNotMultisig)]
+#[test, expected_failure(abort_code = ESenderIsNotValidMultisig)]
 /// Test that a non-multisig sender cannot claim a rebate via the admin function.
 fun non_multisig_admin_claim_fails() {
     let (mut scenario, fee_manager_id) = setup_protocol_fee_for_rebate();

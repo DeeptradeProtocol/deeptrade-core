@@ -16,7 +16,7 @@ use deeptrade_core::treasury::{
     EVersionAlreadyEnabled,
     EVersionNotEnabled,
     ECannotDisableNewerVersion,
-    ESenderIsNotMultisig
+    ESenderIsNotValidMultisig
 };
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
@@ -267,7 +267,7 @@ fun test_disable_version_fails_newer_version() {
 }
 
 #[test]
-#[expected_failure(abort_code = ESenderIsNotMultisig)]
+#[expected_failure(abort_code = ESenderIsNotValidMultisig)]
 fun test_version_management_fails_not_multisig() {
     let (mut scenario, _, admin_cap, mut treasury, _) = setup();
 
@@ -292,7 +292,7 @@ fun test_version_management_fails_not_multisig() {
 }
 
 #[test]
-#[expected_failure(abort_code = ESenderIsNotMultisig)]
+#[expected_failure(abort_code = ESenderIsNotValidMultisig)]
 fun test_version_management_fails_not_multisig_disable() {
     let (mut scenario, _, admin_cap, mut treasury, _) = setup();
 

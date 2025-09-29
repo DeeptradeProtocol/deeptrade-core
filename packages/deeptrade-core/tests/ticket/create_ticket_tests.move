@@ -6,7 +6,7 @@ use deeptrade_core::admin_init_tests::setup_with_admin_cap;
 use deeptrade_core::ticket::{
     Self,
     AdminTicket,
-    ESenderIsNotMultisig,
+    ESenderIsNotValidMultisig,
     TicketCreated,
     ticket_delay_duration
 };
@@ -78,7 +78,7 @@ fun create_ticket_success_with_multisig() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = ESenderIsNotMultisig)]
+#[test, expected_failure(abort_code = ESenderIsNotValidMultisig)]
 /// Test that ticket creation fails if the sender is not the derived multisig address.
 fun create_ticket_fails_if_sender_not_multisig() {
     let owner = @0xDEED;
