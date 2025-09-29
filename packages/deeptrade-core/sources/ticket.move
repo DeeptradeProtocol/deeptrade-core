@@ -1,6 +1,7 @@
 module deeptrade_core::ticket;
 
 use deeptrade_core::admin::AdminCap;
+use deeptrade_core::multisig::MultisigConfig;
 use multisig::multisig;
 use sui::clock::Clock;
 use sui::event;
@@ -10,7 +11,7 @@ const ETicketOwnerMismatch: u64 = 1;
 const ETicketTypeMismatch: u64 = 2;
 const ETicketExpired: u64 = 3;
 const ETicketNotReady: u64 = 4;
-const ESenderIsNotMultisig: u64 = 5;
+const ESenderIsNotValidMultisig: u64 = 5;
 const ETicketNotExpired: u64 = 6;
 
 // === Constants ===
@@ -52,14 +53,12 @@ public struct TicketDestroyed has copy, drop {
 
 // === Public Functions ===
 /// Create an admin ticket for timelock mechanism with multi-signature verification
-/// Verifies sender matches the multi-sig address, then creates a ticket for future execution
+/// Verifies sender matches the admin multi-sig address, then creates a ticket for future execution
 ///
 /// Parameters:
+/// - multisig_config: Protocol's admin multisig config
 /// - _admin: Admin capability
 /// - ticket_type: Type of operation this ticket authorizes
-/// - pks: Vector of public keys of the multi-sig signers
-/// - weights: Vector of weights for each corresponding signer (must match pks length)
-/// - threshold: Minimum sum of weights required to authorize transactions (must be > 0 and <= sum of weights)
 /// - clock: Clock for timestamp recording
 /// - ctx: Mutable transaction context for ticket creation and sender verification
 ///
@@ -67,20 +66,22 @@ public struct TicketDestroyed has copy, drop {
 /// - AdminTicket: The created ticket bound to the sender address
 ///
 /// Aborts:
-/// - With ESenderIsNotMultisig if the transaction sender is not the expected multi-signature address
-///   derived from the provided pks, weights, and threshold parameters
+/// - With ESenderIsNotValidMultisig if the transaction sender is not the protocol's admin multisig
 public fun create_ticket(
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
     ticket_type: u8,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
+        multisig::check_if_sender_is_multisig_address(
+            multisig_config.public_keys(),
+            multisig_config.weights(),
+            multisig_config.threshold(),
+            ctx,
+        ),
+        ESenderIsNotValidMultisig,
     );
 
     let created_at = clock.timestamp_ms();

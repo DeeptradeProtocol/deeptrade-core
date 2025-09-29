@@ -6,6 +6,7 @@ use deepbook::order_info::OrderInfo;
 use deepbook::pool::Pool;
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::math;
+use deeptrade_core::multisig::MultisigConfig;
 use deeptrade_core::treasury::{Treasury, join_protocol_fee};
 use multisig::multisig;
 use sui::bag::{Self, Bag};
@@ -29,7 +30,7 @@ const EFilledQuantityGreaterThanOrderQuantity: u64 = 7;
 /// Error when the user unsettled fee is not empty to be destroyed
 const EUserUnsettledFeeNotEmpty: u64 = 8;
 const EProtocolUnsettledFeeNotEmpty: u64 = 9;
-const ESenderIsNotMultisig: u64 = 10;
+const ESenderIsNotValidMultisig: u64 = 10;
 const EInvalidFeeManagerShareTicket: u64 = 11;
 
 // === Structs ===
@@ -282,16 +283,19 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
     fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
     order_id: u128,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
     assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
+        multisig::check_if_sender_is_multisig_address(
+            multisig_config.public_keys(),
+            multisig_config.weights(),
+            multisig_config.threshold(),
+            ctx,
+        ),
+        ESenderIsNotValidMultisig,
     );
     treasury.verify_version();
 
@@ -325,15 +329,18 @@ public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
 public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
     treasury: &Treasury,
     fee_manager: &mut FeeManager,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
     assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
+        multisig::check_if_sender_is_multisig_address(
+            multisig_config.public_keys(),
+            multisig_config.weights(),
+            multisig_config.threshold(),
+            ctx,
+        ),
+        ESenderIsNotValidMultisig,
     );
     treasury.verify_version();
 

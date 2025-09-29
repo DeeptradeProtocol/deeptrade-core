@@ -8,6 +8,7 @@
 module deeptrade_core::loyalty;
 
 use deeptrade_core::admin::AdminCap;
+use deeptrade_core::multisig::MultisigConfig;
 use multisig::multisig;
 use sui::event;
 use sui::table::{Self, Table};
@@ -19,7 +20,7 @@ const ELoyaltyLevelHasUsers: u64 = 3;
 const EUserAlreadyHasLoyaltyLevel: u64 = 4;
 const EUserHasNoLoyaltyLevel: u64 = 5;
 const EInvalidFeeDiscountRate: u64 = 6;
-const ESenderIsNotMultisig: u64 = 7;
+const ESenderIsNotValidMultisig: u64 = 7;
 const ESenderIsNotLoyaltyAdmin: u64 = 8;
 
 // === Constants ===
@@ -100,16 +101,19 @@ fun init(ctx: &mut TxContext) {
 /// A protocol admin operation.
 public fun update_loyalty_admin_cap_owner(
     loyalty_admin_cap: &mut LoyaltyAdminCap,
+    multisig_config: &MultisigConfig,
     _admin_cap: &AdminCap,
     new_owner: address,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
     assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
+        multisig::check_if_sender_is_multisig_address(
+            multisig_config.public_keys(),
+            multisig_config.weights(),
+            multisig_config.threshold(),
+            ctx,
+        ),
+        ESenderIsNotValidMultisig,
     );
 
     let old_owner = loyalty_admin_cap.owner;
@@ -191,18 +195,21 @@ public fun revoke_user_level(
 /// Add a new loyalty level with fee discount rate
 public fun add_loyalty_level(
     loyalty_program: &mut LoyaltyProgram,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
     level: u8,
     fee_discount_rate: u64,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
     // Validate multisig
     assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
+        multisig::check_if_sender_is_multisig_address(
+            multisig_config.public_keys(),
+            multisig_config.weights(),
+            multisig_config.threshold(),
+            ctx,
+        ),
+        ESenderIsNotValidMultisig,
     );
 
     // Validate fee discount rate
@@ -228,17 +235,20 @@ public fun add_loyalty_level(
 /// Remove a loyalty level (only if no users have this level)
 public fun remove_loyalty_level(
     loyalty_program: &mut LoyaltyProgram,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
     level: u8,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
     // Validate multisig
     assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
+        multisig::check_if_sender_is_multisig_address(
+            multisig_config.public_keys(),
+            multisig_config.weights(),
+            multisig_config.threshold(),
+            ctx,
+        ),
+        ESenderIsNotValidMultisig,
     );
 
     // Validate level exists
