@@ -6,17 +6,15 @@ use deeptrade_core::loyalty::{
     LoyaltyAdminCap,
     LoyaltyProgram,
     ELoyaltyLevelAlreadyExists,
-    EInvalidFeeDiscountRate,
-    ESenderIsNotValidMultisig
+    EInvalidFeeDiscountRate
 };
+use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
+use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
 };
 use std::unit_test::assert_eq;
-use sui::test_scenario::{Scenario, begin, end, return_shared};
+use sui::test_scenario::{Scenario, end, return_shared};
 use sui::test_utils::destroy;
 
 // === Constants ===
@@ -49,16 +47,15 @@ fun successful_add_loyalty_level() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
             PLATINUM_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -76,6 +73,7 @@ fun successful_add_loyalty_level() {
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -89,39 +87,34 @@ fun add_multiple_loyalty_levels() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add multiple levels
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_BRONZE,
             BRONZE_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_SILVER,
             SILVER_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_GOLD,
             GOLD_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -153,6 +146,7 @@ fun add_multiple_loyalty_levels() {
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -166,16 +160,15 @@ fun add_level_with_max_discount_rate() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
             MAX_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -189,6 +182,7 @@ fun add_level_with_max_discount_rate() {
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -202,22 +196,22 @@ fun add_level_with_zero_discount_rate_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Try to add level with zero discount rate (should fail)
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_BRONZE,
             ZERO_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -231,29 +225,26 @@ fun add_level_with_different_level_ids() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add level with ID 0
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_ZERO,
             BRONZE_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         // Add level with max u8 value
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_MAX,
             GOLD_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -274,6 +265,7 @@ fun add_level_with_different_level_ids() {
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -287,34 +279,32 @@ fun add_duplicate_level_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add level first time
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_SILVER,
             SILVER_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         // Try to add the same level again
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_SILVER,
             GOLD_DISCOUNT, // Different discount rate, but same level ID
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -328,22 +318,22 @@ fun add_level_with_invalid_discount_rate_fails() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Try to add level with discount rate > 100%
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
             INVALID_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -356,22 +346,22 @@ fun non_multisig_sender_fails() {
     scenario.next_tx(OWNER);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Use invalid multisig parameters to trigger failure
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_GOLD,
             GOLD_DISCOUNT,
-            vector[vector[1u8, 2u8, 3u8]], // Invalid public key
-            vector[1u8], // Invalid weight
-            1u16, // Invalid threshold
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -387,57 +377,56 @@ fun add_then_remove_then_add_again() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
             PLATINUM_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     // Remove level
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     // Add level again
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
             GOLD_DISCOUNT, // Different discount rate this time
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -451,6 +440,7 @@ fun add_then_remove_then_add_again() {
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
@@ -466,21 +456,21 @@ fun add_level_then_grant_to_user() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
             PLATINUM_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     // Grant the new level to a user
@@ -519,7 +509,7 @@ fun add_level_then_grant_to_user() {
 /// Returns (scenario) ready for testing.
 #[test_only]
 public(package) fun setup_test_environment(): Scenario {
-    let mut scenario = begin(OWNER);
+    let mut scenario = setup_with_initialized_config();
 
     // Initialize loyalty program
     scenario.next_tx(OWNER);
