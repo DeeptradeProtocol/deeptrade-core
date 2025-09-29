@@ -6,7 +6,7 @@ use deepbook::order_info::OrderInfo;
 use deepbook::pool::Pool;
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::math;
-use deeptrade_core::multisig::MultisigConfig;
+use deeptrade_core::multisig_config::MultisigConfig;
 use deeptrade_core::treasury::{Treasury, join_protocol_fee};
 use multisig::multisig;
 use sui::bag::{Self, Bag};

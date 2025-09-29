@@ -8,7 +8,7 @@
 module deeptrade_core::loyalty;
 
 use deeptrade_core::admin::AdminCap;
-use deeptrade_core::multisig::MultisigConfig;
+use deeptrade_core::multisig_config::MultisigConfig;
 use multisig::multisig;
 use sui::event;
 use sui::table::{Self, Table};

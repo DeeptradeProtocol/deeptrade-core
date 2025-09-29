@@ -1,7 +1,7 @@
 module deeptrade_core::ticket;
 
 use deeptrade_core::admin::AdminCap;
-use deeptrade_core::multisig::MultisigConfig;
+use deeptrade_core::multisig_config::MultisigConfig;
 use multisig::multisig;
 use sui::clock::Clock;
 use sui::event;

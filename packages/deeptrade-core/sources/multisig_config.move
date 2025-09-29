@@ -1,4 +1,4 @@
-module deeptrade_core::multisig;
+module deeptrade_core::multisig_config;
 
 use multisig::multisig;
 use sui::event;

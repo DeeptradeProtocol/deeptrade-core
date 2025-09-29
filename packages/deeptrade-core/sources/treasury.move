@@ -2,7 +2,7 @@ module deeptrade_core::treasury;
 
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::helper::current_version;
-use deeptrade_core::multisig::MultisigConfig;
+use deeptrade_core::multisig_config::MultisigConfig;
 use deeptrade_core::ticket::{
     AdminTicket,
     validate_ticket,
