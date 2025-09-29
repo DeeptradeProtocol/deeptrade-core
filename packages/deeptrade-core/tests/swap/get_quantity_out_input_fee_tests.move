@@ -12,18 +12,17 @@ use deepbook::pool_tests::{
 use deeptrade_core::fee::{Self, TradingFeeConfig};
 use deeptrade_core::fee_manager::{Self, FeeManager};
 use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram};
+use deeptrade_core::multisig_config::MultisigConfig;
 use deeptrade_core::swap::get_quantity_out_input_fee;
+use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use deeptrade_core::treasury;
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
 };
 use std::unit_test::assert_eq;
 use sui::clock::Clock;
 use sui::sui::SUI;
-use sui::test_scenario::{Self, Scenario, begin, end, return_shared};
+use sui::test_scenario::{Self, Scenario, end, return_shared};
 use sui::test_utils::destroy;
 use token::deep::DEEP;
 
@@ -333,7 +332,7 @@ fun no_loyalty_level() {
 /// Returns (scenario, pool_id, balance_manager_id, fee_manager_id) ready for testing.
 #[test_only]
 public(package) fun setup_test_environment(): (Scenario, ID, ID, ID) {
-    let mut scenario = begin(OWNER);
+    let mut scenario = setup_with_initialized_config();
 
     // Setup treasury
     scenario.next_tx(OWNER);
@@ -379,43 +378,39 @@ public(package) fun setup_test_environment(): (Scenario, ID, ID, ID) {
     {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let config = scenario.take_shared<MultisigConfig>();
 
         // Add test loyalty levels
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_BRONZE,
             100_000_000, // 10% discount
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_SILVER,
             250_000_000, // 25% discount
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_GOLD,
             500_000_000, // 50% discount
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     // Add liquidity to the pool
