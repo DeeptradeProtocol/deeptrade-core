@@ -6,6 +6,8 @@ use sui::event;
 // === Errors ===
 const ENewAddressIsOldAddress: u64 = 1;
 const ESenderIsNotValidMultisig: u64 = 2;
+const EMultisigConfigAlreadyInitialized: u64 = 3;
+const EMultisigConfigNotInitialized: u64 = 4;
 
 // === Structs ===
 /// Configuration of the protocol's administrator multisig. Only a multisig account matching these
@@ -15,6 +17,7 @@ public struct MultisigConfig has key {
     public_keys: vector<vector<u8>>,
     weights: vector<u8>,
     threshold: u16,
+    initialized: bool,
 }
 
 /// Capability to update the multisig config
@@ -23,6 +26,14 @@ public struct MultisigAdminCap has key, store {
 }
 
 // === Events ===
+public struct MultisigConfigInitialized has copy, drop {
+    config_id: ID,
+    public_keys: vector<vector<u8>>,
+    weights: vector<u8>,
+    threshold: u16,
+    multisig_address: address,
+}
+
 public struct MultisigConfigUpdated has copy, drop {
     config_id: ID,
     old_public_keys: vector<vector<u8>>,
@@ -35,13 +46,14 @@ public struct MultisigConfigUpdated has copy, drop {
     new_address: address,
 }
 
-// Initialize multisig config object and send multisig admin cap to publisher
+// Share multisig config object and transfer multisig admin cap to publisher
 fun init(ctx: &mut TxContext) {
     let multisig_config = MultisigConfig {
         id: object::new(ctx),
         public_keys: vector::empty(),
         weights: vector::empty(),
         threshold: 0,
+        initialized: false,
     };
     let multisig_admin_cap = MultisigAdminCap {
         id: object::new(ctx),
@@ -52,6 +64,38 @@ fun init(ctx: &mut TxContext) {
 }
 
 // === Public-Mutative Functions ===
+/// Multisig config can be initialized only once. `update_multisig_config` should be used for subsequent updates
+public fun initialize_multisig_config(
+    config: &mut MultisigConfig,
+    _admin_cap: &MultisigAdminCap,
+    public_keys: vector<vector<u8>>,
+    weights: vector<u8>,
+    threshold: u16,
+) {
+    assert!(!config.initialized, EMultisigConfigAlreadyInitialized);
+
+    // Validates passed multisig parameters, aborting if they are invalid
+    let multisig_address = multisig::derive_multisig_address_quiet(
+        public_keys,
+        weights,
+        threshold,
+    );
+
+    config.public_keys = public_keys;
+    config.weights = weights;
+    config.threshold = threshold;
+    config.initialized = true;
+
+    event::emit(MultisigConfigInitialized {
+        config_id: config.id.to_inner(),
+        public_keys,
+        weights,
+        threshold,
+        multisig_address,
+    });
+}
+
+/// Multisig config can be updated only after it has been initialized by `initialize_multisig_config`
 public fun update_multisig_config(
     config: &mut MultisigConfig,
     _admin: &MultisigAdminCap,
@@ -59,6 +103,8 @@ public fun update_multisig_config(
     new_weights: vector<u8>,
     new_threshold: u16,
 ) {
+    assert!(config.initialized, EMultisigConfigNotInitialized);
+
     let old_public_keys = config.public_keys;
     let old_weights = config.weights;
     let old_threshold = config.threshold;
@@ -99,6 +145,7 @@ public(package) fun validate_sender_is_admin_multisig(
     config: &MultisigConfig,
     ctx: &mut TxContext,
 ) {
+    assert!(config.initialized, EMultisigConfigNotInitialized);
     assert!(
         multisig::check_if_sender_is_multisig_address(
             config.public_keys,
@@ -117,4 +164,38 @@ public fun init_for_testing(ctx: &mut TxContext) { init(ctx); }
 #[test_only]
 public fun get_multisig_admin_cap_for_testing(ctx: &mut TxContext): MultisigAdminCap {
     MultisigAdminCap { id: object::new(ctx) }
+}
+
+#[test_only]
+public fun get_multisig_config_params(
+    config: &MultisigConfig,
+): (vector<vector<u8>>, vector<u8>, u16) {
+    (config.public_keys, config.weights, config.threshold)
+}
+
+#[test_only]
+public fun unwrap_multisig_config_updated_event(
+    event: &MultisigConfigUpdated,
+): (
+    ID,
+    vector<vector<u8>>,
+    vector<vector<u8>>,
+    vector<u8>,
+    vector<u8>,
+    u16,
+    u16,
+    address,
+    address,
+) {
+    (
+        event.config_id,
+        event.old_public_keys,
+        event.new_public_keys,
+        event.old_weights,
+        event.new_weights,
+        event.old_threshold,
+        event.new_threshold,
+        event.old_address,
+        event.new_address,
+    )
 }
