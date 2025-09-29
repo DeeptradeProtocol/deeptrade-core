@@ -199,3 +199,10 @@ public fun unwrap_multisig_config_updated_event(
         event.new_address,
     )
 }
+
+#[test_only]
+public fun unwrap_multisig_config_initialized_event(
+    event: &MultisigConfigInitialized,
+): (ID, vector<vector<u8>>, vector<u8>, u16, address) {
+    (event.config_id, event.public_keys, event.weights, event.threshold, event.multisig_address)
+}
