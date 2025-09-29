@@ -4,15 +4,8 @@ module deeptrade_core::create_ticket_tests;
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
-use deeptrade_core::ticket::{
-    Self,
-    AdminTicket,
-    TicketCreated,
-    ticket_delay_duration
-};
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-};
+use deeptrade_core::ticket::{Self, AdminTicket, TicketCreated, ticket_delay_duration};
+use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
 use sui::clock::{Self, Clock};
 use sui::event;

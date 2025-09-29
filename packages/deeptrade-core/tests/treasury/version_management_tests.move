@@ -16,7 +16,7 @@ use deeptrade_core::treasury::{
     EVersionPermanentlyDisabled,
     EVersionAlreadyEnabled,
     EVersionNotEnabled,
-    ECannotDisableNewerVersion,
+    ECannotDisableNewerVersion
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::event;

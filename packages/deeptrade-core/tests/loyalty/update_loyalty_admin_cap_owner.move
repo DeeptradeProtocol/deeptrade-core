@@ -3,12 +3,7 @@ module deeptrade_core::update_loyalty_admin_cap_owner_tests;
 
 use deeptrade_core::add_loyalty_level_tests::setup_test_environment;
 use deeptrade_core::admin;
-use deeptrade_core::loyalty::{
-    Self,
-    LoyaltyAdminCap,
-    LoyaltyProgram,
-    ESenderIsNotLoyaltyAdmin,
-};
+use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram, ESenderIsNotLoyaltyAdmin};
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;

@@ -10,9 +10,7 @@ use deeptrade_core::loyalty::{
 };
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-};
+use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
 use sui::test_scenario::{Scenario, end, return_shared};
 use sui::test_utils::destroy;

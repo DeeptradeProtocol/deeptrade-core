@@ -13,9 +13,7 @@ use deeptrade_core::fee_manager::{
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
 use deeptrade_core::treasury::Treasury;
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-};
+use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::sui::SUI;

@@ -22,11 +22,9 @@ use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
 use deeptrade_core::helper;
 use deeptrade_core::loyalty::{Self, LoyaltyProgram};
 use deeptrade_core::multisig_config::MultisigConfig;
-use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use deeptrade_core::treasury;
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-};
+use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
+use multisig::multisig_test_utils::get_test_multisig_address;
 use pyth::price_info::{Self, PriceInfoObject};
 use std::unit_test::assert_eq;
 use sui::clock;
