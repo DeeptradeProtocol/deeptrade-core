@@ -11,7 +11,6 @@ use deeptrade_core::ticket::{
     withdraw_protocol_fee_ticket_type,
     withdraw_deep_reserves_ticket_type
 };
-use multisig::multisig;
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::clock::Clock;
@@ -29,10 +28,9 @@ const ECannotDisableNewerVersion: u64 = 3;
 const EVersionNotEnabled: u64 = 4;
 /// Error when trying to use shared object in a package whose version is not enabled
 const EPackageVersionNotEnabled: u64 = 5;
-const ESenderIsNotValidMultisig: u64 = 6;
 
 /// Error when trying to enable a version that has been permanently disabled
-const EVersionPermanentlyDisabled: u64 = 7;
+const EVersionPermanentlyDisabled: u64 = 6;
 
 // === Structs ===
 public struct Treasury has key, store {
@@ -253,15 +251,7 @@ public fun enable_version(
     version: u16,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
 
     // Check if the version has been permanently disabled
     assert!(!treasury.disabled_versions.contains(&version), EVersionPermanentlyDisabled);
@@ -297,15 +287,7 @@ public fun disable_version(
     version: u16,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
     assert!(version <= current_version(), ECannotDisableNewerVersion);
     assert!(treasury.allowed_versions.contains(&version), EVersionNotEnabled);
 

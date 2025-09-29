@@ -2,7 +2,6 @@ module deeptrade_core::ticket;
 
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::multisig_config::MultisigConfig;
-use multisig::multisig;
 use sui::clock::Clock;
 use sui::event;
 
@@ -11,8 +10,7 @@ const ETicketOwnerMismatch: u64 = 1;
 const ETicketTypeMismatch: u64 = 2;
 const ETicketExpired: u64 = 3;
 const ETicketNotReady: u64 = 4;
-const ESenderIsNotValidMultisig: u64 = 5;
-const ETicketNotExpired: u64 = 6;
+const ETicketNotExpired: u64 = 5;
 
 // === Constants ===
 const MILLISECONDS_PER_DAY: u64 = 86_400_000;
@@ -74,15 +72,7 @@ public fun create_ticket(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
 
     let created_at = clock.timestamp_ms();
 

@@ -5,6 +5,7 @@ use sui::event;
 
 // === Errors ===
 const ENewAddressIsOldAddress: u64 = 1;
+const ESenderIsNotValidMultisig: u64 = 2;
 
 // === Structs ===
 /// Configuration of the protocol's administrator multisig. Only a multisig account matching these
@@ -93,12 +94,21 @@ public fun update_multisig_config(
     });
 }
 
-// === Public-View Functions ===
-public fun public_keys(config: &MultisigConfig): vector<vector<u8>> { config.public_keys }
-
-public fun weights(config: &MultisigConfig): vector<u8> { config.weights }
-
-public fun threshold(config: &MultisigConfig): u16 { config.threshold }
+// === Public-Package Functions ===
+public(package) fun validate_sender_is_admin_multisig(
+    config: &MultisigConfig,
+    ctx: &mut TxContext,
+) {
+    assert!(
+        multisig::check_if_sender_is_multisig_address(
+            config.public_keys,
+            config.weights,
+            config.threshold,
+            ctx,
+        ),
+        ESenderIsNotValidMultisig,
+    );
+}
 
 // === Test Functions ===
 #[test_only]

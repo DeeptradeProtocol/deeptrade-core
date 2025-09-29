@@ -9,7 +9,6 @@ module deeptrade_core::loyalty;
 
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::multisig_config::MultisigConfig;
-use multisig::multisig;
 use sui::event;
 use sui::table::{Self, Table};
 
@@ -20,8 +19,7 @@ const ELoyaltyLevelHasUsers: u64 = 3;
 const EUserAlreadyHasLoyaltyLevel: u64 = 4;
 const EUserHasNoLoyaltyLevel: u64 = 5;
 const EInvalidFeeDiscountRate: u64 = 6;
-const ESenderIsNotValidMultisig: u64 = 7;
-const ESenderIsNotLoyaltyAdmin: u64 = 8;
+const ESenderIsNotLoyaltyAdmin: u64 = 7;
 
 // === Constants ===
 const MAX_FEE_DISCOUNT_RATE: u64 = 1_000_000_000; // 100% in billionths
@@ -106,15 +104,7 @@ public fun update_loyalty_admin_cap_owner(
     new_owner: address,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
 
     let old_owner = loyalty_admin_cap.owner;
     loyalty_admin_cap.owner = new_owner;
@@ -202,15 +192,7 @@ public fun add_loyalty_level(
     ctx: &mut TxContext,
 ) {
     // Validate multisig
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
 
     // Validate fee discount rate
     assert!(
@@ -241,15 +223,7 @@ public fun remove_loyalty_level(
     ctx: &mut TxContext,
 ) {
     // Validate multisig
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
 
     // Validate level exists
     assert!(loyalty_program.levels.contains(level), ELoyaltyLevelNotFound);

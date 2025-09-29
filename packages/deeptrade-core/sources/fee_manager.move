@@ -8,7 +8,6 @@ use deeptrade_core::admin::AdminCap;
 use deeptrade_core::math;
 use deeptrade_core::multisig_config::MultisigConfig;
 use deeptrade_core::treasury::{Treasury, join_protocol_fee};
-use multisig::multisig;
 use sui::bag::{Self, Bag};
 use sui::balance::Balance;
 use sui::coin::{Self, Coin};
@@ -30,8 +29,7 @@ const EFilledQuantityGreaterThanOrderQuantity: u64 = 7;
 /// Error when the user unsettled fee is not empty to be destroyed
 const EUserUnsettledFeeNotEmpty: u64 = 8;
 const EProtocolUnsettledFeeNotEmpty: u64 = 9;
-const ESenderIsNotValidMultisig: u64 = 10;
-const EInvalidFeeManagerShareTicket: u64 = 11;
+const EInvalidFeeManagerShareTicket: u64 = 10;
 
 // === Structs ===
 /// A shared object that manages a user's fee-related operations. Required for trading
@@ -288,15 +286,7 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
     order_id: u128,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
     treasury.verify_version();
 
     claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
@@ -333,15 +323,7 @@ public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
     _admin: &AdminCap,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(
-            multisig_config.public_keys(),
-            multisig_config.weights(),
-            multisig_config.threshold(),
-            ctx,
-        ),
-        ESenderIsNotValidMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
     treasury.verify_version();
 
     claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
