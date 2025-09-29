@@ -12,11 +12,12 @@ use deepbook::pool_tests::{
 };
 use deeptrade_core::fee_manager::{Self, FeeManager, settle_user_fees};
 use deeptrade_core::treasury;
+use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::clock::Clock;
 use sui::sui::SUI;
-use sui::test_scenario::{Self, Scenario, begin, end, return_shared};
+use sui::test_scenario::{Self, Scenario, end, return_shared};
 use sui::test_utils::destroy;
 use token::deep::DEEP;
 
@@ -1607,7 +1608,7 @@ fun settlement_with_maximum_precision_amounts() {
 /// - Creates FeeManager for ALICE
 #[test_only]
 public(package) fun setup_test_environment(): (Scenario, ID, ID, ID) {
-    let mut scenario = begin(OWNER);
+    let mut scenario = setup_with_initialized_config();
 
     // Setup treasury
     scenario.next_tx(OWNER);
