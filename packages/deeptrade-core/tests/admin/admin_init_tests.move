@@ -2,6 +2,7 @@
 module deeptrade_core::admin_init_tests;
 
 use deeptrade_core::admin::{Self, AdminCap};
+use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use std::unit_test::assert_eq;
 use sui::test_scenario;
 
@@ -33,7 +34,8 @@ fun init_logic_creates_and_transfers_admin_cap_to_publisher() {
 /// Initializes admin and gives the AdminCap to the OWNER.
 #[test_only]
 public fun setup_with_admin_cap(owner: address): test_scenario::Scenario {
-    let mut scenario = test_scenario::begin(owner);
+    let mut scenario = setup_with_initialized_config();
+    scenario.next_tx(owner);
     {
         admin::init_for_testing(scenario.ctx());
     };

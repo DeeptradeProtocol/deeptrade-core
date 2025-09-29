@@ -3,18 +3,15 @@ module deeptrade_core::create_ticket_tests;
 
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
+use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::ticket::{
     Self,
     AdminTicket,
-    ESenderIsNotValidMultisig,
     TicketCreated,
     ticket_delay_duration
 };
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
 };
 use std::unit_test::assert_eq;
 use sui::clock::{Self, Clock};
@@ -39,13 +36,12 @@ fun create_ticket_success_with_multisig() {
         let mut clock = clock::create_for_testing(scenario.ctx());
         clock.set_for_testing(CLOCK_TIMESTAMP_MS);
         let admin_cap = scenario.take_from_sender<AdminCap>();
+        let config = scenario.take_shared<MultisigConfig>();
 
         ticket::create_ticket(
+            &config,
             &admin_cap,
             TICKET_TYPE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             &clock,
             scenario.ctx(),
         );
@@ -60,6 +56,7 @@ fun create_ticket_success_with_multisig() {
 
         clock::destroy_for_testing(clock);
         scenario.return_to_sender(admin_cap);
+        return_shared(config);
     };
 
     scenario.next_tx(multisig_address);
@@ -90,20 +87,20 @@ fun create_ticket_fails_if_sender_not_multisig() {
     {
         let clock = clock::create_for_testing(scenario.ctx());
         let admin_cap = scenario.take_from_sender<AdminCap>();
+        let config = scenario.take_shared<MultisigConfig>();
 
         // This should abort
         ticket::create_ticket(
+            &config,
             &admin_cap,
             TICKET_TYPE,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             &clock,
             scenario.ctx(),
         );
 
         clock::destroy_for_testing(clock);
         scenario.return_to_sender(admin_cap);
+        return_shared(config);
     };
 
     scenario.end();
@@ -117,19 +114,19 @@ public fun create_ticket_with_multisig(scenario: &mut Scenario, ticket_type: u8)
 
     let clock = clock::create_for_testing(scenario.ctx());
     let admin_cap = scenario.take_from_sender<AdminCap>();
+    let config = scenario.take_shared<MultisigConfig>();
 
     ticket::create_ticket(
+        &config,
         &admin_cap,
         ticket_type,
-        get_test_multisig_pks(),
-        get_test_multisig_weights(),
-        get_test_multisig_threshold(),
         &clock,
         scenario.ctx(),
     );
 
     clock::destroy_for_testing(clock);
     scenario.return_to_sender(admin_cap);
+    return_shared(config);
 
     // We keep it here to make sure the ticket is available from Global Inventory in the next test
     scenario.next_tx(multisig_address);
