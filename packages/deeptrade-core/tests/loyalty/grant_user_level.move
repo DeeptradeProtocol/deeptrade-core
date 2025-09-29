@@ -9,8 +9,9 @@ use deeptrade_core::loyalty::{
     EUserAlreadyHasLoyaltyLevel,
     ESenderIsNotLoyaltyAdmin
 };
-use deeptrade_core::multisig_config::MultisigConfig;
+use deeptrade_core::multisig_config::{MultisigConfig, EMultisigConfigNotInitialized};
 use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
+use deeptrade_core::initialize_multisig_config_tests::setup;
 use multisig::multisig_test_utils::{
     get_test_multisig_address,
 };
@@ -311,6 +312,41 @@ fun grant_to_zero_address_succeeds() {
 
         return_shared(loyalty_program);
         return_shared(loyalty_admin_cap);
+    };
+
+    end(scenario);
+}
+
+#[test, expected_failure(abort_code = EMultisigConfigNotInitialized)]
+fun add_loyalty_level_fails_uninitialized_config() {
+    let mut scenario = setup();
+    let multisig_address = get_test_multisig_address();
+
+    // Initialize loyalty program
+    scenario.next_tx(OWNER);
+    {
+        loyalty::init_for_testing(scenario.ctx());
+    };
+
+    scenario.next_tx(multisig_address);
+    {
+        let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+
+        // This should fail because the config is not initialized
+        loyalty::add_loyalty_level(
+            &mut loyalty_program,
+            &config,
+            &admin_cap,
+            LEVEL_BRONZE,
+            BRONZE_DISCOUNT,
+            scenario.ctx(),
+        );
+
+        destroy(admin_cap);
+        return_shared(loyalty_program);
+        return_shared(config);
     };
 
     end(scenario);
