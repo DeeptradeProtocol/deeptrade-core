@@ -8,6 +8,7 @@ export const TRADING_FEE_CONFIG_OBJECT_ID = "";
 export const LOYALTY_PROGRAM_OBJECT_ID = "";
 export const LOYALTY_ADMIN_CAP_OBJECT_ID = "";
 export const MULTISIG_CONFIG_OBJECT_ID = "";
+export const MULTISIG_ADMIN_CAP_OBJECT_ID = "";
 
 // Coin types
 export const DEEP_COIN_TYPE = "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP";
