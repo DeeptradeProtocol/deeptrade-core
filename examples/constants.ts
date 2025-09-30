@@ -6,6 +6,8 @@ export const UPGRADE_CAP_OBJECT_ID = "0xae8c80532528977c531c7ee477d55d9e8618320e
 export const POOL_CREATION_CONFIG_OBJECT_ID = "0xa5e401f7311aa3a58bf0de4a893ef5684e9f994d2400d02eb0ea74c8cd88504c";
 export const TRADING_FEE_CONFIG_OBJECT_ID = "";
 export const LOYALTY_PROGRAM_OBJECT_ID = "";
+export const LOYALTY_ADMIN_CAP_OBJECT_ID = "";
+export const MULTISIG_CONFIG_OBJECT_ID = "";
 
 // Coin types
 export const DEEP_COIN_TYPE = "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP";
