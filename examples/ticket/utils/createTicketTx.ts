@@ -1,6 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { DEEPTRADE_CORE_PACKAGE_ID } from "../../constants";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
+import { DEEPTRADE_CORE_PACKAGE_ID, MULTISIG_CONFIG_OBJECT_ID } from "../../constants";
 
 export enum TicketType {
   WithdrawDeepReserves = "WithdrawDeepReserves",
@@ -14,13 +14,11 @@ export enum TicketType {
 export interface CreateTicketParams {
   ticketType: TicketType;
   adminCapId: string;
-  pks: number[][];
-  weights: number[];
-  threshold: number;
+  multisigConfigId: string;
   transaction?: Transaction;
 }
 
-export function createTicketTx({ ticketType, adminCapId, pks, weights, threshold, transaction }: CreateTicketParams): {
+export function createTicketTx({ ticketType, adminCapId, multisigConfigId, transaction }: CreateTicketParams): {
   tx: Transaction;
   ticket: any;
 } {
@@ -34,14 +32,7 @@ export function createTicketTx({ ticketType, adminCapId, pks, weights, threshold
 
   const ticket = tx.moveCall({
     target: `${DEEPTRADE_CORE_PACKAGE_ID}::ticket::create_ticket`,
-    arguments: [
-      tx.object(adminCapId),
-      ticketTypeArg,
-      tx.pure.vector("vector<u8>", pks),
-      tx.pure.vector("u8", weights),
-      tx.pure.u16(threshold),
-      tx.object(SUI_CLOCK_OBJECT_ID),
-    ],
+    arguments: [tx.object(multisigConfigId), tx.object(adminCapId), ticketTypeArg, tx.object(SUI_CLOCK_OBJECT_ID)],
   });
 
   return { tx, ticket };
