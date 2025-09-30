@@ -1,7 +1,11 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID, LOYALTY_PROGRAM_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
+import {
+  ADMIN_CAP_OBJECT_ID,
+  DEEPTRADE_CORE_PACKAGE_ID,
+  LOYALTY_PROGRAM_OBJECT_ID,
+  MULTISIG_CONFIG_OBJECT_ID,
+} from "../constants";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
-import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { percentageInBillionths } from "../utils";
 
 const LEVEL = 1; // Level ID to create
@@ -16,12 +20,10 @@ const FEE_DISCOUNT_RATE = percentageInBillionths(FEE_DISCOUNT_PERCENTAGE);
     target: `${DEEPTRADE_CORE_PACKAGE_ID}::loyalty::add_loyalty_level`,
     arguments: [
       tx.object(LOYALTY_PROGRAM_OBJECT_ID),
+      tx.object(MULTISIG_CONFIG_OBJECT_ID),
       tx.object(ADMIN_CAP_OBJECT_ID),
       tx.pure.u8(LEVEL),
       tx.pure.u64(FEE_DISCOUNT_RATE),
-      tx.pure.vector("vector<u8>", MULTISIG_CONFIG.publicKeysSuiBytes),
-      tx.pure.vector("u8", MULTISIG_CONFIG.weights),
-      tx.pure.u16(MULTISIG_CONFIG.threshold),
     ],
   });
 
