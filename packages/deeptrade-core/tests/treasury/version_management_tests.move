@@ -4,6 +4,7 @@ module deeptrade_core::version_management_tests;
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
 use deeptrade_core::helper::current_version;
+use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::treasury::{
     Self,
     Treasury,
@@ -15,15 +16,9 @@ use deeptrade_core::treasury::{
     EVersionPermanentlyDisabled,
     EVersionAlreadyEnabled,
     EVersionNotEnabled,
-    ECannotDisableNewerVersion,
-    ESenderIsNotMultisig
+    ECannotDisableNewerVersion
 };
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
+use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::event;
 use sui::test_scenario::{Self, Scenario};
 
@@ -38,14 +33,13 @@ fun test_enable_new_version_success() {
     {
         let new_version = NEW_VERSION;
         assert!(!treasury.allowed_versions().contains(&new_version), 1);
+        let config = scenario.take_shared<MultisigConfig>();
 
         treasury::enable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             NEW_VERSION,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -59,6 +53,7 @@ fun test_enable_new_version_success() {
         );
         assert!(event_treasury_id == treasury_id, 4);
         assert!(event_version == NEW_VERSION, 5);
+        test_scenario::return_shared(config);
     };
 
     test_scenario::return_shared(treasury);
@@ -74,17 +69,16 @@ fun test_disable_current_version_success() {
     scenario.next_tx(multisig_address);
     {
         let version_to_disable = current_version();
+        let config = scenario.take_shared<MultisigConfig>();
 
         assert!(treasury.allowed_versions().contains(&version_to_disable), 1);
         assert!(!treasury.disabled_versions().contains(&version_to_disable), 2);
 
         treasury::disable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             version_to_disable,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -99,6 +93,7 @@ fun test_disable_current_version_success() {
         );
         assert!(event_treasury_id == treasury_id, 6);
         assert!(event_version == version_to_disable, 7);
+        test_scenario::return_shared(config);
     };
 
     test_scenario::return_shared(treasury);
@@ -116,15 +111,15 @@ fun test_action_fails_on_disabled_version() {
     // Disable the current version
     scenario.next_tx(multisig_address);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         treasury::disable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             version_to_disable,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     // Attempt to perform a version-checked action
@@ -151,30 +146,30 @@ fun test_reenable_disabled_version_fails() {
     // Disable the current version
     scenario.next_tx(multisig_address);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         treasury::disable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             version_to_disable,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     // Attempt to re-enable the disabled version
     scenario.next_tx(multisig_address);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         // This should fail
         treasury::enable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             version_to_disable,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     scenario.return_to_sender(admin_cap);
@@ -190,16 +185,16 @@ fun test_enable_version_fails_already_enabled() {
 
     scenario.next_tx(multisig_address);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         // Attempt to enable the current version, which is already enabled by default
         treasury::enable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             current_version(),
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     scenario.return_to_sender(admin_cap);
@@ -214,27 +209,25 @@ fun test_disable_version_fails_not_enabled() {
 
     scenario.next_tx(multisig_address);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         // Disable the current version
         treasury::disable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             current_version(),
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         // Disable the version that is not enabled (we already disabled the current version)
         treasury::disable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             current_version(),
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     scenario.return_to_sender(admin_cap);
@@ -249,16 +242,16 @@ fun test_disable_version_fails_newer_version() {
 
     scenario.next_tx(multisig_address);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         // Attempt to disable a future version
         treasury::disable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             current_version() + 1,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     scenario.return_to_sender(admin_cap);
@@ -267,23 +260,23 @@ fun test_disable_version_fails_newer_version() {
 }
 
 #[test]
-#[expected_failure(abort_code = ESenderIsNotMultisig)]
+#[expected_failure(abort_code = ESenderIsNotValidMultisig)]
 fun test_version_management_fails_not_multisig() {
     let (mut scenario, _, admin_cap, mut treasury, _) = setup();
 
     // Switch to a non-multisig user
     scenario.next_tx(FAKE_USER);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         // Attempt to enable a version from an unauthorized address
         treasury::enable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             NEW_VERSION,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     scenario.return_to_sender(admin_cap);
@@ -292,23 +285,23 @@ fun test_version_management_fails_not_multisig() {
 }
 
 #[test]
-#[expected_failure(abort_code = ESenderIsNotMultisig)]
+#[expected_failure(abort_code = ESenderIsNotValidMultisig)]
 fun test_version_management_fails_not_multisig_disable() {
     let (mut scenario, _, admin_cap, mut treasury, _) = setup();
 
     // Switch to a non-multisig user
     scenario.next_tx(FAKE_USER);
     {
+        let config = scenario.take_shared<MultisigConfig>();
         // Attempt to enable a version from an unauthorized address
         treasury::disable_version(
             &mut treasury,
+            &config,
             &admin_cap,
             current_version(),
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
+        test_scenario::return_shared(config);
     };
 
     scenario.return_to_sender(admin_cap);

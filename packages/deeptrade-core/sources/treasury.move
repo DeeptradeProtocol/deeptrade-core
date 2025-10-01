@@ -2,6 +2,7 @@ module deeptrade_core::treasury;
 
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::helper::current_version;
+use deeptrade_core::multisig_config::MultisigConfig;
 use deeptrade_core::ticket::{
     AdminTicket,
     validate_ticket,
@@ -10,7 +11,6 @@ use deeptrade_core::ticket::{
     withdraw_protocol_fee_ticket_type,
     withdraw_deep_reserves_ticket_type
 };
-use multisig::multisig;
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};
 use sui::clock::Clock;
@@ -28,10 +28,9 @@ const ECannotDisableNewerVersion: u64 = 3;
 const EVersionNotEnabled: u64 = 4;
 /// Error when trying to use shared object in a package whose version is not enabled
 const EPackageVersionNotEnabled: u64 = 5;
-const ESenderIsNotMultisig: u64 = 6;
 
 /// Error when trying to enable a version that has been permanently disabled
-const EVersionPermanentlyDisabled: u64 = 7;
+const EVersionPermanentlyDisabled: u64 = 6;
 
 // === Structs ===
 public struct Treasury has key, store {
@@ -237,30 +236,22 @@ public fun withdraw_deep_reserves(
 ///
 /// Parameters:
 /// - treasury: Treasury object
+/// - multisig_config: Protocol's admin multisig config
 /// - _admin: Admin capability
 /// - version: Package version to enable
-/// - pks: Vector of public keys of the multi-sig signers
-/// - weights: Vector of weights for each corresponding signer (must match pks length)
-/// - threshold: Minimum sum of weights required to authorize transactions
 /// - ctx: Mutable transaction context for sender verification
 ///
 /// Aborts:
-/// - With ESenderIsNotMultisig if the transaction sender is not the expected multi-signature address
-///   derived from the provided pks, weights, and threshold parameters
+/// - With ESenderIsNotValidMultisig if the transaction sender is not the protocol's admin multisig
 /// - With EVersionAlreadyEnabled if the version is already enabled
 public fun enable_version(
     treasury: &mut Treasury,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
     version: u16,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
 
     // Check if the version has been permanently disabled
     assert!(!treasury.disabled_versions.contains(&version), EVersionPermanentlyDisabled);
@@ -280,31 +271,23 @@ public fun enable_version(
 ///
 /// Parameters:
 /// - treasury: Treasury object
+/// - multisig_config: Protocol's admin multisig config
 /// - _admin: Admin capability
 /// - version: Package version to disable
-/// - pks: Vector of public keys of the multi-sig signers
-/// - weights: Vector of weights for each corresponding signer (must match pks length)
-/// - threshold: Minimum sum of weights required to authorize transactions
 /// - ctx: Mutable transaction context for sender verification
 ///
 /// Aborts:
-/// - With ESenderIsNotMultisig if the transaction sender is not the expected multi-signature address
-///   derived from the provided pks, weights, and threshold parameters
+/// - With ESenderIsNotValidMultisig if the transaction sender is not the protocol's admin multisig
 /// - With ECannotDisableNewerVersion if trying to disable a newer version
 /// - With EVersionNotEnabled if the version is not currently enabled
 public fun disable_version(
     treasury: &mut Treasury,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
     version: u16,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
     assert!(version <= current_version(), ECannotDisableNewerVersion);
     assert!(treasury.allowed_versions.contains(&version), EVersionNotEnabled);
 

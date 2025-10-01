@@ -21,19 +21,16 @@ use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
 };
 use deeptrade_core::helper;
 use deeptrade_core::loyalty::{Self, LoyaltyProgram};
+use deeptrade_core::multisig_config::MultisigConfig;
 use deeptrade_core::treasury;
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
+use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
+use multisig::multisig_test_utils::get_test_multisig_address;
 use pyth::price_info::{Self, PriceInfoObject};
 use std::unit_test::assert_eq;
 use sui::clock;
 use sui::coin;
 use sui::sui::SUI;
-use sui::test_scenario::{Self, Scenario, begin, end, return_shared};
+use sui::test_scenario::{Self, Scenario, end, return_shared};
 use sui::test_utils::destroy;
 use token::deep::DEEP;
 
@@ -60,7 +57,7 @@ public(package) fun setup_test_environment(): (
     PriceInfoObject,
     ID,
 ) {
-    let mut scenario = begin(OWNER);
+    let mut scenario = setup_with_initialized_config();
 
     // Setup treasury
     scenario.next_tx(OWNER);
@@ -171,44 +168,40 @@ public(package) fun setup_test_environment(): (
     let loyalty_program_id = {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+        let config = scenario.take_shared<MultisigConfig>();
 
         // Add test loyalty levels
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_BRONZE,
             BRONZE_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_SILVER,
             SILVER_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_GOLD,
             GOLD_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         let loyalty_program_id = object::id(&loyalty_program);
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
         loyalty_program_id
     };
 
