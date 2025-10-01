@@ -219,10 +219,10 @@ public(package) fun get_sui_per_deep_from_reference_pool<ReferenceBaseAsset, Ref
     );
     let reference_pool_price = get_pool_first_ask_price(reference_pool, clock);
 
-    let reference_base_type = type_name::get<ReferenceBaseAsset>();
-    let reference_quote_type = type_name::get<ReferenceQuoteAsset>();
-    let deep_type = type_name::get<DEEP>();
-    let sui_type = type_name::get<SUI>();
+    let reference_base_type = type_name::with_original_ids<ReferenceBaseAsset>();
+    let reference_quote_type = type_name::with_original_ids<ReferenceQuoteAsset>();
+    let deep_type = type_name::with_original_ids<DEEP>();
+    let sui_type = type_name::with_original_ids<SUI>();
     let is_deep_sui_pool = reference_base_type == deep_type && reference_quote_type == sui_type;
     let is_sui_deep_pool = reference_base_type == sui_type && reference_quote_type == deep_type;
 

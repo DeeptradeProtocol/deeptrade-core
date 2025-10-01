@@ -1430,10 +1430,12 @@ public(package) fun prepare_order_execution<
         .max_deep_fee_coverage_discount_rate();
 
     // Determine input coin type
-    let input_coin_is_sui = if (is_bid) type_name::get<QuoteToken>() == type_name::get<SUI>()
-    else type_name::get<BaseToken>() == type_name::get<SUI>();
-    let input_coin_is_deep = if (is_bid) type_name::get<QuoteToken>() == type_name::get<DEEP>()
-    else type_name::get<BaseToken>() == type_name::get<DEEP>();
+    let input_coin_is_sui = if (is_bid)
+        type_name::with_original_ids<QuoteToken>() == type_name::with_original_ids<SUI>()
+    else type_name::with_original_ids<BaseToken>() == type_name::with_original_ids<SUI>();
+    let input_coin_is_deep = if (is_bid)
+        type_name::with_original_ids<QuoteToken>() == type_name::with_original_ids<DEEP>()
+    else type_name::with_original_ids<BaseToken>() == type_name::with_original_ids<DEEP>();
 
     let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
         is_pool_whitelisted,
