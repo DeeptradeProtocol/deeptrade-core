@@ -1,7 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { ADMIN_CAP_OBJECT_ID } from "../constants";
+import { ADMIN_CAP_OBJECT_ID, MULTISIG_CONFIG_OBJECT_ID } from "../constants";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
-import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { createTicketTx, TicketType } from "./utils/createTicketTx";
 
 // yarn ts-node examples/ticket/create-multiple-tickets.ts > create-multiple-tickets.log 2>&1
@@ -24,9 +23,7 @@ import { createTicketTx, TicketType } from "./utils/createTicketTx";
       transaction: tx,
       ticketType,
       adminCapId: ADMIN_CAP_OBJECT_ID,
-      pks: MULTISIG_CONFIG.publicKeysSuiBytes,
-      weights: MULTISIG_CONFIG.weights,
-      threshold: MULTISIG_CONFIG.threshold,
+      multisigConfigId: MULTISIG_CONFIG_OBJECT_ID,
     });
   }
 
