@@ -7,7 +7,8 @@ use deeptrade_core::multisig_config::{
     MultisigConfig,
     MultisigConfigUpdated,
     ENewAddressIsOldAddress,
-    EMultisigConfigNotInitialized
+    EMultisigConfigNotInitialized,
+    ETooFewSigners
 };
 use multisig::multisig::{
     Self,
@@ -174,12 +175,12 @@ fun new_address_is_old_address_fails() {
 fun mismatched_pks_and_weights_fails() {
     let mut scenario = setup_with_initialized_config();
 
-    let mut new_pks = get_test_multisig_pks();
-    let new_weights = get_test_multisig_weights();
+    let new_pks = get_test_multisig_pks();
+    let mut new_weights = get_test_multisig_weights();
     let new_threshold = get_test_multisig_threshold();
 
     // Create a mismatch
-    new_pks.pop_back();
+    new_weights.pop_back();
 
     scenario.next_tx(OWNER);
     {
@@ -237,6 +238,41 @@ fun unachievable_threshold_fails() {
     let new_weights = get_test_multisig_weights();
     // Sum of weights is 3, so 4 is unachievable
     let new_threshold = 4;
+
+    scenario.next_tx(OWNER);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        let admin_cap = multisig_config::get_multisig_admin_cap_for_testing(scenario.ctx());
+
+        multisig_config::update_multisig_config(
+            &mut config,
+            &admin_cap,
+            new_pks,
+            new_weights,
+            new_threshold,
+        );
+
+        test_utils::destroy(admin_cap);
+        return_shared(config);
+    };
+
+    end(scenario);
+}
+
+#[test, expected_failure(abort_code = ETooFewSigners)]
+fun too_few_signers_fails() {
+    let mut scenario = setup_with_initialized_config();
+
+    let mut new_pks = get_test_multisig_pks();
+    let mut new_weights = get_test_multisig_weights();
+    // With one signer, threshold must be 1
+    let new_threshold = 1;
+
+    // Remove two signers to have only one
+    new_pks.pop_back();
+    new_pks.pop_back();
+    new_weights.pop_back();
+    new_weights.pop_back();
 
     scenario.next_tx(OWNER);
     {

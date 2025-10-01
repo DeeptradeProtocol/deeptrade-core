@@ -5,7 +5,8 @@ use deeptrade_core::multisig_config::{
     Self,
     MultisigConfig,
     MultisigConfigInitialized,
-    EMultisigConfigAlreadyInitialized
+    EMultisigConfigAlreadyInitialized,
+    ETooFewSigners
 };
 use multisig::multisig::{
     Self,
@@ -208,6 +209,41 @@ fun unachievable_threshold_fails() {
     let weights = get_test_multisig_weights();
     // Sum of weights is 3, so 4 is unachievable
     let threshold = 4;
+
+    scenario.next_tx(OWNER);
+    {
+        let mut config = scenario.take_shared<MultisigConfig>();
+        let admin_cap = multisig_config::get_multisig_admin_cap_for_testing(scenario.ctx());
+
+        multisig_config::initialize_multisig_config(
+            &mut config,
+            &admin_cap,
+            pks,
+            weights,
+            threshold,
+        );
+
+        test_utils::destroy(admin_cap);
+        return_shared(config);
+    };
+
+    end(scenario);
+}
+
+#[test, expected_failure(abort_code = ETooFewSigners)]
+fun too_few_signers_fails() {
+    let mut scenario = setup();
+
+    let mut pks = get_test_multisig_pks();
+    let mut weights = get_test_multisig_weights();
+    // With one signer, threshold must be 1
+    let threshold = 1;
+
+    // Remove two signers to have only one
+    pks.pop_back();
+    pks.pop_back();
+    weights.pop_back();
+    weights.pop_back();
 
     scenario.next_tx(OWNER);
     {

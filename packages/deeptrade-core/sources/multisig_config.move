@@ -8,6 +8,10 @@ const ENewAddressIsOldAddress: u64 = 1;
 const ESenderIsNotValidMultisig: u64 = 2;
 const EMultisigConfigAlreadyInitialized: u64 = 3;
 const EMultisigConfigNotInitialized: u64 = 4;
+const ETooFewSigners: u64 = 5;
+
+// === Constants ===
+const MIN_SIGNERS: u64 = 2;
 
 // === Structs ===
 /// Configuration of the protocol's administrator multisig. Only a multisig account matching these
@@ -73,6 +77,7 @@ public fun initialize_multisig_config(
     threshold: u16,
 ) {
     assert!(!config.initialized, EMultisigConfigAlreadyInitialized);
+    assert!(public_keys.length() >= MIN_SIGNERS, ETooFewSigners);
 
     // Validates passed multisig parameters, aborting if they are invalid
     let multisig_address = multisig::derive_multisig_address_quiet(
@@ -104,6 +109,7 @@ public fun update_multisig_config(
     new_threshold: u16,
 ) {
     assert!(config.initialized, EMultisigConfigNotInitialized);
+    assert!(new_public_keys.length() >= MIN_SIGNERS, ETooFewSigners);
 
     let old_public_keys = config.public_keys;
     let old_weights = config.weights;
