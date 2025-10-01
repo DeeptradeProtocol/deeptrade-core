@@ -3,12 +3,8 @@ module deeptrade_core::get_user_discount_rate_tests;
 
 use deeptrade_core::grant_user_level_tests::setup_test_environment;
 use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram};
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
+use deeptrade_core::multisig_config::MultisigConfig;
+use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
 use sui::test_scenario::{end, return_shared};
 use sui::test_utils::destroy;
@@ -227,22 +223,22 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add a new level
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
             PLATINUM_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     // Grant the new level to ALICE
@@ -293,20 +289,20 @@ fun get_discount_rate_for_nonexistent_level_edge_case() {
     scenario.next_tx(multisig_address);
     {
         let mut loyalty_program = scenario.take_shared_by_id<LoyaltyProgram>(loyalty_program_id);
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         loyalty::remove_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_PLATINUM,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
     };
 
     // Verify discount rate is now 0 (user has no level)

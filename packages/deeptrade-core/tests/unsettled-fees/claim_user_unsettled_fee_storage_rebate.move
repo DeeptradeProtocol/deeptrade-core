@@ -8,17 +8,12 @@ use deeptrade_core::fee_manager::{
     claim_user_unsettled_fee_storage_rebate,
     claim_user_unsettled_fee_storage_rebate_admin,
     settle_filled_order_fee_and_record,
-    start_protocol_fee_settlement,
-    ESenderIsNotMultisig
+    start_protocol_fee_settlement
 };
+use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
 use deeptrade_core::treasury::Treasury;
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
+use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
 use sui::balance;
 use sui::sui::SUI;
@@ -225,6 +220,7 @@ fun admin_claims_rebate_successfully() {
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         claim_user_unsettled_fee_storage_rebate_admin<SUI, USDC, SUI>(
@@ -232,11 +228,9 @@ fun admin_claims_rebate_successfully() {
             &mut fee_manager,
             &pool,
             &balance_manager,
+            &config,
             &admin_cap,
             order_id,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -251,12 +245,13 @@ fun admin_claims_rebate_successfully() {
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
+        return_shared(config);
     };
 
     end(scenario);
 }
 
-#[test, expected_failure(abort_code = ESenderIsNotMultisig)]
+#[test, expected_failure(abort_code = ESenderIsNotValidMultisig)]
 /// Test that a non-multisig sender cannot claim a rebate via the admin function.
 fun non_multisig_admin_claim_fails() {
     let (
@@ -274,6 +269,7 @@ fun non_multisig_admin_claim_fails() {
         let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
         let pool = scenario.take_shared_by_id(pool_id);
         let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         claim_user_unsettled_fee_storage_rebate_admin<SUI, USDC, SUI>(
@@ -281,11 +277,9 @@ fun non_multisig_admin_claim_fails() {
             &mut fee_manager,
             &pool,
             &balance_manager,
+            &config,
             &admin_cap,
             order_id,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
@@ -294,6 +288,7 @@ fun non_multisig_admin_claim_fails() {
         return_shared(fee_manager);
         return_shared(pool);
         return_shared(balance_manager);
+        return_shared(config);
     };
 
     end(scenario);

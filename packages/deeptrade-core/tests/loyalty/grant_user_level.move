@@ -1,6 +1,7 @@
 #[test_only]
 module deeptrade_core::grant_user_level_tests;
 
+use deeptrade_core::initialize_multisig_config_tests::setup;
 use deeptrade_core::loyalty::{
     Self,
     LoyaltyProgram,
@@ -9,14 +10,11 @@ use deeptrade_core::loyalty::{
     EUserAlreadyHasLoyaltyLevel,
     ESenderIsNotLoyaltyAdmin
 };
-use multisig::multisig_test_utils::{
-    get_test_multisig_address,
-    get_test_multisig_pks,
-    get_test_multisig_weights,
-    get_test_multisig_threshold
-};
+use deeptrade_core::multisig_config::{MultisigConfig, EMultisigConfigNotInitialized};
+use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
+use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
-use sui::test_scenario::{Scenario, begin, end, return_shared};
+use sui::test_scenario::{Scenario, end, return_shared};
 use sui::test_utils::destroy;
 
 // === Constants ===
@@ -317,13 +315,48 @@ fun grant_to_zero_address_succeeds() {
     end(scenario);
 }
 
+#[test, expected_failure(abort_code = EMultisigConfigNotInitialized)]
+fun add_loyalty_level_fails_uninitialized_config() {
+    let mut scenario = setup();
+    let multisig_address = get_test_multisig_address();
+
+    // Initialize loyalty program
+    scenario.next_tx(OWNER);
+    {
+        loyalty::init_for_testing(scenario.ctx());
+    };
+
+    scenario.next_tx(multisig_address);
+    {
+        let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
+        let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
+
+        // This should fail because the config is not initialized
+        loyalty::add_loyalty_level(
+            &mut loyalty_program,
+            &config,
+            &admin_cap,
+            LEVEL_BRONZE,
+            BRONZE_DISCOUNT,
+            scenario.ctx(),
+        );
+
+        destroy(admin_cap);
+        return_shared(loyalty_program);
+        return_shared(config);
+    };
+
+    end(scenario);
+}
+
 // === Helper Functions ===
 
 /// Sets up a complete test environment with loyalty program.
 /// Returns (scenario, loyalty_program_id) ready for testing.
 #[test_only]
 public(package) fun setup_test_environment(): (Scenario, ID) {
-    let mut scenario = begin(OWNER);
+    let mut scenario = setup_with_initialized_config();
 
     // Initialize loyalty program
     scenario.next_tx(OWNER);
@@ -336,45 +369,41 @@ public(package) fun setup_test_environment(): (Scenario, ID) {
     scenario.next_tx(multisig_address);
     let loyalty_program_id = {
         let mut loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let config = scenario.take_shared<MultisigConfig>();
         let admin_cap = deeptrade_core::admin::get_admin_cap_for_testing(scenario.ctx());
 
         // Add test loyalty levels
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_BRONZE,
             BRONZE_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_SILVER,
             SILVER_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         loyalty::add_loyalty_level(
             &mut loyalty_program,
+            &config,
             &admin_cap,
             LEVEL_GOLD,
             GOLD_DISCOUNT,
-            get_test_multisig_pks(),
-            get_test_multisig_weights(),
-            get_test_multisig_threshold(),
             scenario.ctx(),
         );
 
         let loyalty_program_id = object::id(&loyalty_program);
         destroy(admin_cap);
         return_shared(loyalty_program);
+        return_shared(config);
         loyalty_program_id
     };
 

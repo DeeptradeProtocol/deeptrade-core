@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
+import { keypair, provider } from "../common";
 import { grantUserLevelTx } from "./utils";
 
 const USER_ADDRESS = ""; // Address of the user to grant the level to
@@ -11,7 +11,10 @@ const LEVEL = 1; // Level to grant to the user
 
   grantUserLevelTx(USER_ADDRESS, LEVEL, tx);
 
-  console.warn(`Building transaction to grant user ${USER_ADDRESS} loyalty level ${LEVEL}`);
+  console.warn(`Executing transaction to grant user ${USER_ADDRESS} loyalty level ${LEVEL}`);
 
-  await buildAndLogMultisigTransaction(tx);
+  // const res = await provider.devInspectTransactionBlock({ transactionBlock: tx, sender: user });
+  const res = await provider.signAndExecuteTransaction({ transaction: tx, signer: keypair });
+
+  console.log("res:", JSON.stringify(res, null, 2));
 })();

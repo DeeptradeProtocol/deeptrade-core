@@ -6,8 +6,8 @@ use deepbook::order_info::OrderInfo;
 use deepbook::pool::Pool;
 use deeptrade_core::admin::AdminCap;
 use deeptrade_core::math;
+use deeptrade_core::multisig_config::MultisigConfig;
 use deeptrade_core::treasury::{Treasury, join_protocol_fee};
-use multisig::multisig;
 use sui::bag::{Self, Bag};
 use sui::balance::Balance;
 use sui::coin::{Self, Coin};
@@ -29,8 +29,7 @@ const EFilledQuantityGreaterThanOrderQuantity: u64 = 7;
 /// Error when the user unsettled fee is not empty to be destroyed
 const EUserUnsettledFeeNotEmpty: u64 = 8;
 const EProtocolUnsettledFeeNotEmpty: u64 = 9;
-const ESenderIsNotMultisig: u64 = 10;
-const EInvalidFeeManagerShareTicket: u64 = 11;
+const EInvalidFeeManagerShareTicket: u64 = 10;
 
 // === Structs ===
 /// A shared object that manages a user's fee-related operations. Required for trading
@@ -282,17 +281,12 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
     fee_manager: &mut FeeManager,
     pool: &Pool<BaseToken, QuoteToken>,
     balance_manager: &BalanceManager,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
     order_id: u128,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
     treasury.verify_version();
 
     claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
@@ -325,16 +319,11 @@ public fun claim_protocol_unsettled_fee_storage_rebate<FeeCoinType>(
 public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
     treasury: &Treasury,
     fee_manager: &mut FeeManager,
+    multisig_config: &MultisigConfig,
     _admin: &AdminCap,
-    pks: vector<vector<u8>>,
-    weights: vector<u8>,
-    threshold: u16,
     ctx: &mut TxContext,
 ) {
-    assert!(
-        multisig::check_if_sender_is_multisig_address(pks, weights, threshold, ctx),
-        ESenderIsNotMultisig,
-    );
+    multisig_config.validate_sender_is_admin_multisig(ctx);
     treasury.verify_version();
 
     claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
