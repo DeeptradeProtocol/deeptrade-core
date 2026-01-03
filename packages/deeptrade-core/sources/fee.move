@@ -2,6 +2,7 @@ module deeptrade_core::fee;
 
 use deepbook::constants::fee_penalty_multiplier;
 use deepbook::pool::Pool;
+use deeptrade_core::dt_math as math;
 use deeptrade_core::helper::{
     calculate_deep_required,
     calculate_order_amount,
@@ -12,7 +13,6 @@ use deeptrade_core::helper::{
     apply_discount
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
-use deeptrade_core::math;
 use deeptrade_core::ticket::{
     AdminTicket,
     validate_ticket,

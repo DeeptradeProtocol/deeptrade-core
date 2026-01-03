@@ -1,8 +1,8 @@
 #[test_only]
 module deeptrade_core::apply_slippage_tests;
 
+use deeptrade_core::dt_math as math;
 use deeptrade_core::helper;
-use deeptrade_core::math;
 use std::unit_test::assert_eq;
 
 /// Test that applying slippage to zero value returns zero

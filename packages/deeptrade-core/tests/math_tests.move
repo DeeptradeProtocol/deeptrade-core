@@ -2,7 +2,7 @@
 module deeptrade_core::math_tests;
 
 use deepbook::constants::max_u64;
-use deeptrade_core::math;
+use deeptrade_core::dt_math as math;
 use std::unit_test::assert_eq;
 
 /// This test demonstrates why using the scaled-math functions (`mul`, `div`)

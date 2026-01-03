@@ -10,10 +10,10 @@ use deepbook::pool_tests::{
     setup_pool_with_default_fees_and_reference_pool,
     place_limit_order
 };
+use deeptrade_core::dt_math as math;
 use deeptrade_core::fee::{Self, TradingFeeConfig};
 use deeptrade_core::fee_manager::{Self, FeeManager};
 use deeptrade_core::loyalty::{Self, LoyaltyProgram};
-use deeptrade_core::math;
 use deeptrade_core::order::{Self, create_market_order_input_fee};
 use deeptrade_core::treasury;
 use std::unit_test::assert_eq;

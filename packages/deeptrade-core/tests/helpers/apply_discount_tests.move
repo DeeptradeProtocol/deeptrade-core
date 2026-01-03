@@ -1,8 +1,8 @@
 #[test_only]
 module deeptrade_core::apply_discount_tests;
 
+use deeptrade_core::dt_math as math;
 use deeptrade_core::helper::{Self, EInvalidDiscountRate};
-use deeptrade_core::math;
 use std::unit_test::assert_eq;
 
 /// Test that applying zero discount returns the original value

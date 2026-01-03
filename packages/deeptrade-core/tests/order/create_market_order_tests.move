@@ -13,6 +13,7 @@ use deepbook::pool_tests::{
     add_deep_price_point,
     set_time
 };
+use deeptrade_core::dt_math as math;
 use deeptrade_core::fee::{Self, TradingFeeConfig};
 use deeptrade_core::fee_manager::{Self, FeeManager};
 use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
@@ -20,7 +21,6 @@ use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
     new_sui_price_object
 };
 use deeptrade_core::loyalty::{Self, LoyaltyProgram};
-use deeptrade_core::math;
 use deeptrade_core::order::{Self, create_market_order};
 use deeptrade_core::treasury;
 use pyth::price_info::PriceInfoObject;
