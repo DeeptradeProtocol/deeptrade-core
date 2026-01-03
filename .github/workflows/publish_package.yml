@@ -5,7 +5,8 @@ on:
     workflow_dispatch:
     # TODO: REMOVE THIS AFTER TESTING
     push:
-        branches: ["feature/add-slsa-and-mvr-info"]
+        branches:
+            - "feature/add-slsa-and-mvr-info"
 
 permissions:
     contents: read
