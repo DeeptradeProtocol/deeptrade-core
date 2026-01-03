@@ -1,0 +1,24 @@
+name: Publish MVR Verified Package
+
+on:
+    # Trigger on manual button click
+    workflow_dispatch:
+    # OR trigger when you push a specific tag (uncomment to enable)
+    # push:
+    #   tags:
+    #     - 'v*'
+
+permissions:
+    contents: read
+    id-token: write # REQUIRED for generating SLSA provenance
+
+jobs:
+    publish:
+        # Use your fork and the specific immutable tag
+        uses: DeeptradeProtocol/sui-mvr-provenance/.github/workflows/deploy_with_slsa3.yml@v1.0.0
+        with:
+            # Path to the folder containing your Move.toml
+            working-directory: packages/deeptrade-core
+        secrets:
+            # Pass your burner key into the action's expected secret name
+            ED25519_PRIVATE_KEY: ${{ secrets.DEPLOYER_KEY }}
