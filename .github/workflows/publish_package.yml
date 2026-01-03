@@ -3,10 +3,9 @@ name: Publish MVR Verified Package
 on:
     # Trigger on manual button click
     workflow_dispatch:
-    # OR trigger when you push a specific tag (uncomment to enable)
-    # push:
-    #   tags:
-    #     - 'v*'
+    # TODO: REMOVE THIS AFTER TESTING
+    push:
+        branches: ["feature/add-slsa-and-mvr-info"]
 
 permissions:
     contents: read
