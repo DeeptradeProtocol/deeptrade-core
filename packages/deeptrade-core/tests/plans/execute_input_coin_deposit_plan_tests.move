@@ -3,7 +3,7 @@ module deeptrade_core::execute_input_coin_deposit_plan_tests;
 
 use deepbook::balance_manager::BalanceManager;
 use deepbook::balance_manager_tests::{create_acct_and_share_with_funds, USDC, SPAM};
-use deeptrade_core::order::{
+use deeptrade_core::dt_order::{
     execute_input_coin_deposit_plan,
     get_input_coin_deposit_plan,
     assert_input_coin_deposit_plan_eq
@@ -211,7 +211,7 @@ fun input_coin_deposit_ask_from_wallet() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = deeptrade_core::order::EInsufficientInput)]
+#[test, expected_failure(abort_code = deeptrade_core::dt_order::EInsufficientInput)]
 fun insufficient_input_coin_aborts() {
     // Test-specific constants
     let required_amount = 10_000 * TOKEN_MULTIPLIER; // 10,000 tokens needed

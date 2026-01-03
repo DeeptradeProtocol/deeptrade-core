@@ -10,8 +10,8 @@ use deepbook::pool_tests::{
     setup_pool_with_default_fees_and_reference_pool,
     place_limit_order
 };
+use deeptrade_core::dt_order::cancel_order_and_settle_fees;
 use deeptrade_core::fee_manager::{Self, FeeManager};
-use deeptrade_core::order::cancel_order_and_settle_fees;
 use deeptrade_core::treasury;
 use std::unit_test::assert_eq;
 use sui::balance;

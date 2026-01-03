@@ -3,12 +3,12 @@ module deeptrade_core::execute_coverage_fee_plan_tests;
 
 use deepbook::balance_manager::BalanceManager;
 use deepbook::balance_manager_tests::create_acct_and_share_with_funds;
-use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
-use deeptrade_core::order::{
+use deeptrade_core::dt_order::{
     execute_coverage_fee_plan,
     get_coverage_fee_plan,
     assert_coverage_fee_plan_eq
 };
+use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
 use deeptrade_core::treasury::{Self, Treasury};
 use std::unit_test::assert_eq;
 use sui::coin::mint_for_testing;
@@ -334,7 +334,7 @@ fun coverage_fee_from_balance_manager_only() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = deeptrade_core::order::EInsufficientFee)]
+#[test, expected_failure(abort_code = deeptrade_core::dt_order::EInsufficientFee)]
 fun insufficient_fee_aborts() {
     // Test-specific constants
     let deep_from_reserves = 60_000 * DEEP_MULTIPLIER; // 60,000 DEEP taken from treasury

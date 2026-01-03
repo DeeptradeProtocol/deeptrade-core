@@ -1,7 +1,7 @@
 #[test_only]
 module deeptrade_core::get_input_coin_deposit_plan_tests;
 
-use deeptrade_core::order::{get_input_coin_deposit_plan, assert_input_coin_deposit_plan_eq};
+use deeptrade_core::dt_order::{get_input_coin_deposit_plan, assert_input_coin_deposit_plan_eq};
 
 // ===== Constants =====
 

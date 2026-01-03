@@ -1,7 +1,7 @@
 #[test_only]
 module deeptrade_core::plan_fee_collection_tests;
 
-use deeptrade_core::order;
+use deeptrade_core::dt_order as order;
 use std::unit_test::assert_eq;
 
 /// Test that planning fee collection with zero fee returns zeros
