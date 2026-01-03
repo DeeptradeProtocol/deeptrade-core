@@ -3,8 +3,8 @@ module deeptrade_core::update_pool_creation_protocol_fee_tests;
 
 use deeptrade_core::admin_init_tests::setup_with_admin_cap;
 use deeptrade_core::create_ticket_tests::get_ticket_ready_for_consumption;
-use deeptrade_core::pool::{
-    Self,
+use deeptrade_core::dt_pool::{
+    Self as pool,
     PoolCreationConfig,
     PoolCreationProtocolFeeUpdated,
     unwrap_pool_creation_protocol_fee_updated_event,

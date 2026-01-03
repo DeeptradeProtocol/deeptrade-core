@@ -1,4 +1,4 @@
-module deeptrade_core::pool;
+module deeptrade_core::dt_pool;
 
 use deepbook::constants;
 use deepbook::pool;
