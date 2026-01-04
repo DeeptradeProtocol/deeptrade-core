@@ -16,6 +16,7 @@ jobs:
         with:
             # Path to the folder containing your Move.toml
             working-directory: packages/deeptrade-core
+            # Sui version to use for the build
             sui-version: "1.62.1"
         secrets:
             # Pass your deployer key into the action's expected secret name
