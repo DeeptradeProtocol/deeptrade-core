@@ -12,10 +12,11 @@ permissions:
 jobs:
     publish:
         # Sui MVR Provenance action (fork from https://github.com/zktx-io/sui-mvr-provenance)
-        uses: DeeptradeProtocol/sui-mvr-provenance/.github/workflows/deploy_with_slsa3.yml@239e5fa9af3f1eb86cc8f23a7ef0cc43201a31db
+        uses: DeeptradeProtocol/sui-mvr-provenance/.github/workflows/deploy_with_slsa3.yml@37b7f20283ad2a9a039d012722be5ebe4b4bbac2
         with:
             # Path to the folder containing your Move.toml
             working-directory: packages/deeptrade-core
+            sui-version: "1.62.1"
         secrets:
             # Pass your deployer key into the action's expected secret name
             ED25519_PRIVATE_KEY: ${{ secrets.DEPLOYER_KEY }}
