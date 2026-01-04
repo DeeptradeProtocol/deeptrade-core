@@ -16,7 +16,7 @@ permissions:
 jobs:
     publish:
         # Use your fork and the specific immutable tag
-        uses: DeeptradeProtocol/sui-mvr-provenance/.github/workflows/deploy_with_slsa3.yml@f89b9e238ea73d9c20caebcf15e91bbae31a0d92
+        uses: DeeptradeProtocol/sui-mvr-provenance/.github/workflows/deploy_with_slsa3.yml@b077705e97114b119554c51b78e9295507c28d24
         with:
             # Path to the folder containing your Move.toml
             working-directory: packages/deeptrade-core
