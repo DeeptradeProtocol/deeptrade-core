@@ -19,4 +19,4 @@ multisig = { git = "https://github.com/DeeptradeProtocol/multisig-move.git", sub
 [addresses]
 # Workaround for Sui compiler bug (#22194) causing namespace conflicts with dependencies.
 # This address must be set to `0x0` for deployment or upgrades. See `docs/dev-notes.md`.
-deeptrade_core = "0x232b6dccf004919ce5deb1a7ee3d0e9f1c71170c9402ec1918aa212754baadb3"
+deeptrade_core = "0x0"

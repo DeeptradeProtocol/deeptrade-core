@@ -1,0 +1,13 @@
+{
+    "network": "mainnet",
+    "owner": "0xed7e0efee7084f2eec7212586d7eb5a94233a45fb13368d05f9641e8ab8d9d52",
+    "app_name": "@deeptrade/deeptrade-core",
+    "app_desc": "This package is a comprehensive on-chain trading protocol suite built to enhance and secure liquidity operations on the Sui network's DeepBook order book.",
+    "upgrade_cap": null,
+    "app_cap": null,
+    "pkg_info": null,
+    "icon_url": "https://deeptrade.io/web-app-manifest-512x512.png",
+    "homepage_url": "https://deeptrade.io",
+    "documentation_url": "https://github.com/deeptradeProtocol/deeptrade-core",
+    "contact": "contact@deeptrade.io"
+}
