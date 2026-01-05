@@ -3,11 +3,14 @@ name: Move Test CI
 on:
   pull_request:
     paths:
-      - ".github/workflows/**"
+      - ".github/workflows/move_test.yml"
       - "packages/deeptrade-core/**"
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/move_test.yml"
+      - "packages/deeptrade-core/**.move"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -17,7 +20,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      SUI_VERSION: "1.56.2" # Parameterized Sui version
+      SUI_VERSION: "1.62.1" # Parameterized Sui version
 
     steps:
       - uses: actions/checkout@v4
