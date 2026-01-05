@@ -5,7 +5,7 @@ use deepbook::balance_manager::BalanceManager;
 use deepbook::balance_manager_tests::{create_acct_and_share_with_funds, USDC};
 use deepbook::pool::Pool;
 use deepbook::pool_tests::{setup_test, setup_pool_with_default_fees};
-use deeptrade_core::order::prepare_input_fee_order_execution;
+use deeptrade_core::dt_order::prepare_input_fee_order_execution;
 use std::unit_test::assert_eq;
 use sui::coin::mint_for_testing;
 use sui::sui::SUI;
@@ -200,7 +200,7 @@ fun ask_success() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = deeptrade_core::order::EInvalidOwner)]
+#[test, expected_failure(abort_code = deeptrade_core::dt_order::EInvalidOwner)]
 fun invalid_owner_aborts() {
     // Test-specific constants
     let order_amount = 5_000 * TOKEN_MULTIPLIER; // 5,000 quote tokens for bid

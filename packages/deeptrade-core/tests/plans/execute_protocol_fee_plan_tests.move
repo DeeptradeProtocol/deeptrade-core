@@ -6,10 +6,10 @@ use deepbook::balance_manager_tests::create_acct_and_share_with_funds;
 use deepbook::constants;
 use deepbook::order_info::{Self, OrderInfo};
 use deeptrade_core::add_to_user_unsettled_fees_tests::setup_fee_manager_test;
+use deeptrade_core::dt_order::{execute_protocol_fee_plan, get_protocol_fee_plan};
 use deeptrade_core::fee::calculate_protocol_fees;
 use deeptrade_core::fee_manager::FeeManager;
 use deeptrade_core::helper::calculate_order_taker_maker_ratio;
-use deeptrade_core::order::{execute_protocol_fee_plan, get_protocol_fee_plan};
 use std::unit_test::assert_eq;
 use sui::coin::mint_for_testing;
 use sui::object::id_from_address;
@@ -170,7 +170,7 @@ fun both_taker_and_maker_fees_from_both_sources() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = deeptrade_core::order::EInsufficientFee)]
+#[test, expected_failure(abort_code = deeptrade_core::dt_order::EInsufficientFee)]
 fun insufficient_fee_aborts() {
     let mut scenario = setup_fee_manager_test(ALICE);
 

@@ -1,4 +1,4 @@
-module deeptrade_core::order;
+module deeptrade_core::dt_order;
 
 use deepbook::balance_manager::{BalanceManager, TradeProof};
 use deepbook::constants;

@@ -1,7 +1,7 @@
 #[test_only]
 module deeptrade_core::get_deep_plan_tests;
 
-use deeptrade_core::order::{get_deep_plan, assert_deep_plan_eq};
+use deeptrade_core::dt_order::{get_deep_plan, assert_deep_plan_eq};
 
 // -------------------------------------
 // Constants for realistic DEEP amounts

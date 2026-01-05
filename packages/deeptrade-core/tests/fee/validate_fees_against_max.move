@@ -1,14 +1,14 @@
 #[test_only]
 module deeptrade_core::validate_fees_against_max_tests;
 
-use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
-use deeptrade_core::helper::apply_slippage;
-use deeptrade_core::order::{
+use deeptrade_core::dt_order::{
     validate_fees_against_max,
     EDeepRequiredExceedsMax,
     ECoverageFeeExceedsMax,
     EInvalidSlippage
 };
+use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
+use deeptrade_core::helper::apply_slippage;
 use std::unit_test::assert_eq;
 
 #[test]

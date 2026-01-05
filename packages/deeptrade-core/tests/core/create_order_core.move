@@ -1,9 +1,7 @@
 #[test_only]
 module deeptrade_core::create_order_core_tests;
 
-use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
-use deeptrade_core::helper::calculate_order_amount;
-use deeptrade_core::order::{
+use deeptrade_core::dt_order::{
     create_order_core,
     assert_deep_plan_eq,
     assert_coverage_fee_plan_eq,
@@ -13,6 +11,8 @@ use deeptrade_core::order::{
     InputCoinDepositPlan,
     EInvalidInputCoinType
 };
+use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
+use deeptrade_core::helper::calculate_order_amount;
 use std::unit_test::assert_eq;
 
 // ===== Constants =====

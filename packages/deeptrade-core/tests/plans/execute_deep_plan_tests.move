@@ -3,7 +3,7 @@ module deeptrade_core::execute_deep_plan_tests;
 
 use deepbook::balance_manager::BalanceManager;
 use deepbook::balance_manager_tests::create_acct_and_share_with_funds;
-use deeptrade_core::order::{execute_deep_plan, get_deep_plan, assert_deep_plan_eq};
+use deeptrade_core::dt_order::{execute_deep_plan, get_deep_plan, assert_deep_plan_eq};
 use deeptrade_core::treasury::{Self, Treasury};
 use std::unit_test::assert_eq;
 use sui::coin::mint_for_testing;
@@ -125,7 +125,7 @@ fun deep_from_both_wallet_and_treasury_reserves() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = deeptrade_core::order::EInsufficientDeepReserves)]
+#[test, expected_failure(abort_code = deeptrade_core::dt_order::EInsufficientDeepReserves)]
 fun insufficient_deep_reserves_aborts() {
     // Test-specific constants
     let deep_required = 5_000 * DEEP_MULTIPLIER; // 5,000 DEEP total needed

@@ -4,8 +4,8 @@ module deeptrade_core::create_permissionless_pool_tests;
 use deepbook::constants;
 use deepbook::pool_tests::setup_test;
 use deepbook::registry::Registry;
-use deeptrade_core::pool::{
-    Self,
+use deeptrade_core::dt_pool::{
+    Self as pool,
     PoolCreated,
     ENotEnoughFee,
     ECreationFeeTooLarge,

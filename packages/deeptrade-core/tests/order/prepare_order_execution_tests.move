@@ -6,6 +6,7 @@ use deepbook::balance_manager_tests::{create_acct_and_share_with_funds, USDC};
 use deepbook::constants;
 use deepbook::pool::Pool;
 use deepbook::pool_tests::{setup_test, setup_pool_with_default_fees, setup_reference_pool};
+use deeptrade_core::dt_order::prepare_order_execution;
 use deeptrade_core::fee::{Self, TradingFeeConfig};
 use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
     new_deep_price_object,
@@ -13,7 +14,6 @@ use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
 };
 use deeptrade_core::helper::hundred_percent;
 use deeptrade_core::loyalty::{Self, LoyaltyProgram};
-use deeptrade_core::order::prepare_order_execution;
 use deeptrade_core::treasury::{Self, Treasury};
 use pyth::price_info;
 use std::unit_test::assert_eq;
@@ -486,7 +486,7 @@ fun ask_success() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = deeptrade_core::order::EInvalidOwner)]
+#[test, expected_failure(abort_code = deeptrade_core::dt_order::EInvalidOwner)]
 fun invalid_owner_aborts() {
     // This test verifies that prepare_order_execution aborts when called by someone
     // who is not the owner of the balance manager

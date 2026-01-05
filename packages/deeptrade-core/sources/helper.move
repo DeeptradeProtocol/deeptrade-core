@@ -2,7 +2,7 @@ module deeptrade_core::helper;
 
 use deepbook::constants::{live, partially_filled};
 use deepbook::pool::Pool;
-use deeptrade_core::math;
+use deeptrade_core::dt_math as math;
 use deeptrade_core::oracle;
 use pyth::price_info::PriceInfoObject;
 use std::type_name;

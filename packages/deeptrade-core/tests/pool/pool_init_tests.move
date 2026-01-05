@@ -1,8 +1,8 @@
 #[test_only]
 module deeptrade_core::pool_init_tests;
 
-use deeptrade_core::pool::{
-    Self,
+use deeptrade_core::dt_pool::{
+    Self as pool,
     PoolCreationConfig,
     pool_creation_protocol_fee,
     default_pool_creation_protocol_fee
