@@ -1,7 +1,7 @@
 {
     "network": "mainnet",
     "owner": "0x8763507d111c8dde6a68a8103e08dcf32a5206307b2c65607d6facbb3d5afb3a",
-    "app_name": "@testapp/test-app-03-04-2026",
+    "app_name": "@testapp/test-app-05-01-2026",
     "app_desc": "My Test App Description",
     "upgrade_cap": null,
     "app_cap": null,
