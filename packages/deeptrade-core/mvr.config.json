@@ -1,0 +1,13 @@
+{
+    "network": "mainnet",
+    "owner": "0x8763507d111c8dde6a68a8103e08dcf32a5206307b2c65607d6facbb3d5afb3a",
+    "app_name": "@testapp/test-app-03-04-2026",
+    "app_desc": "My Test App Description",
+    "upgrade_cap": null,
+    "app_cap": null,
+    "pkg_info": null,
+    "icon_url": "https://www.w3.org/StyleSheets/TR/2021/logos/W3C",
+    "homepage_url": "https://myapp.site",
+    "documentation_url": "https://docs.myapp.site",
+    "contact": "team@myapp.site"
+}

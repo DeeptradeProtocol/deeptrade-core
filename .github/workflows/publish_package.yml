@@ -1,0 +1,23 @@
+name: Publish MVR Verified Package
+
+on:
+    # Trigger on manual button click
+    workflow_dispatch:
+
+permissions:
+    contents: write
+    id-token: write
+    actions: read
+
+jobs:
+    publish:
+        # Sui MVR Provenance action (fork from https://github.com/zktx-io/sui-mvr-provenance)
+        uses: DeeptradeProtocol/sui-mvr-provenance/.github/workflows/deploy_with_slsa3.yml@37b7f20283ad2a9a039d012722be5ebe4b4bbac2
+        with:
+            # Path to the folder containing your Move.toml
+            working-directory: packages/deeptrade-core
+            # Sui version to use for the build
+            sui-version: "1.62.1"
+        secrets:
+            # Pass your deployer key into the action's expected secret name
+            ED25519_PRIVATE_KEY: ${{ secrets.DEPLOYER_KEY }}
