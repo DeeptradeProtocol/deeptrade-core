@@ -33,6 +33,15 @@ The protocol is designed for long-term maintainability with a built-in **Version
 
 To further enhance transparency around upgrades, the protocol will adopt a **Custom Upgrade Policy** for its `UpgradeCap`. This initiative directly addresses the critical need for observable package upgrades — a challenge recognized within the broader Sui ecosystem (see [Sui Improvement Proposal #57](https://github.com/sui-foundation/sips/pull/57/files)). The custom policy, currently in draft (see [PR #75](https://github.com/DeeptradeProtocol/deeptrade-core/pull/75)), will provide essential on-chain visibility for any upgrade event. This lays the groundwork for a future upgrade timelock, ensuring the community has a crucial window to review and react to changes, safeguarding against unauthorized modifications.
 
+## 🛡️ Security & Audits
+
+Deeptrade Core smart contract have been rigorously audited by **MoveBit**, a leading security firm specializing in the Move ecosystem. The audit concluded with all identified issues resolved, ensuring a robust and secure trading environment.
+
+- **[View Audit Report (Oct 2025)](./audits/Deeptrade%20Audit%20Report-2025-10-9.pdf)**
+- **[Official Mirror (movebit.xyz)](http://movebit.xyz/reports/20251009-Deeptrade-Final-Audit-Report.pdf)**
+
+Our security model is reinforced by an **on-chain Multisig Guarantee** and mandatory **Timelocks** for sensitive administrative functions, providing users with maximum transparency and safety.
+
 ## System Design
 
 For detailed technical specifications and implementation details, please refer to:
