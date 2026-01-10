@@ -10,7 +10,7 @@ import { getWithdrawFeeTx } from "./getWithdrawFeeTx";
 import { getWrapperBags } from "./utils/getWrapperBags";
 import { processFeesBag } from "./utils/processFeeBag";
 
-// yarn ts-node examples/wrapper/admin-withdraw-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
+// yarn ts-node examples/wrapper/admin-withdraw-all-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
 (async () => {
   const tx = new Transaction();
   const { protocolFeesBagId } = await getWrapperBags();
