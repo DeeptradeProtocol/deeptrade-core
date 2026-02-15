@@ -1,7 +1,6 @@
 import { bcs } from "@mysten/sui/bcs";
 import { Transaction } from "@mysten/sui/transactions";
-import { DUMMY_PLACEHOLDER_ADDRESS } from "../../common";
-import { provider } from "../../provider";
+import { provider, DUMMY_PLACEHOLDER_ADDRESS } from "../../provider";
 import { DEEP_DECIMALS, TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../../constants";
 
 export async function getDeepReservesBalance() {
