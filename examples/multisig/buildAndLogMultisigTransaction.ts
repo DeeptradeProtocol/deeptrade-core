@@ -1,6 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
-import { provider } from "../common";
+import { provider } from "../provider";
 import { MULTISIG_CONFIG } from "./multisig";
 
 /**

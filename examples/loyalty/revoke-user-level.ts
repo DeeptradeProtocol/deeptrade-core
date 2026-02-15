@@ -1,5 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { keypair, provider } from "../common";
+import { keypair } from "../common";
+import { provider } from "../provider";
 import { DEEPTRADE_CORE_PACKAGE_ID, LOYALTY_ADMIN_CAP_OBJECT_ID, LOYALTY_PROGRAM_OBJECT_ID } from "../constants";
 
 const USER_ADDRESS = ""; // Address of the user to revoke the level from
