@@ -17,3 +17,12 @@ export const keypair = process.env.SUI_WALLET_PRIVATE_KEY_ARRAY
   ? Ed25519Keypair.fromSecretKey(hexStringToUint8Array(process.env.SUI_WALLET_PRIVATE_KEY_ARRAY))
   : Ed25519Keypair.deriveKeypair(mnemonic);
 export const user = keypair.getPublicKey().toSuiAddress();
+
+/**
+ * A randomly generated Sui address used as a placeholder for read-only operations.
+ *
+ * @note Use this ONLY for `devInspectTransactionBlock` or dry-runs where a sender
+ * address is required but no actual signing/gas payment occurs.
+ * @warning Never send real assets to this address as the private key is not persisted.
+ */
+export const DUMMY_PLACEHOLDER_ADDRESS = new Ed25519Keypair().getPublicKey().toSuiAddress();
