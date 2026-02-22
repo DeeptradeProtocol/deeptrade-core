@@ -6,10 +6,10 @@ import { getWithdrawFeeTx } from "./utils/getWithdrawFeeTx";
 import { getTreasuryBags } from "../treasury/utils/getTreasuryBags";
 import { processFeesBag } from "../treasury/utils/processFeeBag";
 
-// Read from WITHDRAW_TICKETS env, throw if empty or invalid
-const ticketsEnv = process.env.WITHDRAW_TICKETS;
+// Read from TICKETS env, throw if empty or invalid
+const ticketsEnv = process.env.TICKETS;
 if (!ticketsEnv) {
-  throw new Error("WITHDRAW_TICKETS environment variable is required.");
+  throw new Error("TICKETS environment variable is required.");
 }
 
 const TICKETS_OBJECT_IDS: string[] = ticketsEnv
@@ -18,7 +18,7 @@ const TICKETS_OBJECT_IDS: string[] = ticketsEnv
   .filter((id) => id.length > 0);
 
 if (TICKETS_OBJECT_IDS.length === 0) {
-  throw new Error("WITHDRAW_TICKETS environment variable must contain at least one ticket ID.");
+  throw new Error("TICKETS environment variable must contain at least one ticket ID.");
 }
 
 // yarn ts-node examples/ticket/admin-withdraw-all-coins-coverage-fee.ts > admin-withdraw-all-coins-coverage-fee.log 2>&1

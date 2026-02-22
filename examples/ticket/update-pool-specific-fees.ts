@@ -5,10 +5,10 @@ import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigT
 import { createPoolFeeConfigTx } from "./utils/createPoolFeeConfigTx";
 import { poolSpecificFeesConfig } from "../fee-config";
 
-// Read from UPDATE_FEES_TICKETS env, throw if empty or invalid
-const ticketsEnv = process.env.UPDATE_FEES_TICKETS;
+// Read from TICKETS env, throw if empty or invalid
+const ticketsEnv = process.env.TICKETS;
 if (!ticketsEnv) {
-  throw new Error("UPDATE_FEES_TICKETS environment variable is required.");
+  throw new Error("TICKETS environment variable is required.");
 }
 
 const TICKETS_OBJECT_IDS: string[] = ticketsEnv

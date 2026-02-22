@@ -9,7 +9,7 @@ on:
                 options:
                     - Update Default Fees
                     - Update Pool Specific Fees
-            update_fees_tickets:
+            tickets:
                 description: "Comma-separated list of Ticket Object IDs (e.g. 0x123..., 0xabc...)"
                 required: true
                 type: string
@@ -25,7 +25,7 @@ jobs:
             MULTISIG_WEIGHTS: ${{ vars.MULTISIG_WEIGHTS }}
 
             # Dynamic Inputs
-            UPDATE_FEES_TICKETS: ${{ inputs.update_fees_tickets }}
+            TICKETS: ${{ inputs.tickets }}
         steps:
             - name: Checkout Code
               uses: actions/checkout@v4

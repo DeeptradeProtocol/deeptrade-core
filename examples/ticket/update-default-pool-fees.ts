@@ -5,10 +5,10 @@ import { createPoolFeeConfigTx } from "./utils/createPoolFeeConfigTx";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { defaultFeesConfig } from "../fee-config";
 
-// Read from UPDATE_FEES_TICKETS env, throw if empty or invalid
-const ticketsEnv = process.env.UPDATE_FEES_TICKETS;
+// Read from TICKETS env, throw if empty or invalid
+const ticketsEnv = process.env.TICKETS;
 if (!ticketsEnv) {
-  throw new Error("UPDATE_FEES_TICKETS environment variable is required.");
+  throw new Error("TICKETS environment variable is required.");
 }
 
 const TICKETS_OBJECT_IDS: string[] = ticketsEnv
@@ -17,7 +17,7 @@ const TICKETS_OBJECT_IDS: string[] = ticketsEnv
   .filter((id) => id.length > 0);
 
 if (TICKETS_OBJECT_IDS.length === 0) {
-  throw new Error("UPDATE_FEES_TICKETS environment variable must contain at least one ticket ID.");
+  throw new Error("TICKETS environment variable must contain at least one ticket ID.");
 }
 
 const TICKET_OBJECT_ID = TICKETS_OBJECT_IDS[0];
