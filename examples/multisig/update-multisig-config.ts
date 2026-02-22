@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { Transaction } from "@mysten/sui/transactions";
 import { DEEPTRADE_CORE_PACKAGE_ID, MULTISIG_CONFIG_OBJECT_ID, MULTISIG_ADMIN_CAP_OBJECT_ID } from "../constants";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
