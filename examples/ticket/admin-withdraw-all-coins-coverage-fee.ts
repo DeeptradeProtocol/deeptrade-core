@@ -5,30 +5,70 @@ import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigT
 import { getWithdrawFeeTx } from "./utils/getWithdrawFeeTx";
 import { getTreasuryBags } from "../treasury/utils/getTreasuryBags";
 import { processFeesBag } from "../treasury/utils/processFeeBag";
+import { parseTicketIds } from "./utils/parseTicketIds";
 
-const TICKET_OBJECT_ID = "";
+const TICKETS_OBJECT_IDS = parseTicketIds();
 
 // yarn ts-node examples/ticket/admin-withdraw-all-coins-coverage-fee.ts > admin-withdraw-all-coins-coverage-fee.log 2>&1
 (async () => {
+  console.warn(`Building transaction to withdraw all coverage fees`);
   const tx = new Transaction();
 
   const { deepReservesBagId } = await getTreasuryBags();
 
   // Process coverage fees
-  const { coinsMapByCoinType } = await processFeesBag(deepReservesBagId);
+  const { coinsMapByCoinType, coinsMetadataMapByCoinType } = await processFeesBag(deepReservesBagId);
   const coinTypes = Object.keys(coinsMapByCoinType);
 
-  console.warn(
-    `Building transaction to withdraw coverage fees for ${coinTypes.length} coin types: ${coinTypes.join(", ")}`,
-  );
+  if (TICKETS_OBJECT_IDS.length < coinTypes.length) {
+    console.warn(
+      `\n⚠️  WARNING: You provided ${TICKETS_OBJECT_IDS.length} tickets, but there are ${coinTypes.length} coin types with fees.`,
+    );
+    console.warn(`Only the first ${TICKETS_OBJECT_IDS.length} coin types will be withdrawn.\n`);
+  }
 
-  for (const coinType of coinTypes) {
+  const withdrawnCoins: string[] = [];
+
+  for (let i = 0; i < coinTypes.length; i++) {
+    const coinType = coinTypes[i];
+    const ticketId = TICKETS_OBJECT_IDS[i];
+
+    if (!ticketId) {
+      // Stop if we run out of tickets
+      break;
+    }
+
     getWithdrawFeeTx({
-      coinType,
+      coinType: coinType,
       target: `${DEEPTRADE_CORE_PACKAGE_ID}::treasury::withdraw_coverage_fee`,
-      ticketId: TICKET_OBJECT_ID,
+      ticketId: ticketId,
       user: MULTISIG_CONFIG.address,
       transaction: tx,
+    });
+
+    withdrawnCoins.push(coinType);
+  }
+
+  if (withdrawnCoins.length > 0) {
+    console.log(`\n✅ Withdrawing coverage fees for the following ${withdrawnCoins.length} coins:`);
+    withdrawnCoins.forEach((coinType) => {
+      const amountRaw = coinsMapByCoinType[coinType];
+      const metadata = coinsMetadataMapByCoinType[coinType];
+      const amount = Number(amountRaw) / 10 ** metadata.decimals;
+      console.log(` - ${metadata.symbol}: ${amount} (${amountRaw} raw)`);
+    });
+  } else {
+    console.log(`\nℹ️  No coverage fees were added to the transaction.`);
+  }
+
+  const remainingCoins = coinTypes.slice(withdrawnCoins.length);
+  if (remainingCoins.length > 0) {
+    console.log(`\n⚠️  The following ${remainingCoins.length} coins will REMAIN in the bag (lack of tickets):`);
+    remainingCoins.forEach((coinType) => {
+      const amountRaw = coinsMapByCoinType[coinType];
+      const metadata = coinsMetadataMapByCoinType[coinType];
+      const amount = Number(amountRaw) / 10 ** metadata.decimals;
+      console.log(` - ${metadata.symbol}: ${amount} (${amountRaw} raw)`);
     });
   }
 

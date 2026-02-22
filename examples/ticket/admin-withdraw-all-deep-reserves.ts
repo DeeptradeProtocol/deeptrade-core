@@ -4,8 +4,9 @@ import { getDeepReservesBalance } from "../treasury/utils/getDeepReservesBalance
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
+import { parseTicketIds } from "./utils/parseTicketIds";
 
-const TICKET_OBJECT_ID = "";
+const TICKET_OBJECT_ID = parseTicketIds()[0];
 
 // yarn ts-node examples/ticket/withdraw-all-deep-reserves.ts > withdraw-all-deep-reserves.log 2>&1
 (async () => {
