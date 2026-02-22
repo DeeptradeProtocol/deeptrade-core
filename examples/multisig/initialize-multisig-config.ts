@@ -3,6 +3,11 @@ import { DEEPTRADE_CORE_PACKAGE_ID, MULTISIG_CONFIG_OBJECT_ID, MULTISIG_ADMIN_CA
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 
+const ADMIN_CAP_HOLDER_ADDRESS = process.env.MULTISIG_ADMIN_CAP_HOLDER_ADDRESS;
+if (!ADMIN_CAP_HOLDER_ADDRESS) {
+  throw new Error("MULTISIG_ADMIN_CAP_HOLDER_ADDRESS environment variable is required.");
+}
+
 // Usage: npx tsx examples/multisig/initialize-multisig-config.ts > initialize-multisig-config.log 2>&1
 (async () => {
   const { publicKeysSuiBytes, weights, threshold, address } = MULTISIG_CONFIG;
@@ -12,6 +17,7 @@ import { MULTISIG_CONFIG } from "../multisig/multisig";
   console.warn(`- Signers: ${publicKeysSuiBytes.length}`);
   console.warn(`- Weights: ${JSON.stringify(weights)}`);
   console.warn(`- Threshold: ${threshold}`);
+  console.warn(`- Admin cap holder (sender): ${ADMIN_CAP_HOLDER_ADDRESS}`);
 
   const tx = new Transaction();
 
@@ -26,5 +32,5 @@ import { MULTISIG_CONFIG } from "../multisig/multisig";
     ],
   });
 
-  await buildAndLogMultisigTransaction(tx);
+  await buildAndLogMultisigTransaction(tx, ADMIN_CAP_HOLDER_ADDRESS);
 })();

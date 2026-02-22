@@ -1,52 +1,52 @@
-name: Withdraw Fees Transaction
+name: Build Withdraw Fees Transaction
 
 on:
-    workflow_dispatch:
-        inputs:
-            withdrawal_type:
-                description: "Select what to withdraw"
-                type: choice
-                options:
-                    - Withdraw Protocol Fees
-                    - Withdraw Coverage Fees
-                    - Withdraw DEEP Reserves
-            tickets:
-                description: "Comma-separated list of Ticket Object IDs (e.g. 0x123..., 0xabc...)"
-                required: true
-                type: string
+  workflow_dispatch:
+    inputs:
+      withdrawal_type:
+        description: "Select what to withdraw"
+        type: choice
+        options:
+          - Withdraw Protocol Fees
+          - Withdraw Coverage Fees
+          - Withdraw DEEP Reserves
+      tickets:
+        description: "Comma-separated list of Ticket Object IDs (e.g. 0x123..., 0xabc...)"
+        required: true
+        type: string
 
 jobs:
-    build-withdraw-tx:
-        runs-on: ubuntu-latest
-        env:
-            # Multisig specific config (can be secrets or vars)
-            MULTISIG_ADDRESS: ${{ vars.MULTISIG_ADDRESS }}
-            MULTISIG_SIGNERS_BASE64_PUBKEYS: ${{ vars.MULTISIG_SIGNERS_BASE64_PUBKEYS }}
-            MULTISIG_THRESHOLD: ${{ vars.MULTISIG_THRESHOLD }}
-            MULTISIG_WEIGHTS: ${{ vars.MULTISIG_WEIGHTS }}
+  build-withdraw-tx:
+    runs-on: ubuntu-latest
+    env:
+      # Multisig specific config (can be secrets or vars)
+      MULTISIG_ADDRESS: ${{ vars.MULTISIG_ADDRESS }}
+      MULTISIG_SIGNERS_BASE64_PUBKEYS: ${{ vars.MULTISIG_SIGNERS_BASE64_PUBKEYS }}
+      MULTISIG_THRESHOLD: ${{ vars.MULTISIG_THRESHOLD }}
+      MULTISIG_WEIGHTS: ${{ vars.MULTISIG_WEIGHTS }}
 
-            # Dynamic Inputs
-            TICKETS: ${{ inputs.tickets }}
-        steps:
-            - name: Checkout Code
-              uses: actions/checkout@v4
+      # Dynamic Inputs
+      TICKETS: ${{ inputs.tickets }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-            - name: Install Dependencies
-              run: npm ci
+      - name: Install Dependencies
+        run: npm ci
 
-            - name: Build Protocol Fees Withdrawal
-              if: ${{ inputs.withdrawal_type == 'Withdraw Protocol Fees' }}
-              run: npx tsx examples/ticket/admin-withdraw-protocol-fee.ts
+      - name: Build Protocol Fees Withdrawal
+        if: ${{ inputs.withdrawal_type == 'Withdraw Protocol Fees' }}
+        run: npx tsx examples/ticket/admin-withdraw-protocol-fee.ts
 
-            - name: Build Coverage Fees Withdrawal
-              if: ${{ inputs.withdrawal_type == 'Withdraw Coverage Fees' }}
-              run: npx tsx examples/ticket/admin-withdraw-all-coins-coverage-fee.ts
+      - name: Build Coverage Fees Withdrawal
+        if: ${{ inputs.withdrawal_type == 'Withdraw Coverage Fees' }}
+        run: npx tsx examples/ticket/admin-withdraw-all-coins-coverage-fee.ts
 
-            - name: Build DEEP Reserves Withdrawal
-              if: ${{ inputs.withdrawal_type == 'Withdraw DEEP Reserves' }}
-              run: npx tsx examples/ticket/admin-withdraw-all-deep-reserves.ts
+      - name: Build DEEP Reserves Withdrawal
+        if: ${{ inputs.withdrawal_type == 'Withdraw DEEP Reserves' }}
+        run: npx tsx examples/ticket/admin-withdraw-all-deep-reserves.ts
