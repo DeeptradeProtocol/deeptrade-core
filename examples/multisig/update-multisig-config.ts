@@ -7,6 +7,11 @@ import { SIGNATURE_FLAG_TO_SCHEME } from "@mysten/sui/cryptography";
 // --- NEW multisig config comes from standard MULTISIG_* env vars (loaded by multisig.ts) ---
 const { publicKeysSuiBytes, publicKeys, weights, threshold, address } = MULTISIG_CONFIG;
 
+const ADMIN_CAP_HOLDER_ADDRESS = process.env.MULTISIG_ADMIN_CAP_HOLDER_ADDRESS;
+if (!ADMIN_CAP_HOLDER_ADDRESS) {
+  throw new Error("MULTISIG_ADMIN_CAP_HOLDER_ADDRESS environment variable is required.");
+}
+
 // Usage: npx tsx examples/multisig/update-multisig-config.ts > update-multisig-config.log 2>&1
 (async () => {
   console.warn(`Building transaction to update multisig config`);
@@ -19,6 +24,7 @@ const { publicKeysSuiBytes, publicKeys, weights, threshold, address } = MULTISIG
     const scheme = SIGNATURE_FLAG_TO_SCHEME[pk.flag() as keyof typeof SIGNATURE_FLAG_TO_SCHEME];
     console.warn(`  - Signer ${i + 1}: ${pk.toSuiAddress()} (${scheme}, weight: ${weights[i]})`);
   });
+  console.warn(`- Admin cap holder (sender): ${ADMIN_CAP_HOLDER_ADDRESS}`);
 
   const tx = new Transaction();
 
@@ -33,5 +39,5 @@ const { publicKeysSuiBytes, publicKeys, weights, threshold, address } = MULTISIG
     ],
   });
 
-  await buildAndLogMultisigTransaction(tx);
+  await buildAndLogMultisigTransaction(tx, ADMIN_CAP_HOLDER_ADDRESS);
 })();

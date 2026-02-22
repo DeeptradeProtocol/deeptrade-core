@@ -19,6 +19,7 @@ jobs:
             MULTISIG_SIGNERS_BASE64_PUBKEYS: ${{ vars.MULTISIG_SIGNERS_BASE64_PUBKEYS }}
             MULTISIG_THRESHOLD: ${{ vars.MULTISIG_THRESHOLD }}
             MULTISIG_WEIGHTS: ${{ vars.MULTISIG_WEIGHTS }}
+            MULTISIG_ADMIN_CAP_HOLDER_ADDRESS: ${{ vars.MULTISIG_ADMIN_CAP_HOLDER_ADDRESS }}
         steps:
             - name: Checkout Code
               uses: actions/checkout@v4

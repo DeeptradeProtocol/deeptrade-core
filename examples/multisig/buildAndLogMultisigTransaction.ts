@@ -7,8 +7,8 @@ import { MULTISIG_CONFIG } from "./multisig";
  * Handles the boilerplate of building, dry running, and logging a multisig transaction.
  * @param tx - The transaction block to process.
  */
-export async function buildAndLogMultisigTransaction(tx: Transaction): Promise<void> {
-  tx.setSender(MULTISIG_CONFIG.address);
+export async function buildAndLogMultisigTransaction(tx: Transaction, sender = MULTISIG_CONFIG.address): Promise<void> {
+  tx.setSender(sender);
 
   const transactionBytes = await tx.build({ client: provider });
   const base64TxBytes = toBase64(transactionBytes);
