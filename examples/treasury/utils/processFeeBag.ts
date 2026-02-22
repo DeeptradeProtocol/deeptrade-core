@@ -1,5 +1,5 @@
 import { CoinsMapByCoinType, CoinsMetadataMapByCoinType } from "./types";
-import { provider } from "../../common";
+import { provider } from "../../provider";
 import { getCoinMetadata } from "./getCoinMetadata";
 
 // Process fees from a specific bag

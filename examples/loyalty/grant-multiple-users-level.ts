@@ -1,6 +1,7 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { keypair, provider } from "../common";
+import { keypair } from "../common";
 import { grantUserLevelTx } from "./utils";
+import { provider } from "../provider";
 
 const USER_ADDRESSES: string[] = []; // Addresses of the users to grant the level to
 const LEVEL = 1; // Level to grant to the users

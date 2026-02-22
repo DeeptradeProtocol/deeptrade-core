@@ -1,6 +1,6 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { keypair, provider, user } from "../common";
 import { ADMIN_CAP_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
+import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 
 // yarn ts-node examples/pool/create-pool-creation-config.ts
 (async () => {
@@ -11,8 +11,5 @@ import { ADMIN_CAP_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
     arguments: [tx.object(ADMIN_CAP_OBJECT_ID)],
   });
 
-  const res = await provider.signAndExecuteTransaction({ transaction: tx, signer: keypair });
-  // const res = await provider.devInspectTransactionBlock({ transactionBlock: tx, sender: user });
-
-  console.log(res);
+  await buildAndLogMultisigTransaction(tx);
 })();

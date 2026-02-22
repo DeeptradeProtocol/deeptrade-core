@@ -1,6 +1,7 @@
 import { coinWithBalance, Transaction } from "@mysten/sui/transactions";
-import { keypair, provider } from "../common";
+import { keypair } from "../common";
 import { DEEP_COIN_TYPE, DEEP_DECIMALS, TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../constants";
+import { provider } from "../provider";
 
 // How many DEEP tokens to deposit (in human-readable format)
 const DEEP_AMOUNT = 100;

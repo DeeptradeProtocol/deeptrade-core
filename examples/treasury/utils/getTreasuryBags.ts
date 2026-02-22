@@ -1,4 +1,4 @@
-import { provider } from "../../common";
+import { provider } from "../../provider";
 import { TREASURY_OBJECT_ID } from "../../constants";
 
 export async function getTreasuryBags() {

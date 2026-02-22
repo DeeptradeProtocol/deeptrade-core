@@ -1,4 +1,4 @@
-import { provider } from "../../common";
+import { provider } from "../../provider";
 import { CoinMetadata } from "./types";
 
 // Fetch coin metadata for a specific coin type

@@ -1,7 +1,7 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { keypair, provider } from "../common";
 import { DEEPTRADE_CORE_PACKAGE_ID, MULTISIG_ADMIN_CAP_OBJECT_ID, MULTISIG_CONFIG_OBJECT_ID } from "../constants";
 import { MultisigConfig } from "../multisig/types";
+import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 
 const NEW_PUBLIC_KEYS: MultisigConfig["publicKeysSuiBytes"] = [];
 const NEW_WEIGHTS: MultisigConfig["weights"] = [];
@@ -24,8 +24,5 @@ const NEW_THRESHOLD: MultisigConfig["threshold"] = 0;
 
   console.warn(`Executing transaction to initialize multisig config`);
 
-  // const res = await provider.devInspectTransactionBlock({ transactionBlock: tx, sender: user });
-  const res = await provider.signAndExecuteTransaction({ transaction: tx, signer: keypair });
-
-  console.log("res:", JSON.stringify(res, null, 2));
+  await buildAndLogMultisigTransaction(tx);
 })();

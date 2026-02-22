@@ -1,7 +1,6 @@
 import { bcs } from "@mysten/sui/bcs";
 import { Transaction } from "@mysten/sui/transactions";
-import { user } from "../../common";
-import { provider } from "../../common";
+import { provider, DUMMY_PLACEHOLDER_ADDRESS } from "../../provider";
 import { DEEP_DECIMALS, TREASURY_OBJECT_ID, DEEPTRADE_CORE_PACKAGE_ID } from "../../constants";
 
 export async function getDeepReservesBalance() {
@@ -13,7 +12,7 @@ export async function getDeepReservesBalance() {
   });
 
   const res = await provider.devInspectTransactionBlock({
-    sender: user,
+    sender: DUMMY_PLACEHOLDER_ADDRESS,
     transactionBlock: tx,
   });
 
