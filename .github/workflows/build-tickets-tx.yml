@@ -1,0 +1,62 @@
+name: Build Tickets Transaction
+
+on:
+    workflow_dispatch:
+        inputs:
+            count_update_default_fees:
+                description: 'Number of "Update Default Fees" tickets'
+                required: false
+                default: "0"
+            count_update_pool_specific_fees:
+                description: 'Number of "Update Pool Specific Fees" tickets'
+                required: false
+                default: "0"
+            count_withdraw_deep_reserves:
+                description: 'Number of "Withdraw Deep Reserves" tickets'
+                required: false
+                default: "0"
+            count_withdraw_protocol_fee:
+                description: 'Number of "Withdraw Protocol Fee" tickets'
+                required: false
+                default: "0"
+            count_withdraw_coverage_fee:
+                description: 'Number of "Withdraw Coverage Fee" tickets'
+                required: false
+                default: "0"
+            count_update_pool_creation_fee:
+                description: 'Number of "Update Pool Creation Fee" tickets'
+                required: false
+                default: "0"
+
+jobs:
+    build-tickets-tx:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+
+            - name: Install Dependencies
+              run: npm ci
+
+            - name: Build Multiple Tickets
+              env:
+                  # Multisig specific config
+                  MULTISIG_ADDRESS: ${{ vars.MULTISIG_ADDRESS }}
+                  MULTISIG_SIGNERS_BASE64_PUBKEYS: ${{ vars.MULTISIG_SIGNERS_BASE64_PUBKEYS }}
+                  MULTISIG_THRESHOLD: ${{ vars.MULTISIG_THRESHOLD }}
+                  MULTISIG_WEIGHTS: ${{ vars.MULTISIG_WEIGHTS }}
+
+                  # Dynamic Inputs
+                  COUNT_UPDATE_DEFAULT_FEES: ${{ inputs.count_update_default_fees }}
+                  COUNT_UPDATE_POOL_SPECIFIC_FEES: ${{ inputs.count_update_pool_specific_fees }}
+                  COUNT_WITHDRAW_DEEP_RESERVES: ${{ inputs.count_withdraw_deep_reserves }}
+                  COUNT_WITHDRAW_PROTOCOL_FEE: ${{ inputs.count_withdraw_protocol_fee }}
+                  COUNT_WITHDRAW_COVERAGE_FEE: ${{ inputs.count_withdraw_coverage_fee }}
+                  COUNT_UPDATE_POOL_CREATION_FEE: ${{ inputs.count_update_pool_creation_fee }}
+              run: |
+                  npx tsx examples/ticket/create-multiple-tickets-ci.ts
