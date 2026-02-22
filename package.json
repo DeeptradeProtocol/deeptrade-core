@@ -15,14 +15,14 @@
   "author": "avernikoz@gmail.com",
   "license": "ISC",
   "dependencies": {
-    "@mysten/sui": "^1.21.2"
+    "@mysten/sui": "^1.42.2"
   },
   "devDependencies": {
     "@mysten/prettier-plugin-move": "^0.3.1",
     "@types/node": "^22.13.5",
     "dotenv": "^16.4.7",
     "prettier": "^3.6.2",
-    "ts-node": "^10.9.2",
+    "tsx": "4.21.0",
     "typescript": "^5.7.3"
   }
 }
