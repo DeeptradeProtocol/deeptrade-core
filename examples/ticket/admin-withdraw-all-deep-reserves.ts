@@ -4,23 +4,9 @@ import { getDeepReservesBalance } from "../treasury/utils/getDeepReservesBalance
 import { MULTISIG_CONFIG } from "../multisig/multisig";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
+import { parseTicketIds } from "./utils/parseTicketIds";
 
-// Read from TICKETS env, throw if empty or invalid
-const ticketsEnv = process.env.TICKETS;
-if (!ticketsEnv) {
-  throw new Error("TICKETS environment variable is required.");
-}
-
-const TICKETS_OBJECT_IDS: string[] = ticketsEnv
-  .split(",")
-  .map((id) => id.trim())
-  .filter((id) => id.length > 0);
-
-if (TICKETS_OBJECT_IDS.length === 0) {
-  throw new Error("TICKETS environment variable must contain at least one ticket ID.");
-}
-
-const TICKET_OBJECT_ID = TICKETS_OBJECT_IDS[0];
+const TICKET_OBJECT_ID = parseTicketIds()[0];
 
 // yarn ts-node examples/ticket/withdraw-all-deep-reserves.ts > withdraw-all-deep-reserves.log 2>&1
 (async () => {

@@ -5,21 +5,9 @@ import { getWithdrawFeeTx } from "./utils/getWithdrawFeeTx";
 import { Transaction } from "@mysten/sui/transactions";
 import { getTreasuryBags } from "../treasury/utils/getTreasuryBags";
 import { processFeesBag } from "../treasury/utils/processFeeBag";
+import { parseTicketIds } from "./utils/parseTicketIds";
 
-// Read from TICKETS env, throw if empty or invalid
-const ticketsEnv = process.env.TICKETS;
-if (!ticketsEnv) {
-  throw new Error("TICKETS environment variable is required.");
-}
-
-const TICKETS_OBJECT_IDS: string[] = ticketsEnv
-  .split(",")
-  .map((id) => id.trim())
-  .filter((id) => id.length > 0);
-
-if (TICKETS_OBJECT_IDS.length === 0) {
-  throw new Error("TICKETS environment variable must contain at least one ticket ID.");
-}
+const TICKETS_OBJECT_IDS = parseTicketIds();
 
 // yarn ts-node examples/ticket/admin-withdraw-protocol-fee.ts > admin-withdraw-protocol-fee.log 2>&1
 (async () => {

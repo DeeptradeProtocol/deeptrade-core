@@ -4,23 +4,9 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import { buildAndLogMultisigTransaction } from "../multisig/buildAndLogMultisigTransaction";
 import { createPoolFeeConfigTx } from "./utils/createPoolFeeConfigTx";
 import { poolSpecificFeesConfig } from "../fee-config";
+import { parseTicketIds } from "./utils/parseTicketIds";
 
-// Read from TICKETS env, throw if empty or invalid
-const ticketsEnv = process.env.TICKETS;
-if (!ticketsEnv) {
-  throw new Error("TICKETS environment variable is required.");
-}
-
-const TICKETS_OBJECT_IDS: string[] = ticketsEnv
-  .split(",")
-  .map((id) => id.trim())
-  .filter((id) => id.length > 0);
-
-if (TICKETS_OBJECT_IDS.length < poolSpecificFeesConfig.length) {
-  throw new Error(
-    `Not enough tickets provided! Found ${TICKETS_OBJECT_IDS.length} but need ${poolSpecificFeesConfig.length} for the pools defined in config.`,
-  );
-}
+const TICKETS_OBJECT_IDS = parseTicketIds(poolSpecificFeesConfig.length);
 
 // yarn ts-node examples/ticket/update-pool-specific-fees.ts > update-pool-specific-fees.log 2>&1
 (async () => {
