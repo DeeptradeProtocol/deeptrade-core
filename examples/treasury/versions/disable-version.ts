@@ -7,8 +7,18 @@ import {
 } from "../../constants";
 import { buildAndLogMultisigTransaction } from "../../multisig/buildAndLogMultisigTransaction";
 
-// Set the version to disable here
-const VERSION = 1;
+// Set the version to disable here (must be provided via ENV)
+const VERSION_ENV = process.env.PROTOCOL_VERSION;
+
+if (!VERSION_ENV) {
+  throw new Error("PROTOCOL_VERSION environment variable is required.");
+}
+
+const VERSION = parseInt(VERSION_ENV, 10);
+
+if (isNaN(VERSION) || VERSION < 0 || VERSION > 65535) {
+  throw new Error(`Invalid version: ${VERSION_ENV}. Must be a number between 0 and 65535.`);
+}
 
 // Usage: yarn ts-node examples/treasury/versions/disable-version.ts > disable-version.log 2>&1
 (async () => {
