@@ -1,4 +1,4 @@
-name: Manage Multisig Config
+name: Build Multisig Config Transaction
 
 on:
     workflow_dispatch:
