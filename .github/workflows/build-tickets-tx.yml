@@ -59,4 +59,4 @@ jobs:
                   COUNT_WITHDRAW_COVERAGE_FEE: ${{ inputs.count_withdraw_coverage_fee }}
                   COUNT_UPDATE_POOL_CREATION_FEE: ${{ inputs.count_update_pool_creation_fee }}
               run: |
-                  npx tsx examples/ticket/create-multiple-tickets-ci.ts
+                  npx tsx examples/ticket/create-multiple-tickets-custom.ts
