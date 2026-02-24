@@ -2,13 +2,19 @@ import { Transaction } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
 import { provider } from "../provider";
 import { MULTISIG_CONFIG } from "./multisig";
+import { GAS_PRICE } from "../constants";
 
 /**
  * Handles the boilerplate of building, dry running, and logging a multisig transaction.
  * @param tx - The transaction block to process.
  */
-export async function buildAndLogMultisigTransaction(tx: Transaction, sender = MULTISIG_CONFIG.address): Promise<void> {
+export async function buildAndLogMultisigTransaction(
+  tx: Transaction,
+  sender = MULTISIG_CONFIG.address,
+  gasPrice = GAS_PRICE,
+): Promise<void> {
   tx.setSender(sender);
+  tx.setGasPrice(gasPrice);
 
   const transactionBytes = await tx.build({ client: provider });
   const base64TxBytes = toBase64(transactionBytes);

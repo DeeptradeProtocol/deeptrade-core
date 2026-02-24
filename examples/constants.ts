@@ -18,3 +18,6 @@ export const USDC_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942
 export const WAL_COIN_TYPE = "0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL";
 // Decimals
 export const DEEP_DECIMALS = 6;
+
+// Gas price
+export const GAS_PRICE = 750;
