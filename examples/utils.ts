@@ -46,3 +46,10 @@ export function normalizeMnemonic(mnemonic: string): string {
 export function percentageInBillionths(percentage: number) {
   return (percentage / 100) * 1_000_000_000;
 }
+
+// Helper function to format balance with decimals
+export function formatBalance(balance: string | number | bigint, decimals: number = 9): string {
+  const balanceBigInt = BigInt(balance);
+  const amount = Number(balanceBigInt) / 10 ** decimals;
+  return amount.toFixed(decimals).replace(/\.?0+$/, "");
+}
