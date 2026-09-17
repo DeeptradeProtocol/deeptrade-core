@@ -54,8 +54,8 @@ public struct MultisigConfigUpdated has copy, drop {
 fun init(ctx: &mut TxContext) {
     let multisig_config = MultisigConfig {
         id: object::new(ctx),
-        public_keys: vector::empty(),
-        weights: vector::empty(),
+        public_keys: vector[],
+        weights: vector[],
         threshold: 0,
         initialized: false,
     };
