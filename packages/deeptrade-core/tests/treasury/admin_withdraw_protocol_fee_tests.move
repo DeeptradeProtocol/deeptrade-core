@@ -10,7 +10,7 @@ use deeptrade_core::ticket::{
     ticket_delay_duration,
     unwrap_ticket_destroyed_event,
     withdraw_deep_reserves_ticket_type,
-    withdraw_protocol_fee_ticket_type
+    withdraw_protocol_fee_ticket_type,
 };
 use deeptrade_core::treasury::{
     Self,
@@ -18,7 +18,7 @@ use deeptrade_core::treasury::{
     ProtocolFeeWithdrawn,
     init_for_testing,
     join_protocol_fee,
-    unwrap_protocol_fee_withdrawn_event
+    unwrap_protocol_fee_withdrawn_event,
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::balance;

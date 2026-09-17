@@ -9,13 +9,13 @@ use deepbook::pool_tests::{
     setup_reference_pool,
     place_limit_order,
     setup_pool_with_default_fees,
-    setup_pool_with_default_fees_and_reference_pool
+    setup_pool_with_default_fees_and_reference_pool,
 };
 use deepbook::registry::{Self, Registry};
 use deeptrade_core::helper::{
     get_sui_per_deep_from_reference_pool,
     EIneligibleReferencePool,
-    ENoAskPrice
+    ENoAskPrice,
 };
 use std::unit_test::assert_eq;
 use sui::clock::Clock;

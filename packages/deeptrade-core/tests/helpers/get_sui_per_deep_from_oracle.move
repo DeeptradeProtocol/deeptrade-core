@@ -5,13 +5,13 @@ use deeptrade_core::helper::{
     get_sui_per_deep_from_oracle,
     EInvalidPriceFeedIdentifier,
     EDecimalAdjustmentTooLarge,
-    EUnexpectedPositiveExponent
+    EUnexpectedPositiveExponent,
 };
 use deeptrade_core::oracle::{
     Self,
     EPriceConfidenceExceedsThreshold,
     EStalePrice,
-    EZeroPriceMagnitude
+    EZeroPriceMagnitude,
 };
 use pyth::i64;
 use pyth::price;

@@ -9,7 +9,7 @@ use deeptrade_core::ticket::{
     destroy_ticket,
     withdraw_coverage_fee_ticket_type,
     withdraw_protocol_fee_ticket_type,
-    withdraw_deep_reserves_ticket_type
+    withdraw_deep_reserves_ticket_type,
 };
 use sui::bag::{Self, Bag};
 use sui::balance::{Self, Balance};

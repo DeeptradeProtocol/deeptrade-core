@@ -10,7 +10,7 @@ use deeptrade_core::ticket::{
     ticket_delay_duration,
     unwrap_ticket_destroyed_event,
     withdraw_coverage_fee_ticket_type,
-    withdraw_protocol_fee_ticket_type
+    withdraw_protocol_fee_ticket_type,
 };
 use deeptrade_core::treasury::{
     Self,
@@ -18,7 +18,7 @@ use deeptrade_core::treasury::{
     CoverageFeeWithdrawn,
     init_for_testing,
     join_coverage_fee,
-    unwrap_coverage_fee_withdrawn_event
+    unwrap_coverage_fee_withdrawn_event,
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::balance;

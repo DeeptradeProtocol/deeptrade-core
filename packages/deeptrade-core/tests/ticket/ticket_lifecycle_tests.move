@@ -17,7 +17,7 @@ use deeptrade_core::ticket::{
     update_pool_specific_fees_ticket_type,
     withdraw_coverage_fee_ticket_type,
     withdraw_deep_reserves_ticket_type,
-    withdraw_protocol_fee_ticket_type
+    withdraw_protocol_fee_ticket_type,
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::clock;

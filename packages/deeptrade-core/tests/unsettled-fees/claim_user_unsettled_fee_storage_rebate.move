@@ -8,7 +8,7 @@ use deeptrade_core::fee_manager::{
     claim_user_unsettled_fee_storage_rebate,
     claim_user_unsettled_fee_storage_rebate_admin,
     settle_filled_order_fee_and_record,
-    start_protocol_fee_settlement
+    start_protocol_fee_settlement,
 };
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;

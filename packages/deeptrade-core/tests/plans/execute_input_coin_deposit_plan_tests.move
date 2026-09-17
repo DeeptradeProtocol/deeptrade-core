@@ -6,7 +6,7 @@ use deepbook::balance_manager_tests::{create_acct_and_share_with_funds, USDC, SP
 use deeptrade_core::dt_order::{
     execute_input_coin_deposit_plan,
     get_input_coin_deposit_plan,
-    assert_input_coin_deposit_plan_eq
+    assert_input_coin_deposit_plan_eq,
 };
 use std::unit_test::assert_eq;
 use sui::coin::mint_for_testing;

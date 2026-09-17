@@ -13,14 +13,14 @@ use deeptrade_core::fee::{
     EFeeOutOfRange,
     EInvalidFeeHierarchy,
     EInvalidFeePrecision,
-    EDiscountOutOfRange
+    EDiscountOutOfRange,
 };
 use deeptrade_core::ticket::{
     ETicketTypeMismatch,
     TicketDestroyed,
     unwrap_ticket_destroyed_event,
     update_default_fees_ticket_type,
-    update_pool_specific_fees_ticket_type
+    update_pool_specific_fees_ticket_type,
 };
 use deeptrade_core::trading_fee_config_init_tests::setup_with_trading_fee_config;
 use multisig::multisig_test_utils::get_test_multisig_address;

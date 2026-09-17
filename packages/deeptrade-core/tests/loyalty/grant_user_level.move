@@ -8,7 +8,7 @@ use deeptrade_core::loyalty::{
     LoyaltyAdminCap,
     ELoyaltyLevelNotFound,
     EUserAlreadyHasLoyaltyLevel,
-    ESenderIsNotLoyaltyAdmin
+    ESenderIsNotLoyaltyAdmin,
 };
 use deeptrade_core::multisig_config::{MultisigConfig, EMultisigConfigNotInitialized};
 use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
