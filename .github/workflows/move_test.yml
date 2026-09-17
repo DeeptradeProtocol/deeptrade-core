@@ -20,7 +20,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      SUI_VERSION: "1.62.1" # Parameterized Sui version
+      SUI_VERSION: "1.79.1" # Parameterized Sui version
 
     steps:
       - uses: actions/checkout@v6
