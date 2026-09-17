@@ -64,12 +64,16 @@ jobs:
 
       - name: Prepare Move.toml for tests
         run: |
-          # New package system has no [dev-dependencies] and rejects duplicate keys,
-          # so rewrite the existing pins.
-          perl -i -pe 's#MystenLabs/deepbookv3.git#DeeptradeProtocol/deepbookv3.git#; s/rev = "v3\.0\.0"/rev = "v3-tag-fork-test-methods"/' packages/deeptrade-core/Move.toml
-          perl -i -pe 's#pyth = \{ git = "https://github.com/pyth-network/pyth-crosschain.git"#pyth = { git = "https://github.com/DeeptradeProtocol/pyth-crosschain.git"#' packages/deeptrade-core/Move.toml
+          TOML=packages/deeptrade-core/Move.toml
+          # Comment production pins, then uncomment the test-fork lines (no duplicate keys).
+          perl -i -pe 's/^(deepbook = \{ git = "https:\/\/github.com\/MystenLabs\/deepbookv3.git".*\})/# $1/' "$TOML"
+          perl -i -pe 's/^(token = \{ git = "https:\/\/github.com\/MystenLabs\/deepbookv3.git".*\})/# $1/' "$TOML"
+          perl -i -pe 's/^(pyth = \{ git = "https:\/\/github.com\/pyth-network\/pyth-crosschain.git".*\})/# $1/' "$TOML"
+          perl -i -pe 's/^#\s*(deepbook = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/deepbookv3.git".*\})/$1/' "$TOML"
+          perl -i -pe 's/^#\s*(token = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/deepbookv3.git".*\})/$1/' "$TOML"
+          perl -i -pe 's/^#\s*(pyth = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/pyth-crosschain.git".*\})/$1/' "$TOML"
           echo "Move.toml after changes:"
-          cat packages/deeptrade-core/Move.toml
+          cat "$TOML"
 
       - name: Run Move tests for deeptrade-core
         run: |
