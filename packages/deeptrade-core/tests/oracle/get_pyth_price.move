@@ -5,7 +5,7 @@ use deeptrade_core::oracle::{
     get_pyth_price,
     EPriceConfidenceExceedsThreshold,
     EStalePrice,
-    EZeroPriceMagnitude
+    EZeroPriceMagnitude,
 };
 use pyth::i64;
 use pyth::price;

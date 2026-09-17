@@ -8,7 +8,7 @@ use deeptrade_core::fee::{
     TradingFeeConfig,
     calculate_protocol_fees,
     calculate_input_coin_deepbook_fee,
-    calculate_deep_reserves_coverage_order_fee
+    calculate_deep_reserves_coverage_order_fee,
 };
 use deeptrade_core::fee_manager::FeeManager;
 use deeptrade_core::helper::{
@@ -19,7 +19,7 @@ use deeptrade_core::helper::{
     calculate_order_taker_maker_ratio,
     apply_slippage,
     calculate_deep_fee_coverage_discount_rate,
-    hundred_percent
+    hundred_percent,
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::treasury::{Treasury, join_coverage_fee, deep_reserves, split_deep_reserves};

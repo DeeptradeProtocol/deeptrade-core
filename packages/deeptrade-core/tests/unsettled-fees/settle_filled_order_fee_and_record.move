@@ -9,7 +9,7 @@ use deepbook::pool_tests::place_limit_order;
 use deeptrade_core::fee_manager::{
     FeeManager,
     settle_filled_order_fee_and_record,
-    start_protocol_fee_settlement
+    start_protocol_fee_settlement,
 };
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
 use deeptrade_core::treasury::Treasury;

@@ -5,7 +5,7 @@ use deeptrade_core::dt_order::{
     validate_fees_against_max,
     EDeepRequiredExceedsMax,
     ECoverageFeeExceedsMax,
-    EInvalidSlippage
+    EInvalidSlippage,
 };
 use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
 use deeptrade_core::helper::apply_slippage;

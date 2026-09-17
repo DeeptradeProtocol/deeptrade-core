@@ -7,7 +7,7 @@ use deeptrade_core::fee::{
     new_pool_fee_config,
     get_fee_defaults,
     default_fees,
-    pool_specific_fees
+    pool_specific_fees,
 };
 use sui::table;
 use sui::test_scenario::{Self, Scenario};

@@ -7,7 +7,7 @@ use deeptrade_core::ticket::{
     AdminTicket,
     update_pool_creation_protocol_fee_ticket_type,
     validate_ticket,
-    destroy_ticket
+    destroy_ticket,
 };
 use deeptrade_core::treasury::{Treasury, join_protocol_fee};
 use sui::clock::Clock;

@@ -11,13 +11,13 @@ use deepbook::pool_tests::{
     setup_reference_pool,
     place_limit_order,
     add_deep_price_point,
-    set_time
+    set_time,
 };
 use deeptrade_core::fee;
 use deeptrade_core::fee_manager::{Self, FeeManager};
 use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
     new_deep_price_object,
-    new_sui_price_object
+    new_sui_price_object,
 };
 use deeptrade_core::helper;
 use deeptrade_core::loyalty::{Self, LoyaltyProgram};

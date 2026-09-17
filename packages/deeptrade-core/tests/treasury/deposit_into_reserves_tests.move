@@ -5,7 +5,7 @@ use deeptrade_core::treasury::{
     Self,
     Treasury,
     DeepReservesDeposited,
-    unwrap_deep_reserves_deposited_event
+    unwrap_deep_reserves_deposited_event,
 };
 use sui::event;
 use sui::test_scenario::{Self, Scenario};

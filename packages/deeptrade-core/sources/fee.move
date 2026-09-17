@@ -10,7 +10,7 @@ use deeptrade_core::helper::{
     get_sui_per_deep,
     calculate_market_order_params,
     hundred_percent,
-    apply_discount
+    apply_discount,
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::ticket::{
@@ -18,7 +18,7 @@ use deeptrade_core::ticket::{
     validate_ticket,
     destroy_ticket,
     update_default_fees_ticket_type,
-    update_pool_specific_fees_ticket_type
+    update_pool_specific_fees_ticket_type,
 };
 use pyth::price_info::PriceInfoObject;
 use std::u64;

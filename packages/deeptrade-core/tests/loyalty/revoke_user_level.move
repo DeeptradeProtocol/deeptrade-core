@@ -7,7 +7,7 @@ use deeptrade_core::loyalty::{
     LoyaltyAdminCap,
     LoyaltyProgram,
     EUserHasNoLoyaltyLevel,
-    ESenderIsNotLoyaltyAdmin
+    ESenderIsNotLoyaltyAdmin,
 };
 use std::unit_test::assert_eq;
 use sui::test_scenario::{end, return_shared};

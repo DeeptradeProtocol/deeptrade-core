@@ -9,7 +9,7 @@ use deeptrade_core::fee_manager::{
     settle_protocol_fee_and_record,
     start_protocol_fee_settlement,
     EInvalidOwner,
-    EProtocolUnsettledFeeNotEmpty
+    EProtocolUnsettledFeeNotEmpty,
 };
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;

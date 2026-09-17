@@ -10,7 +10,7 @@ use deeptrade_core::dt_pool::{
     unwrap_pool_creation_protocol_fee_updated_event,
     default_pool_creation_protocol_fee,
     pool_creation_protocol_fee,
-    EPoolCreationFeeOutOfRange
+    EPoolCreationFeeOutOfRange,
 };
 use deeptrade_core::pool_init_tests::setup_with_pool_creation_config;
 use deeptrade_core::ticket::{
@@ -18,7 +18,7 @@ use deeptrade_core::ticket::{
     TicketDestroyed,
     unwrap_ticket_destroyed_event,
     update_pool_creation_protocol_fee_ticket_type,
-    update_default_fees_ticket_type
+    update_default_fees_ticket_type,
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::clock;
