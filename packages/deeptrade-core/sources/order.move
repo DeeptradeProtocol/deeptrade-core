@@ -8,22 +8,24 @@ use deeptrade_core::fee::{
     TradingFeeConfig,
     calculate_protocol_fees,
     calculate_input_coin_deepbook_fee,
-    calculate_deep_reserves_coverage_order_fee
+    calculate_deep_reserves_coverage_order_fee,
 };
 use deeptrade_core::fee_manager::FeeManager;
 use deeptrade_core::helper::{
     calculate_deep_required,
     calculate_order_amount,
     get_sui_per_deep,
+    get_sui_per_deep_v2,
     calculate_market_order_params,
     calculate_order_taker_maker_ratio,
     apply_slippage,
     calculate_deep_fee_coverage_discount_rate,
-    hundred_percent
+    hundred_percent,
 };
 use deeptrade_core::loyalty::LoyaltyProgram;
 use deeptrade_core::treasury::{Treasury, join_coverage_fee, deep_reserves, split_deep_reserves};
 use pyth::price_info::PriceInfoObject;
+use pyth_upgraded::price_info::PriceInfoObject as PriceInfoObjectUpgraded;
 use std::type_name;
 use std::u64;
 use sui::balance;
@@ -260,6 +262,145 @@ public fun create_limit_order<BaseToken, QuoteToken, ReferenceBaseAsset, Referen
     (order_info, base_coin, quote_coin, deep_coin, sui_coin)
 }
 
+/// Creates a limit order on DeepBook using coins from various sources
+/// This function orchestrates the entire limit order creation process through the following steps:
+/// 1. Creates plans for:
+///    - DEEP coin sourcing from user wallet and treasury reserves
+///    - Coverage fee collection in SUI coins
+///    - Input coin deposits from wallet to balance manager
+/// 2. Executes the plans through shared preparation logic that:
+///    - Sources DEEP coins according to the DEEP plan
+///    - Collects coverage fees according to the coverage fee plan
+///    - Deposits input coins according to the input coin deposit plan
+/// 3. Places the limit order on DeepBook and returns the order info
+/// 4. Plans and charges protocol fees based on order execution results
+///
+/// Parameters:
+/// - treasury: The Deeptrade treasury instance managing the order process
+/// - fee_manager: User's fee manager for collecting protocol fees
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - pool: The trading pool where the order will be placed
+/// - reference_pool: Reference pool for price calculation
+/// - deep_usd_price_info: upgraded Pyth price info object for DEEP/USD price
+/// - sui_usd_price_info: upgraded Pyth price info object for SUI/USD price
+/// - balance_manager: User's balance manager for managing coin deposits
+/// - base_coin: Base token coins from user's wallet
+/// - quote_coin: Quote token coins from user's wallet
+/// - deep_coin: DEEP coins from user's wallet
+/// - sui_coin: SUI coins for fee payment
+/// - price: Order price in quote tokens per base token
+/// - quantity: Order quantity in base tokens
+/// - is_bid: True for buy orders, false for sell orders
+/// - expire_timestamp: Order expiration timestamp
+/// - order_type: Type of order (e.g., GTC, IOC, FOK)
+/// - self_matching_option: Self-matching behavior configuration
+/// - client_order_id: Client-provided order identifier
+/// - estimated_deep_required: Amount of DEEP tokens required for the order creation
+/// - estimated_deep_required_slippage: Maximum acceptable slippage for estimated DEEP requirement in billionths (e.g., 10_000_000 = 1%)
+/// - estimated_sui_fee: Estimated SUI fee which we can take as a protocol for the order creation
+/// - estimated_sui_fee_slippage: Maximum acceptable slippage for estimated SUI fee in billionths (e.g., 10_000_000 = 1%)
+/// - clock: System clock for timestamp verification
+public fun create_limit_order_v2<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
+    treasury: &mut Treasury,
+    fee_manager: &mut FeeManager,
+    trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
+    pool: &mut Pool<BaseToken, QuoteToken>,
+    reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
+    deep_usd_price_info: &PriceInfoObjectUpgraded,
+    sui_usd_price_info: &PriceInfoObjectUpgraded,
+    balance_manager: &mut BalanceManager,
+    mut base_coin: Coin<BaseToken>,
+    mut quote_coin: Coin<QuoteToken>,
+    mut deep_coin: Coin<DEEP>,
+    mut sui_coin: Coin<SUI>,
+    price: u64,
+    quantity: u64,
+    is_bid: bool,
+    expire_timestamp: u64,
+    order_type: u8,
+    self_matching_option: u8,
+    client_order_id: u64,
+    estimated_deep_required: u64,
+    estimated_deep_required_slippage: u64,
+    estimated_sui_fee: u64,
+    estimated_sui_fee_slippage: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>, Coin<DEEP>, Coin<SUI>) {
+    treasury.verify_version();
+
+    // Read more about expire timestamp and self matching option limitations in docs/unsettled-fees.md
+    // Verify the order expire timestamp is the max possible expire timestamp
+    let max_expire_timestamp = constants::max_u64();
+    assert!(expire_timestamp == max_expire_timestamp, ENotSupportedExpireTimestamp);
+
+    // Verify the self matching option is self matching allowed
+    assert!(
+        self_matching_option == constants::self_matching_allowed(),
+        ENotSupportedSelfMatchingOption,
+    );
+
+    let deep_required = calculate_deep_required(pool, quantity, price);
+    let order_amount = calculate_order_amount(quantity, price, is_bid);
+
+    let (proof, protocol_fee_discount_rate) = prepare_order_execution_v2(
+        treasury,
+        trading_fee_config,
+        loyalty_program,
+        pool,
+        reference_pool,
+        deep_usd_price_info,
+        sui_usd_price_info,
+        balance_manager,
+        &mut base_coin,
+        &mut quote_coin,
+        &mut deep_coin,
+        &mut sui_coin,
+        deep_required,
+        order_amount,
+        is_bid,
+        estimated_deep_required,
+        estimated_deep_required_slippage,
+        estimated_sui_fee,
+        estimated_sui_fee_slippage,
+        clock,
+        ctx,
+    );
+
+    let order_info = pool.place_limit_order(
+        balance_manager,
+        &proof,
+        client_order_id,
+        order_type,
+        self_matching_option,
+        price,
+        quantity,
+        is_bid,
+        true, // Using DEEP for fees
+        expire_timestamp,
+        clock,
+        ctx,
+    );
+
+    charge_protocol_fees(
+        fee_manager,
+        trading_fee_config,
+        pool,
+        balance_manager,
+        &mut base_coin,
+        &mut quote_coin,
+        &order_info,
+        order_amount,
+        protocol_fee_discount_rate,
+        true, // DEEP fee type
+        ctx,
+    );
+
+    (order_info, base_coin, quote_coin, deep_coin, sui_coin)
+}
+
 /// Creates a market order on DeepBook using coins from various sources
 /// This function orchestrates the entire market order creation process through the following steps:
 /// 1. Creates plans for:
@@ -339,6 +480,137 @@ public fun create_market_order<BaseToken, QuoteToken, ReferenceBaseAsset, Refere
     );
 
     let (proof, protocol_fee_discount_rate) = prepare_order_execution(
+        treasury,
+        trading_fee_config,
+        loyalty_program,
+        pool,
+        reference_pool,
+        deep_usd_price_info,
+        sui_usd_price_info,
+        balance_manager,
+        &mut base_coin,
+        &mut quote_coin,
+        &mut deep_coin,
+        &mut sui_coin,
+        deep_required,
+        order_amount,
+        is_bid,
+        estimated_deep_required,
+        estimated_deep_required_slippage,
+        estimated_sui_fee,
+        estimated_sui_fee_slippage,
+        clock,
+        ctx,
+    );
+
+    let order_info = pool.place_market_order(
+        balance_manager,
+        &proof,
+        client_order_id,
+        self_matching_option,
+        base_quantity,
+        is_bid,
+        true, // Using DEEP for fees
+        clock,
+        ctx,
+    );
+
+    charge_protocol_fees(
+        fee_manager,
+        trading_fee_config,
+        pool,
+        balance_manager,
+        &mut base_coin,
+        &mut quote_coin,
+        &order_info,
+        order_amount,
+        protocol_fee_discount_rate,
+        true, // DEEP fee type
+        ctx,
+    );
+
+    (order_info, base_coin, quote_coin, deep_coin, sui_coin)
+}
+
+/// Creates a market order on DeepBook using coins from various sources
+/// This function orchestrates the entire market order creation process through the following steps:
+/// 1. Creates plans for:
+///    - DEEP coin sourcing from user wallet and treasury reserves
+///    - Coverage fee collection in SUI coins
+///    - Input coin deposits from wallet to balance manager
+/// 2. Executes the plans through shared preparation logic that:
+///    - Sources DEEP coins according to the DEEP plan
+///    - Collects coverage fees according to the coverage fee plan
+///    - Deposits input coins according to the input coin deposit plan
+/// 3. Places the market order on DeepBook and returns the order info
+/// 4. Plans and charges protocol fees based on order execution results
+///
+/// Parameters:
+/// - treasury: The Deeptrade treasury instance managing the order process
+/// - fee_manager: User's fee manager for collecting protocol fees
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - pool: The trading pool where the order will be placed
+/// - reference_pool: Reference pool for price calculation
+/// - deep_usd_price_info: upgraded Pyth price info object for DEEP/USD price
+/// - sui_usd_price_info: upgraded Pyth price info object for SUI/USD price
+/// - balance_manager: User's balance manager for managing coin deposits
+/// - base_coin: Base token coins from user's wallet
+/// - quote_coin: Quote token coins from user's wallet
+/// - deep_coin: DEEP coins from user's wallet
+/// - sui_coin: SUI coins for fee payment
+/// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks). For bids, this amount
+///                 will be converted into base quantity using current order book state
+/// - is_bid: True for buy orders, false for sell orders
+/// - self_matching_option: Self-matching behavior configuration
+/// - client_order_id: Client-provided order identifier
+/// - estimated_deep_required: Amount of DEEP tokens required for the order creation
+/// - estimated_deep_required_slippage: Maximum acceptable slippage for estimated DEEP requirement in billionths (e.g., 10_000_000 = 1%)
+/// - estimated_sui_fee: Estimated SUI fee which we can take as a protocol for the order creation
+/// - estimated_sui_fee_slippage: Maximum acceptable slippage for estimated SUI fee in billionths (e.g., 10_000_000 = 1%)
+/// - clock: System clock for timestamp verification
+public fun create_market_order_v2<BaseToken, QuoteToken, ReferenceBaseAsset, ReferenceQuoteAsset>(
+    treasury: &mut Treasury,
+    fee_manager: &mut FeeManager,
+    trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
+    pool: &mut Pool<BaseToken, QuoteToken>,
+    reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
+    deep_usd_price_info: &PriceInfoObjectUpgraded,
+    sui_usd_price_info: &PriceInfoObjectUpgraded,
+    balance_manager: &mut BalanceManager,
+    mut base_coin: Coin<BaseToken>,
+    mut quote_coin: Coin<QuoteToken>,
+    mut deep_coin: Coin<DEEP>,
+    mut sui_coin: Coin<SUI>,
+    order_amount: u64,
+    is_bid: bool,
+    self_matching_option: u8,
+    client_order_id: u64,
+    estimated_deep_required: u64,
+    estimated_deep_required_slippage: u64,
+    estimated_sui_fee: u64,
+    estimated_sui_fee_slippage: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (OrderInfo, Coin<BaseToken>, Coin<QuoteToken>, Coin<DEEP>, Coin<SUI>) {
+    treasury.verify_version();
+
+    // Verify the self matching option is self matching allowed. Read more about self matching option
+    // limitations in docs/unsettled-fees.md
+    assert!(
+        self_matching_option == constants::self_matching_allowed(),
+        ENotSupportedSelfMatchingOption,
+    );
+
+    let (base_quantity, deep_required) = calculate_market_order_params<BaseToken, QuoteToken>(
+        pool,
+        order_amount,
+        is_bid,
+        clock,
+    );
+
+    let (proof, protocol_fee_discount_rate) = prepare_order_execution_v2(
         treasury,
         trading_fee_config,
         loyalty_program,
@@ -1402,6 +1674,174 @@ public(package) fun prepare_order_execution<
 
     // Get the best DEEP/SUI price
     let sui_per_deep = get_sui_per_deep(
+        deep_usd_price_info,
+        sui_usd_price_info,
+        reference_pool,
+        clock,
+    );
+
+    let is_pool_whitelisted = pool.whitelisted();
+
+    // Get balances from balance manager
+    let balance_manager_deep = balance_manager.balance<DEEP>();
+    let balance_manager_sui = balance_manager.balance<SUI>();
+    let balance_manager_base = balance_manager.balance<BaseToken>();
+    let balance_manager_quote = balance_manager.balance<QuoteToken>();
+    let balance_manager_input_coin = if (is_bid) balance_manager_quote else balance_manager_base;
+
+    // Get balances from wallet coins
+    let deep_in_wallet = deep_coin.value();
+    let sui_in_wallet = sui_coin.value();
+    let base_in_wallet = base_coin.value();
+    let quote_in_wallet = quote_coin.value();
+    let wallet_input_coin = if (is_bid) quote_in_wallet else base_in_wallet;
+
+    let treasury_deep_reserves = deep_reserves(treasury);
+    let max_deep_fee_coverage_discount_rate = trading_fee_config
+        .get_pool_fee_config(pool)
+        .max_deep_fee_coverage_discount_rate();
+
+    // Determine input coin type
+    let input_coin_is_sui = if (is_bid)
+        type_name::with_original_ids<QuoteToken>() == type_name::with_original_ids<SUI>()
+    else type_name::with_original_ids<BaseToken>() == type_name::with_original_ids<SUI>();
+    let input_coin_is_deep = if (is_bid)
+        type_name::with_original_ids<QuoteToken>() == type_name::with_original_ids<DEEP>()
+    else type_name::with_original_ids<BaseToken>() == type_name::with_original_ids<DEEP>();
+
+    let (deep_plan, coverage_fee_plan, input_coin_deposit_plan) = create_order_core(
+        is_pool_whitelisted,
+        deep_required,
+        balance_manager_deep,
+        balance_manager_sui,
+        balance_manager_input_coin,
+        deep_in_wallet,
+        sui_in_wallet,
+        wallet_input_coin,
+        treasury_deep_reserves,
+        order_amount,
+        sui_per_deep,
+        input_coin_is_sui,
+        input_coin_is_deep,
+    );
+
+    validate_fees_against_max(
+        deep_required,
+        deep_plan.from_deep_reserves,
+        sui_per_deep,
+        estimated_deep_required,
+        estimated_deep_required_slippage,
+        estimated_sui_fee,
+        estimated_sui_fee_slippage,
+    );
+
+    // Calculate total protocol fees discount rate
+    let coverage_discount_rate = calculate_deep_fee_coverage_discount_rate(
+        max_deep_fee_coverage_discount_rate,
+        deep_plan.from_deep_reserves,
+        deep_required,
+    );
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+
+    // Ensure the total discount rate doesn't exceed 100%
+    let total_discount_rate = u64::min(
+        coverage_discount_rate + loyalty_discount_rate,
+        hundred_percent(),
+    );
+
+    execute_deep_plan(treasury, balance_manager, deep_coin, &deep_plan, ctx);
+
+    execute_coverage_fee_plan(
+        treasury,
+        balance_manager,
+        sui_coin,
+        &coverage_fee_plan,
+        ctx,
+    );
+
+    execute_input_coin_deposit_plan(
+        balance_manager,
+        base_coin,
+        quote_coin,
+        &input_coin_deposit_plan,
+        is_bid,
+        ctx,
+    );
+
+    // Generate and return proof and protocol fee discount rate
+    (balance_manager.generate_proof_as_owner(ctx), total_discount_rate)
+}
+
+/// Prepares order execution by handling all common order creation logic:
+/// 1. Verifies the caller owns the balance manager
+/// 2. Creates plans for DEEP sourcing, coverage fee collection, and input coin deposit
+/// 3. Verifies that actual DEEP required and coverage fee don't exceed maximums with slippage
+/// 4. Executes the plans in sequence:
+///    - Sources DEEP coins from user wallet and treasury reserves according to DeepPlan
+///    - Collects coverage fees in SUI coins according to CoverageFeePlan
+///    - Deposits required input coins according to InputCoinDepositPlan
+/// 5. Returns unused DEEP and SUI coins to the caller
+/// 6. Returns the balance manager proof needed for order placement and protocol fee discount rate
+///
+/// This function contains the shared execution logic between limit and market orders,
+/// processing the plans created by create_order_core.
+///
+/// Parameters:
+/// - treasury: The Deeptrade treasury instance managing the order process
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - pool: The trading pool where the order will be placed
+/// - reference_pool: Reference pool used for fallback DEEP/SUI price calculation
+/// - deep_usd_price_info: upgraded Pyth price info object for DEEP/USD price
+/// - sui_usd_price_info: upgraded Pyth price info object for SUI/USD price
+/// - balance_manager: User's balance manager for managing coin deposits
+/// - base_coin: Base token coins from user's wallet
+/// - quote_coin: Quote token coins from user's wallet
+/// - deep_coin: DEEP coins from user's wallet
+/// - sui_coin: SUI coins for fee payment
+/// - deep_required: Amount of DEEP required for the order
+/// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
+/// - is_bid: True for buy orders, false for sell orders
+/// - estimated_deep_required: Amount of DEEP tokens required for the order creation
+/// - estimated_deep_required_slippage: Maximum acceptable slippage for estimated DEEP requirement in billionths (e.g., 10_000_000 = 1%)
+/// - estimated_sui_fee: Estimated SUI fee which we can take as a protocol for the order creation
+/// - estimated_sui_fee_slippage: Maximum acceptable slippage for estimated SUI fee in billionths (e.g., 10_000_000 = 1%)
+/// - clock: System clock for timestamp verification
+public(package) fun prepare_order_execution_v2<
+    BaseToken,
+    QuoteToken,
+    ReferenceBaseAsset,
+    ReferenceQuoteAsset,
+>(
+    treasury: &mut Treasury,
+    trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
+    pool: &Pool<BaseToken, QuoteToken>,
+    reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
+    deep_usd_price_info: &PriceInfoObjectUpgraded,
+    sui_usd_price_info: &PriceInfoObjectUpgraded,
+    balance_manager: &mut BalanceManager,
+    base_coin: &mut Coin<BaseToken>,
+    quote_coin: &mut Coin<QuoteToken>,
+    deep_coin: &mut Coin<DEEP>,
+    sui_coin: &mut Coin<SUI>,
+    deep_required: u64,
+    order_amount: u64,
+    is_bid: bool,
+    estimated_deep_required: u64,
+    estimated_deep_required_slippage: u64,
+    estimated_sui_fee: u64,
+    estimated_sui_fee_slippage: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (TradeProof, u64) {
+    treasury.verify_version();
+
+    // Verify the caller owns the balance manager
+    assert!(balance_manager.owner() == ctx.sender(), EInvalidOwner);
+
+    // Get the best DEEP/SUI price
+    let sui_per_deep = get_sui_per_deep_v2(
         deep_usd_price_info,
         sui_usd_price_info,
         reference_pool,
