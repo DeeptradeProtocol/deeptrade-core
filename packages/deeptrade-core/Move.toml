@@ -14,9 +14,8 @@ pyth = { git = "https://github.com/pyth-network/pyth-crosschain.git", subdir = "
 # linked at once so the legacy entrypoints keep their frozen signatures.
 pyth_upgraded = { git = "https://github.com/pyth-network/pyth-crosschain.git", subdir = "target_chains/sui/contracts", rev = "sui-pro-compatible-contract-mainnet", rename-from = "pyth" }
 
-# Test-only overrides: the new package system has no [dev-dependencies].
-# For `sui move test`, swap the git deps above (or use local paths) the same way as before:
+# For `sui move test`, comment the live pin above and uncomment the matching test-fork line.
+# Never leave both uncommented (duplicate key). Restore production pins before commit.
 # deepbook = { git = "https://github.com/DeeptradeProtocol/deepbookv3.git", subdir = "packages/deepbook", rev = "v3-tag-fork-test-methods" }
+# token = { git = "https://github.com/DeeptradeProtocol/deepbookv3.git", subdir = "packages/token", rev = "v3-tag-fork-test-methods", override = true }
 # pyth = { git = "https://github.com/DeeptradeProtocol/pyth-crosschain.git", subdir = "target_chains/sui/contracts", rev = "sui-contract-mainnet" }
-# deepbook = { local = "../deepbook" }
-# pyth = { local = "../pyth" }
