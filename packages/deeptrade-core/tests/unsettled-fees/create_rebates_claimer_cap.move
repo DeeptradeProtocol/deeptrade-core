@@ -4,7 +4,11 @@ module deeptrade_core::create_rebates_claimer_cap_tests;
 use deeptrade_core::admin;
 use deeptrade_core::fee_manager::{Self, RebatesClaimerCap};
 use deeptrade_core::initialize_multisig_config_tests::setup;
-use deeptrade_core::multisig_config::{MultisigConfig, EMultisigConfigNotInitialized, ESenderIsNotValidMultisig};
+use deeptrade_core::multisig_config::{
+    MultisigConfig,
+    EMultisigConfigNotInitialized,
+    ESenderIsNotValidMultisig,
+};
 use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
