@@ -8,7 +8,7 @@ use deeptrade_core::ticket::{
     AdminTicket,
     ETicketNotExpired,
     TicketDestroyed,
-    withdraw_deep_reserves_ticket_type
+    withdraw_deep_reserves_ticket_type,
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::clock;

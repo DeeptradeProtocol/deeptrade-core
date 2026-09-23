@@ -7,12 +7,12 @@ use deepbook::pool::Pool;
 use deepbook::pool_tests::{setup_test, setup_reference_pool};
 use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
     new_deep_price_object,
-    new_sui_price_object
+    new_sui_price_object,
 };
 use deeptrade_core::helper::{
     get_sui_per_deep,
     get_sui_per_deep_from_oracle,
-    get_sui_per_deep_from_reference_pool
+    get_sui_per_deep_from_reference_pool,
 };
 use pyth::price_info;
 use std::unit_test::assert_eq;

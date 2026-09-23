@@ -7,7 +7,7 @@ use deeptrade_core::loyalty::{
     LoyaltyAdminCap,
     LoyaltyProgram,
     ELoyaltyLevelNotFound,
-    ELoyaltyLevelHasUsers
+    ELoyaltyLevelHasUsers,
 };
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use multisig::multisig_test_utils::get_test_multisig_address;

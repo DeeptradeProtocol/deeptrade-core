@@ -5,7 +5,7 @@ use deeptrade_core::dt_pool::{
     Self as pool,
     PoolCreationConfig,
     pool_creation_protocol_fee,
-    default_pool_creation_protocol_fee
+    default_pool_creation_protocol_fee,
 };
 use sui::test_scenario::{Self, Scenario};
 

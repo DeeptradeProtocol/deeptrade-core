@@ -20,14 +20,14 @@ use deeptrade_core::fee::{
     get_pool_fee_config,
     deep_fee_type_rates,
     input_coin_fee_type_rates,
-    max_deep_fee_coverage_discount_rate
+    max_deep_fee_coverage_discount_rate,
 };
 use deeptrade_core::ticket::{
     ETicketTypeMismatch,
     TicketDestroyed,
     unwrap_ticket_destroyed_event,
     update_default_fees_ticket_type,
-    update_pool_specific_fees_ticket_type
+    update_pool_specific_fees_ticket_type,
 };
 use deeptrade_core::trading_fee_config_init_tests::setup_with_trading_fee_config;
 use multisig::multisig_test_utils::get_test_multisig_address;

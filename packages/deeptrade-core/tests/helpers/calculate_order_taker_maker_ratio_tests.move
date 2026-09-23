@@ -5,7 +5,7 @@ use deepbook::constants::{live, partially_filled, filled, canceled, expired};
 use deeptrade_core::helper::{
     calculate_order_taker_maker_ratio,
     EZeroOriginalQuantity,
-    EExecutedQuantityExceedsOriginal
+    EExecutedQuantityExceedsOriginal,
 };
 use std::unit_test::assert_eq;
 

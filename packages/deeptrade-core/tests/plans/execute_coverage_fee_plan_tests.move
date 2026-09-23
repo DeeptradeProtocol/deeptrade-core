@@ -6,7 +6,7 @@ use deepbook::balance_manager_tests::create_acct_and_share_with_funds;
 use deeptrade_core::dt_order::{
     execute_coverage_fee_plan,
     get_coverage_fee_plan,
-    assert_coverage_fee_plan_eq
+    assert_coverage_fee_plan_eq,
 };
 use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
 use deeptrade_core::treasury::{Self, Treasury};

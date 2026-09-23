@@ -6,7 +6,7 @@ use deeptrade_core::loyalty::{
     LoyaltyAdminCap,
     LoyaltyProgram,
     ELoyaltyLevelAlreadyExists,
-    EInvalidFeeDiscountRate
+    EInvalidFeeDiscountRate,
 };
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;

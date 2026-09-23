@@ -10,7 +10,7 @@ use deeptrade_core::dt_order::prepare_order_execution;
 use deeptrade_core::fee::{Self, TradingFeeConfig};
 use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
     new_deep_price_object,
-    new_sui_price_object
+    new_sui_price_object,
 };
 use deeptrade_core::helper::hundred_percent;
 use deeptrade_core::loyalty::{Self, LoyaltyProgram};

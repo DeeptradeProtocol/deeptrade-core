@@ -8,7 +8,7 @@ use deepbook::pool::Pool;
 use deepbook::pool_tests::{
     setup_test,
     setup_pool_with_default_fees_and_reference_pool,
-    place_limit_order
+    place_limit_order,
 };
 use deeptrade_core::fee_manager::{Self, FeeManager, settle_user_fees};
 use deeptrade_core::treasury;

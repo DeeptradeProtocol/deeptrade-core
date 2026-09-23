@@ -9,7 +9,7 @@ use deeptrade_core::dt_order::{
     DeepPlan,
     CoverageFeePlan,
     InputCoinDepositPlan,
-    EInvalidInputCoinType
+    EInvalidInputCoinType,
 };
 use deeptrade_core::fee::calculate_deep_reserves_coverage_order_fee;
 use deeptrade_core::helper::calculate_order_amount;

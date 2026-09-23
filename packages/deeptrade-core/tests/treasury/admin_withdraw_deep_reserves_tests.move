@@ -10,7 +10,7 @@ use deeptrade_core::ticket::{
     ticket_delay_duration,
     unwrap_ticket_destroyed_event,
     update_default_fees_ticket_type,
-    withdraw_deep_reserves_ticket_type
+    withdraw_deep_reserves_ticket_type,
 };
 use deeptrade_core::treasury::{
     Self,
@@ -18,7 +18,7 @@ use deeptrade_core::treasury::{
     init_for_testing,
     unwrap_deep_reserves_withdrawn_event,
     DeepReservesWithdrawn,
-    EInsufficientDeepReserves
+    EInsufficientDeepReserves,
 };
 use multisig::multisig_test_utils::get_test_multisig_address;
 use sui::clock;

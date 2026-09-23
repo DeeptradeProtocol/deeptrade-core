@@ -8,18 +8,18 @@ use deeptrade_core::multisig_config::{
     MultisigConfigUpdated,
     ENewAddressIsOldAddress,
     EMultisigConfigNotInitialized,
-    ETooFewSigners
+    ETooFewSigners,
 };
 use multisig::multisig::{
     Self,
     ELengthsOfPksAndWeightsAreNotEqual,
-    EThresholdIsPositiveAndNotGreaterThanTheSumOfWeights
+    EThresholdIsPositiveAndNotGreaterThanTheSumOfWeights,
 };
 use multisig::multisig_test_utils::{
     get_test_multisig_pks,
     get_test_multisig_weights,
     get_test_multisig_threshold,
-    get_test_multisig_address
+    get_test_multisig_address,
 };
 use std::unit_test::assert_eq;
 use sui::event;

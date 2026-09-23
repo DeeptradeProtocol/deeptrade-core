@@ -9,7 +9,7 @@ use deeptrade_core::dt_pool::{
     PoolCreated,
     ENotEnoughFee,
     ECreationFeeTooLarge,
-    PoolCreationConfig
+    PoolCreationConfig,
 };
 use deeptrade_core::pool_init_tests;
 use deeptrade_core::treasury::{Self, Treasury};

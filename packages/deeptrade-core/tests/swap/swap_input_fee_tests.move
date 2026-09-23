@@ -9,7 +9,7 @@ use deeptrade_core::loyalty::{Self, LoyaltyAdminCap, LoyaltyProgram};
 use deeptrade_core::swap::{
     swap_exact_base_for_quote_input_fee,
     swap_exact_quote_for_base_input_fee,
-    EInsufficientOutputAmount
+    EInsufficientOutputAmount,
 };
 use deeptrade_core::treasury;
 use sui::clock::Clock;
