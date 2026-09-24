@@ -9,7 +9,7 @@ the `UpgradeCap`.
 | Goal                                 | Choice                                                                                  |
 | ------------------------------------ | --------------------------------------------------------------------------------------- |
 | Upgrades require multisig            | `UpgradeCap` is owned by the admin multisig, not a CI deploy key                        |
-| Observers can trust the build        | GitHub Actions builds bytecode and attests it with **SLSA3**                            |
+| Observers can trust the build        | GitHub Actions builds bytecode and attests it with **SLSA Build L3** (Artifact Attestations via a reusable signer workflow) |
 | CI must not be able to upgrade alone | Workflow is **provenance-only**: it never calls `signAndExecute` / never spends the cap |
 | Post-upgrade source check            | `Published.toml` records address + `toolchain-version` for `sui client verify-source`   |
 
@@ -28,9 +28,10 @@ Same idea as recording `toolchain-version` for source verification (see e.g. [De
 4. Run **Actions → Upgrade Package** (`upgrade_package.yml`) on that commit.
    - Input **`UPGRADE_CAP_ADDRESS_HOLDER`**: address that owns the UpgradeCap (usually the admin multisig). Used as `--sender`.
    - `upgrade-capability` is read from `Published.toml` (not an input).
-5. Download artifacts:
-   - `bytecode.dump.json`, `upgrade.manifest.json`, `upgrade.intoto.jsonl` (SLSA subjects)
+5. Download artifacts from the workflow run:
+   - `bytecode.dump.json`, `upgrade.manifest.json` (attested subjects)
    - `unsigned-upgrade.b64` — unsigned PTB (`authorize_upgrade` + `Upgrade` + `commit_upgrade`)
+   - Provenance is in the repo [Attestations](https://github.com/DeeptradeProtocol/deeptrade-core/attestations) tab (not a separate `.intoto.jsonl` artifact)
 6. CI already asserts the dump digest is embedded in `unsigned-upgrade.b64`. Observers should
    still rebuild locally and re-check; then multisig-sign `unsigned-upgrade.b64` and
    `sui client execute-signed-tx`.
@@ -44,13 +45,16 @@ Same idea as recording `toolchain-version` for source verification (see e.g. [De
 ### A. Before / during the upgrade (CI provenance)
 
 1. Open the workflow run for the claimed commit; download the artifacts (including `unsigned-upgrade.b64`).
-2. Verify SLSA3:
+2. Verify SLSA Build L3 (GitHub Artifact Attestations). Pin the reusable signer workflow:
 
    ```bash
-   slsa-verifier verify-artifact bytecode.dump.json \
-     --provenance-path upgrade.intoto.jsonl \
-     --source-uri github.com/DeeptradeProtocol/deeptrade-core
+   gh attestation verify bytecode.dump.json \
+     --repo DeeptradeProtocol/deeptrade-core \
+     --signer-workflow DeeptradeProtocol/deeptrade-core/.github/workflows/attest-upgrade-subjects.yml
    ```
+
+   (Same command for `upgrade.manifest.json`.) You can also browse
+   [Attestations](https://github.com/DeeptradeProtocol/deeptrade-core/attestations).
 
 3. Rebuild from that commit with the same Sui version as the manifest and compare digests:
 
@@ -86,16 +90,17 @@ sui client verify-source --toolchain-version 1.80.1
 
 | Check                         | Proves                                                                                 |
 | ----------------------------- | -------------------------------------------------------------------------------------- |
-| SLSA3 on `bytecode.dump.json` | This dump was built by GitHub Actions for this repo and not tampered after attestation |
+| GitHub attestation (L3) on `bytecode.dump.json` | Dump was attested by the isolated reusable signer workflow for this repo; not tampered after attestation (`--signer-workflow` pins L3) |
 | Local rebuild digest match    | That dump matches this git tree + toolchain                                            |
 | Digest ↔ upgrade tx (CI + observers) | Dump digest bytes appear in `unsigned-upgrade.b64` (CI fails the run if not) |
 | `sui client verify-source`    | Checked-out source + recorded toolchain match the **on-chain** package                 |
 
-SLSA alone does not authorize or execute the upgrade; multisig signers remain the authority.
+Attestation alone does not authorize or execute the upgrade; multisig signers remain the authority.
 
 ## Related files
 
 - `.github/workflows/upgrade_package.yml` — provenance CI
+- `.github/workflows/attest-upgrade-subjects.yml` — reusable L3 attestor (digest-only)
 - `.github/workflows/publish_package.yml` — initial publish + MVR (separate, key-signed)
 - `packages/deeptrade-core/Published.toml` — publication metadata
 - [dev-notes.md](./dev-notes.md) — CLI upgrade commands

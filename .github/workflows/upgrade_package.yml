@@ -1,8 +1,9 @@
 # Provenance-only upgrade build (no on-chain execute).
 #
-# Builds deeptrade-core bytecode in CI, attests it with SLSA3, serializes an
-# unsigned upgrade PTB for the UpgradeCap holder (multisig), and uploads
-# artifacts — without signing or executing (CI never spends the UpgradeCap).
+# Builds deeptrade-core bytecode in CI, attests dump + manifest with GitHub
+# Artifact Attestations (SLSA Build L3 via attest-upgrade-subjects.yml),
+# serializes an unsigned upgrade PTB for the UpgradeCap holder (multisig), and
+# uploads artifacts — without signing or executing (CI never spends the UpgradeCap).
 #
 # Observer / operator guide: docs/upgrade-provenance.md
 
@@ -20,6 +21,7 @@ permissions:
   contents: read
   id-token: write
   actions: read
+  attestations: write
 
 jobs:
   build:
@@ -32,7 +34,8 @@ jobs:
       GAS_BUDGET: "1000000000"
       MAINNET_RPC: "https://fullnode.mainnet.sui.io:443"
     outputs:
-      base64_hashes: ${{ steps.hash.outputs.base64_hashes }}
+      dump_sha256: ${{ steps.hash.outputs.dump_sha256 }}
+      manifest_sha256: ${{ steps.hash.outputs.manifest_sha256 }}
       git_commit: ${{ github.sha }}
       sui_version: ${{ env.SUI_VERSION }}
     steps:
@@ -131,7 +134,7 @@ jobs:
           echo "Unsigned upgrade bytes written ($(wc -c < unsigned-upgrade.b64) chars)"
 
       # Catches non-malicious drift between dump and serialize steps (not a substitute for
-      # external rebuild + SLSA). Package digest is a 32-byte value embedded in authorize_upgrade.
+      # external rebuild + attestation verify). Package digest is a 32-byte value embedded in authorize_upgrade.
       - name: Assert dump digest is bound in unsigned upgrade PTB
         working-directory: ${{ env.PACKAGE_PATH }}
         run: |
@@ -239,39 +242,38 @@ jobs:
           if-no-files-found: error
 
       - id: hash
-        name: Hash subjects for SLSA provenance
+        name: Hash subjects for attestation
         working-directory: ${{ env.PACKAGE_PATH }}
         run: |
           set -euo pipefail
           # Attest dump + manifest (stable build identity). Unsigned tx is uploaded
           # separately — gas object picks can differ across runs with the same code.
-          HASHES="$(sha256sum bytecode.dump.json upgrade.manifest.json)"
-          echo "Subjects:"
-          echo "$HASHES"
-          echo "base64_hashes=$(echo -n "$HASHES" | base64 -w0)" >> "$GITHUB_OUTPUT"
+          DUMP_SHA="$(sha256sum bytecode.dump.json | cut -d' ' -f1)"
+          MANIFEST_SHA="$(sha256sum upgrade.manifest.json | cut -d' ' -f1)"
+          echo "bytecode.dump.json sha256=$DUMP_SHA"
+          echo "upgrade.manifest.json sha256=$MANIFEST_SHA"
+          echo "dump_sha256=$DUMP_SHA" >> "$GITHUB_OUTPUT"
+          echo "manifest_sha256=$MANIFEST_SHA" >> "$GITHUB_OUTPUT"
 
-  provenance:
+  # SLSA Build L3: signing isolated in reusable workflow (digests only).
+  attest:
     needs: build
     permissions:
-      actions: read
       id-token: write
-      contents: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+      attestations: write
+      contents: read
+    uses: ./.github/workflows/attest-upgrade-subjects.yml
     with:
-      base64-subjects: ${{ needs.build.outputs.base64_hashes }}
-      upload-assets: false
-      provenance-name: upgrade.intoto.jsonl
+      dump_sha256: ${{ needs.build.outputs.dump_sha256 }}
+      manifest_sha256: ${{ needs.build.outputs.manifest_sha256 }}
 
   verify:
-    needs: [build, provenance]
+    needs: [build, attest]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: read
     steps:
-      - name: Download provenance
-        uses: actions/download-artifact@v7
-        with:
-          name: upgrade.intoto.jsonl
-          path: .
-
       - name: Download bytecode.dump.json
         uses: actions/download-artifact@v7
         with:
@@ -284,22 +286,17 @@ jobs:
           name: upgrade.manifest.json
           path: .
 
-      - name: Install slsa-verifier
+      - name: Verify GitHub attestations (SLSA Build L3)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          curl -sSfL https://github.com/slsa-framework/slsa-verifier/releases/latest/download/slsa-verifier-linux-amd64 -o slsa-verifier
-          chmod +x slsa-verifier
-          sudo mv slsa-verifier /usr/local/bin/
-          slsa-verifier version || true
-
-      - name: Verify SLSA provenance
-        run: |
-          set -euo pipefail
+          SIGNER="${{ github.repository }}/.github/workflows/attest-upgrade-subjects.yml"
           for FILE in bytecode.dump.json upgrade.manifest.json; do
             echo "Verifying $FILE..."
-            slsa-verifier verify-artifact "$FILE" \
-              --provenance-path upgrade.intoto.jsonl \
-              --source-uri "github.com/${{ github.repository }}"
+            gh attestation verify "$FILE" \
+              --repo "${{ github.repository }}" \
+              --signer-workflow "$SIGNER"
           done
 
       - name: Print observer instructions
@@ -312,8 +309,12 @@ jobs:
           UPGRADE_CAP=$(jq -r '.upgrade_cap' upgrade.manifest.json)
           HOLDER=$(jq -r '.upgrade_cap_address_holder' upgrade.manifest.json)
           PUBLISHED_AT=$(jq -r '.published_at' upgrade.manifest.json)
+          REPO="${{ github.repository }}"
+          SIGNER="$REPO/.github/workflows/attest-upgrade-subjects.yml"
           {
             echo "## Upgrade provenance ready (no on-chain execute)"
+            echo ""
+            echo "SLSA Build L3 via GitHub Artifact Attestations (signer: \`$SIGNER\`)."
             echo ""
             echo "| Field | Value |"
             echo "| --- | --- |"
@@ -329,11 +330,11 @@ jobs:
             echo "- \`bytecode.dump.json\` — modules / dependencies / package digest"
             echo "- \`upgrade.manifest.json\` — build identity"
             echo "- \`unsigned-upgrade.b64\` — unsigned PTB (authorize + upgrade + commit) for multisig signing"
-            echo "- \`upgrade.intoto.jsonl\` — SLSA3 over dump + manifest"
+            echo "- Provenance: [Attestations](https://github.com/$REPO/attestations) (SLSA Build L3 over dump + manifest)"
             echo ""
             echo "### External observer checklist (before / during upgrade)"
             echo "1. Download artifacts from this workflow run."
-            echo "2. \`slsa-verifier verify-artifact bytecode.dump.json --provenance-path upgrade.intoto.jsonl --source-uri github.com/${{ github.repository }}\`"
+            echo "2. \`gh attestation verify bytecode.dump.json --repo $REPO --signer-workflow $SIGNER\`"
             echo "3. Checkout \`$COMMIT\`, install Sui \`$SUI_VERSION\`, rebuild with \`sui move build --dump-bytecode-as-base64\` in \`packages/deeptrade-core\`, confirm \`.digest\` matches \`package_digest\`."
             echo "4. CI already verified that the package digest from \`bytecode.dump.json\` appears inside \`unsigned-upgrade.b64\` (so dump and serialize agree)."
             echo "5. Still rebuild locally if you are an external observer; then multisig-sign \`unsigned-upgrade.b64\` and run \`sui client execute-signed-tx\`."
