@@ -67,10 +67,8 @@ jobs:
           TOML=packages/deeptrade-core/Move.toml
           # Comment production pins, then uncomment the test-fork lines (no duplicate keys).
           perl -i -pe 's/^(deepbook = \{ git = "https:\/\/github.com\/MystenLabs\/deepbookv3.git".*\})/# $1/' "$TOML"
-          perl -i -pe 's/^(token = \{ git = "https:\/\/github.com\/MystenLabs\/deepbookv3.git".*\})/# $1/' "$TOML"
           perl -i -pe 's/^(pyth = \{ git = "https:\/\/github.com\/pyth-network\/pyth-crosschain.git".*\})/# $1/' "$TOML"
           perl -i -pe 's/^#\s*(deepbook = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/deepbookv3.git".*\})/$1/' "$TOML"
-          perl -i -pe 's/^#\s*(token = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/deepbookv3.git".*\})/$1/' "$TOML"
           perl -i -pe 's/^#\s*(pyth = \{ git = "https:\/\/github.com\/DeeptradeProtocol\/pyth-crosschain.git".*\})/$1/' "$TOML"
           echo "Move.toml after changes:"
           cat "$TOML"
