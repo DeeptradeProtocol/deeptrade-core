@@ -52,9 +52,13 @@ When an order is completed (e.g., fully filled) or cancelled externally, the fee
 
 The permissionless settlement functions (Path B) intentionally leave empty structs and values in the bags. This is a crucial design choice that separates fee settlement from storage rebate claims.
 
-- The user who owns the `FeeManager` has the primary right to reclaim their initial storage deposit by calling one of the `claim_*_storage_rebate` functions. This action destroys the now-empty structs, returning the storage fee to the user.
+Three actors can destroy those empty entries and reclaim the storage rebate:
 
-- For the long-term health and economic sustainability of the protocol, a protocol admin may also perform this cleanup. At a large scale, with potentially millions of users, the gas cost of settling countless small protocol fees can exceed the value of the fees themselves. Reclaiming the storage fees from abandoned structs helps subsidize these essential maintenance operations. This ensures that the fee settlement system remains efficient and economically viable for the protocol, which benefits all users by keeping the platform running smoothly.
+- **`FeeManager` owner**: The user who owns the `FeeManager` can reclaim their initial storage deposit by calling one of the `claim_*_storage_rebate` functions. This action destroys the now-empty structs, returning the storage fee to the user.
+- **Protocol admin (multisig)**: For the long-term health and economic sustainability of the protocol, a protocol admin may also perform this cleanup via the `*_admin` claim paths. At a large scale, with potentially millions of users, the gas cost of settling countless small protocol fees can exceed the value of the fees themselves. Reclaiming the storage fees from abandoned structs helps subsidize these essential maintenance operations.
+- **`RebatesClaimerCap` owner**: At scale, rebate cleanup is too frequent for multisig and too operationally awkward to leave only to individual users. A designated operator holding a `RebatesClaimerCap` can call the `*_claimer` paths to clean up empty entries without being either the `FeeManager` owner or the admin multisig. The multisig retains control of minting caps and rotating their owners. See [Admin Capabilities](./admin.md) for details.
+
+All three paths abort if the bag entry is not empty; they never move unsettled fee balances.
 
 ## Order Type Support
 
