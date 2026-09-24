@@ -25,7 +25,7 @@ Same idea as recording `toolchain-version` for source verification (see e.g. [De
    - `toolchain-version` and `build-config` matching the Sui CLI you will use
    - current `published-at` (package being upgraded **from**)
 3. Fund the UpgradeCap holder address with enough SUI for gas (CLI auto-selects coins from `--sender`).
-4. Run **Actions → Upgrade Package Provenance** (`upgrade_package.yml`) on that commit.
+4. Run **Actions → Upgrade Package** (`upgrade_package.yml`) on that commit.
    - Input **`UPGRADE_CAP_ADDRESS_HOLDER`**: address that owns the UpgradeCap (usually the admin multisig). Used as `--sender`.
    - `upgrade-capability` is read from `Published.toml` (not an input).
 5. Download artifacts:

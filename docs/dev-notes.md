@@ -29,7 +29,7 @@ Mainnet upgrades are multisig-signed and attested via CI. Prefer the full flow i
 1. Ensure `packages/deeptrade-core/Published.toml` is present (`published-at`, `upgrade-capability`,
    `toolchain-version`). After an upgrade, update `published-at` and bump `version`.
 2. Fund the UpgradeCap holder with SUI for gas.
-3. Run **Upgrade Package Provenance** on the target commit with input `UPGRADE_CAP_ADDRESS_HOLDER`
+3. Run **Upgrade Package** on the target commit with input `UPGRADE_CAP_ADDRESS_HOLDER`
    (cap owner / `--sender`). CI reads `upgrade-capability` from `Published.toml` and uploads
    `unsigned-upgrade.b64` plus SLSA artifacts — it does **not** sign or execute.
 4. (optionally) If clients must move to a new protocol version, bump `CURRENT_VERSION` in

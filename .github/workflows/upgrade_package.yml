@@ -6,7 +6,7 @@
 #
 # Observer / operator guide: docs/upgrade-provenance.md
 
-name: Upgrade Package Provenance
+name: Upgrade Package
 
 on:
   workflow_dispatch:
@@ -335,7 +335,9 @@ jobs:
             echo "1. Download artifacts from this workflow run."
             echo "2. \`slsa-verifier verify-artifact bytecode.dump.json --provenance-path upgrade.intoto.jsonl --source-uri github.com/${{ github.repository }}\`"
             echo "3. Checkout \`$COMMIT\`, install Sui \`$SUI_VERSION\`, rebuild with \`sui move build --dump-bytecode-as-base64\` in \`packages/deeptrade-core\`, confirm \`.digest\` matches \`package_digest\`."
-            echo "4. CI already checked dump digest ⊆ unsigned PTB; still confirm locally, then multisig-sign \`unsigned-upgrade.b64\` and \`execute-signed-tx\` (package digest ≠ explorer tx digest)."
+            echo "4. CI already verified that the package digest from \`bytecode.dump.json\` appears inside \`unsigned-upgrade.b64\` (so dump and serialize agree)."
+            echo "5. Still rebuild locally if you are an external observer; then multisig-sign \`unsigned-upgrade.b64\` and run \`sui client execute-signed-tx\`."
+            echo "   Note: the *package digest* (code identity) is not the same as the explorer *transaction digest* after execute."
             echo ""
             echo "### After the upgrade lands on-chain"
             echo "1. Update \`Published.toml\`: \`published-at\` + bump \`version\`."
