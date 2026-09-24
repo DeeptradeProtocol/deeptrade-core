@@ -56,9 +56,12 @@ jobs:
             echo "Error: Downloaded file is not a valid tar.gz archive."
             exit 1
           fi
-          tar -xzf sui.tar.gz -C "$HOME/sui-bin"
-          chmod +x "$HOME/sui-bin/sui"
-          echo "$HOME/sui-bin" >> "$GITHUB_PATH"
+          tar -xzf sui.tar.gz -C $HOME/sui-bin
+          chmod +x $HOME/sui-bin/sui
+          echo "$HOME/sui-bin" >> $GITHUB_PATH
+          export PATH="$HOME/sui-bin:$PATH"
+
+          # Verify installation
           sui --version
 
       - name: Configure Sui client (mainnet)
