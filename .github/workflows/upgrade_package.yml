@@ -158,6 +158,25 @@ jobs:
           print("digest:", list(digest))
           PY
 
+      # Same value as Mysten Offline Signer "Ledger Transaction Hash" / what Ledger confirms when signing.
+      - name: Compute Ledger transaction hash
+        id: ledger
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: |
+          set -euo pipefail
+          HASH=$(python3 <<'PY'
+          import base64
+          import hashlib
+
+          tx = base64.b64decode(open("unsigned-upgrade.b64").read().strip())
+          # blake2b-256([0,0,0] || BCS(TransactionData)) → 0x + hex
+          digest = hashlib.blake2b(b"\x00\x00\x00" + tx, digest_size=32).digest()
+          print("0x" + digest.hex())
+          PY
+          )
+          echo "ledger_transaction_hash=$HASH" >> "$GITHUB_OUTPUT"
+          echo "Ledger transaction hash: $HASH"
+
       - name: Write upgrade manifest
         working-directory: ${{ env.PACKAGE_PATH }}
         run: |
@@ -177,6 +196,7 @@ jobs:
             --arg upgrade_cap "${{ steps.pub.outputs.upgrade_cap }}" \
             --arg upgrade_cap_address_holder "${{ inputs.UPGRADE_CAP_ADDRESS_HOLDER }}" \
             --arg gas_budget "${{ env.GAS_BUDGET }}" \
+            --arg ledger_transaction_hash "${{ steps.ledger.outputs.ledger_transaction_hash }}" \
             --argjson package_digest "$DIGEST" \
             '{
               git_repo: $git_repo,
@@ -193,8 +213,9 @@ jobs:
               upgrade_cap_address_holder: $upgrade_cap_address_holder,
               gas_budget: $gas_budget,
               package_digest: $package_digest,
+              ledger_transaction_hash: $ledger_transaction_hash,
               unsigned_upgrade_artifact: "unsigned-upgrade.b64",
-              note: "CI does not sign or execute. Compare package_digest to authorize_upgrade in the unsigned PTB, then multisig-sign unsigned-upgrade.b64. See docs/upgrade-provenance.md."
+              note: "CI does not sign or execute. Match ledger_transaction_hash to Offline Signer / Ledger before multisig-sign. Compare package_digest to authorize_upgrade in the unsigned PTB. See docs/upgrade-provenance.md."
             }' > upgrade.manifest.json
           cat upgrade.manifest.json
 
@@ -303,6 +324,7 @@ jobs:
         run: |
           set -euo pipefail
           DIGEST=$(jq -c '.package_digest' upgrade.manifest.json)
+          LEDGER_HASH=$(jq -r '.ledger_transaction_hash' upgrade.manifest.json)
           COMMIT=$(jq -r '.git_commit' upgrade.manifest.json)
           SUI_VERSION=$(jq -r '.sui_version' upgrade.manifest.json)
           TOOLCHAIN=$(jq -r '.toolchain_version' upgrade.manifest.json)
@@ -325,6 +347,7 @@ jobs:
             echo "| UpgradeCap (from Published.toml) | \`$UPGRADE_CAP\` |"
             echo "| UPGRADE_CAP_ADDRESS_HOLDER (--sender) | \`$HOLDER\` |"
             echo "| Package digest | \`$DIGEST\` |"
+            echo "| Ledger transaction hash | \`$LEDGER_HASH\` |"
             echo ""
             echo "### Artifacts"
             echo "- \`bytecode.dump.json\` — modules / dependencies / package digest"
@@ -337,8 +360,9 @@ jobs:
             echo "2. \`gh attestation verify bytecode.dump.json --repo $REPO --signer-workflow $SIGNER\`"
             echo "3. Rebuild from that commit and confirm the local dump \`.digest\` matches \`package_digest\` (see \`docs/upgrade-provenance.md\`)."
             echo "4. CI already verified that the package digest from \`bytecode.dump.json\` appears inside \`unsigned-upgrade.b64\` (so dump and serialize agree)."
-            echo "5. Multisig-sign \`unsigned-upgrade.b64\` and run \`sui client execute-signed-tx\`."
-            echo "   Note: the *package digest* (code identity) is not the same as the explorer *transaction digest* after execute."
+            echo "5. Before signing: match \`ledger_transaction_hash\` to tx hash you sign."
+            echo "6. Multisig-sign \`unsigned-upgrade.b64\` and run \`sui client execute-signed-tx\`."
+            echo "   Note: *package digest* ≠ *Ledger transaction hash* ≠ explorer *transaction digest* after execute."
             echo ""
             echo "### After the upgrade lands on-chain"
             echo "1. Update \`Published.toml\`: \`published-at\` + bump \`version\`."
