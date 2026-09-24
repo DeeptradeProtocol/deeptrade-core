@@ -196,21 +196,21 @@ jobs:
           cat upgrade.manifest.json
 
       - name: Upload bytecode.dump.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bytecode.dump.json
           path: ${{ env.PACKAGE_PATH }}/bytecode.dump.json
           if-no-files-found: error
 
       - name: Upload upgrade.manifest.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: upgrade.manifest.json
           path: ${{ env.PACKAGE_PATH }}/upgrade.manifest.json
           if-no-files-found: error
 
       - name: Upload unsigned-upgrade.b64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: unsigned-upgrade.b64
           path: ${{ env.PACKAGE_PATH }}/unsigned-upgrade.b64
@@ -218,21 +218,21 @@ jobs:
 
       - name: Upload unsigned-upgrade.stderr.log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: unsigned-upgrade.stderr.log
           path: ${{ env.PACKAGE_PATH }}/unsigned-upgrade.stderr.log
           if-no-files-found: ignore
 
       - name: Upload mvr.config.json
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: mvr.config.json
           path: ${{ env.PACKAGE_PATH }}/mvr.config.json
           if-no-files-found: error
 
       - name: Upload Published.toml
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Published.toml
           path: ${{ env.PACKAGE_PATH }}/Published.toml
@@ -267,19 +267,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download provenance
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: upgrade.intoto.jsonl
           path: .
 
       - name: Download bytecode.dump.json
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: bytecode.dump.json
           path: .
 
       - name: Download upgrade.manifest.json
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: upgrade.manifest.json
           path: .
