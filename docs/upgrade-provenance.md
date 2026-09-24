@@ -66,7 +66,10 @@ Same idea as recording `toolchain-version` for source verification (see e.g. [De
    jq -c '.digest' bytecode.dump.json /tmp/local.dump.json   # must match
    ```
 
-4. Confirm the **package digest** (`.digest` / `package_digest`) is what `authorize_upgrade` binds in `unsigned-upgrade.b64` — not the explorer transaction digest after execute.
+4. Confirm the **package digest** (`.digest` / `package_digest`) is what `authorize_upgrade` binds in `unsigned-upgrade.b64`.
+5. Before signing: match **`ledger_transaction_hash`** from the manifest / job summary to Mysten Offline Signer / Ledger
+   (`blake2b-256([0,0,0] || BCS(TransactionData))` as `0x…` hex). This is **not** the explorer transaction digest after execute.
+6. Multisig-sign `unsigned-upgrade.b64` and `sui client execute-signed-tx`.
 
 ### B. After the upgrade (on-chain source verification)
 
@@ -93,6 +96,7 @@ sui client verify-source --toolchain-version 1.80.1
 | GitHub attestation (L3) on `bytecode.dump.json` | Dump was attested by the isolated reusable signer workflow for this repo; not tampered after attestation (`--signer-workflow` pins L3) |
 | Local rebuild digest match    | That dump matches this git tree + toolchain                                            |
 | Digest ↔ upgrade tx (CI + observers) | Dump digest bytes appear in `unsigned-upgrade.b64` (CI fails the run if not) |
+| Ledger transaction hash | Same `0x…` hex Offline signers / Ledger show for this unsigned PTB (intent-prefixed blake2b) |
 | `sui client verify-source`    | Checked-out source + recorded toolchain match the **on-chain** package                 |
 
 Attestation alone does not authorize or execute the upgrade; multisig signers remain the authority.
