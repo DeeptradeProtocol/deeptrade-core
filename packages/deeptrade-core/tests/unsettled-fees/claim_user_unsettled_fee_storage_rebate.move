@@ -3,16 +3,22 @@ module deeptrade_core::claim_user_unsettled_fee_storage_rebate_tests;
 
 use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
 use deepbook::constants;
+use deeptrade_core::create_rebates_claimer_cap_tests::create_rebates_claimer_cap_as_admin;
 use deeptrade_core::fee_manager::{
     FeeManager,
+    RebatesClaimerCap,
     claim_user_unsettled_fee_storage_rebate,
     claim_user_unsettled_fee_storage_rebate_admin,
+    claim_user_unsettled_fee_storage_rebate_claimer,
     settle_filled_order_fee_and_record,
     start_protocol_fee_settlement,
+    ESenderIsNotRebatesClaimer,
+    EUserUnsettledFeeNotEmpty,
 };
 use deeptrade_core::multisig_config::{MultisigConfig, ESenderIsNotValidMultisig};
 use deeptrade_core::settle_user_fees_tests::setup_test_environment;
 use deeptrade_core::treasury::Treasury;
+use deeptrade_core::update_rebates_claimer_cap_owner_tests::update_rebates_claimer_cap_owner_as_admin;
 use multisig::multisig_test_utils::get_test_multisig_address;
 use std::unit_test::assert_eq;
 use sui::balance;
@@ -25,6 +31,7 @@ const OWNER: address = @0x1;
 const ALICE: address = @0xAAAA;
 const BOB: address = @0xBBBB;
 const UNRELATED_USER: address = @0xCCCC;
+const CLAIMER: address = @0xDDDD;
 
 #[test]
 /// Test that the owner can claim a storage rebate for a settled fee.
@@ -289,6 +296,323 @@ fun non_multisig_admin_claim_fails() {
         return_shared(pool);
         return_shared(balance_manager);
         return_shared(config);
+    };
+
+    end(scenario);
+}
+
+#[test]
+/// Test that a rebates claimer can claim a user's storage rebate.
+fun claimer_claims_rebate_successfully() {
+    let (
+        mut scenario,
+        pool_id,
+        balance_manager_id,
+        fee_manager_id,
+        order_id,
+    ) = setup_filled_order_for_rebate();
+
+    create_rebates_claimer_cap_as_admin(&mut scenario, CLAIMER);
+
+    scenario.next_tx(CLAIMER);
+    {
+        let treasury = scenario.take_shared<Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let pool = scenario.take_shared_by_id(pool_id);
+        let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let rebates_claimer_cap = scenario.take_shared<RebatesClaimerCap>();
+
+        claim_user_unsettled_fee_storage_rebate_claimer<SUI, USDC, SUI>(
+            &treasury,
+            &mut fee_manager,
+            &pool,
+            &balance_manager,
+            &rebates_claimer_cap,
+            order_id,
+            scenario.ctx(),
+        );
+
+        assert_eq!(
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            false,
+        );
+
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(pool);
+        return_shared(balance_manager);
+        return_shared(rebates_claimer_cap);
+    };
+
+    end(scenario);
+}
+
+#[test, expected_failure(abort_code = ESenderIsNotRebatesClaimer)]
+/// Test that a non-claimer cannot claim a rebate via the claimer function.
+fun unauthorized_claimer_claim_fails() {
+    let (
+        mut scenario,
+        pool_id,
+        balance_manager_id,
+        fee_manager_id,
+        order_id,
+    ) = setup_filled_order_for_rebate();
+
+    create_rebates_claimer_cap_as_admin(&mut scenario, CLAIMER);
+
+    scenario.next_tx(UNRELATED_USER);
+    {
+        let treasury = scenario.take_shared<Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let pool = scenario.take_shared_by_id(pool_id);
+        let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let rebates_claimer_cap = scenario.take_shared<RebatesClaimerCap>();
+
+        claim_user_unsettled_fee_storage_rebate_claimer<SUI, USDC, SUI>(
+            &treasury,
+            &mut fee_manager,
+            &pool,
+            &balance_manager,
+            &rebates_claimer_cap,
+            order_id,
+            scenario.ctx(),
+        );
+
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(pool);
+        return_shared(balance_manager);
+        return_shared(rebates_claimer_cap);
+    };
+
+    end(scenario);
+}
+
+#[test, expected_failure(abort_code = ESenderIsNotRebatesClaimer)]
+/// Test that the previous cap owner cannot claim after ownership is transferred.
+fun old_claimer_cannot_claim_after_owner_update() {
+    let (
+        mut scenario,
+        pool_id,
+        balance_manager_id,
+        fee_manager_id,
+        order_id,
+    ) = setup_filled_order_for_rebate();
+
+    create_rebates_claimer_cap_as_admin(&mut scenario, CLAIMER);
+    update_rebates_claimer_cap_owner_as_admin(&mut scenario, BOB);
+
+    scenario.next_tx(CLAIMER);
+    {
+        let treasury = scenario.take_shared<Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let pool = scenario.take_shared_by_id(pool_id);
+        let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let rebates_claimer_cap = scenario.take_shared<RebatesClaimerCap>();
+
+        claim_user_unsettled_fee_storage_rebate_claimer<SUI, USDC, SUI>(
+            &treasury,
+            &mut fee_manager,
+            &pool,
+            &balance_manager,
+            &rebates_claimer_cap,
+            order_id,
+            scenario.ctx(),
+        );
+
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(pool);
+        return_shared(balance_manager);
+        return_shared(rebates_claimer_cap);
+    };
+
+    end(scenario);
+}
+
+#[test]
+/// Test that the new cap owner can claim after ownership is transferred.
+fun new_claimer_can_claim_after_owner_update() {
+    let (
+        mut scenario,
+        pool_id,
+        balance_manager_id,
+        fee_manager_id,
+        order_id,
+    ) = setup_filled_order_for_rebate();
+
+    create_rebates_claimer_cap_as_admin(&mut scenario, CLAIMER);
+    update_rebates_claimer_cap_owner_as_admin(&mut scenario, BOB);
+
+    scenario.next_tx(BOB);
+    {
+        let treasury = scenario.take_shared<Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let pool = scenario.take_shared_by_id(pool_id);
+        let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let rebates_claimer_cap = scenario.take_shared<RebatesClaimerCap>();
+
+        claim_user_unsettled_fee_storage_rebate_claimer<SUI, USDC, SUI>(
+            &treasury,
+            &mut fee_manager,
+            &pool,
+            &balance_manager,
+            &rebates_claimer_cap,
+            order_id,
+            scenario.ctx(),
+        );
+
+        assert_eq!(
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            false,
+        );
+
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(pool);
+        return_shared(balance_manager);
+        return_shared(rebates_claimer_cap);
+    };
+
+    end(scenario);
+}
+
+#[test, expected_failure(abort_code = ESenderIsNotRebatesClaimer)]
+/// Test that the FeeManager owner cannot claim via the claimer function.
+fun fee_manager_owner_cannot_claim_via_claimer() {
+    let (
+        mut scenario,
+        pool_id,
+        balance_manager_id,
+        fee_manager_id,
+        order_id,
+    ) = setup_filled_order_for_rebate();
+
+    create_rebates_claimer_cap_as_admin(&mut scenario, CLAIMER);
+
+    scenario.next_tx(ALICE);
+    {
+        let treasury = scenario.take_shared<Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let pool = scenario.take_shared_by_id(pool_id);
+        let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let rebates_claimer_cap = scenario.take_shared<RebatesClaimerCap>();
+
+        claim_user_unsettled_fee_storage_rebate_claimer<SUI, USDC, SUI>(
+            &treasury,
+            &mut fee_manager,
+            &pool,
+            &balance_manager,
+            &rebates_claimer_cap,
+            order_id,
+            scenario.ctx(),
+        );
+
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(pool);
+        return_shared(balance_manager);
+        return_shared(rebates_claimer_cap);
+    };
+
+    end(scenario);
+}
+
+#[test, expected_failure(abort_code = EUserUnsettledFeeNotEmpty)]
+/// Test that a claimer cannot claim a rebate for a non-empty (unsettled) fee.
+fun claimer_claim_for_unsettled_fee_fails() {
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
+
+    create_rebates_claimer_cap_as_admin(&mut scenario, CLAIMER);
+
+    scenario.next_tx(ALICE);
+    let order_id = {
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let order_info = deepbook::pool_tests::place_limit_order<SUI, USDC>(
+            ALICE,
+            pool_id,
+            balance_manager_id,
+            1,
+            constants::no_restriction(),
+            constants::self_matching_allowed(),
+            2 * constants::float_scaling(),
+            100 * constants::float_scaling(),
+            true,
+            true,
+            constants::max_u64(),
+            &mut scenario,
+        );
+        let fee_balance = balance::create_for_testing<SUI>(1000);
+        fee_manager.add_to_user_unsettled_fees(fee_balance, &order_info, scenario.ctx());
+        let order_id = order_info.order_id();
+        return_shared(fee_manager);
+        order_id
+    };
+
+    scenario.next_tx(CLAIMER);
+    {
+        let treasury = scenario.take_shared<Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let pool = scenario.take_shared_by_id(pool_id);
+        let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let rebates_claimer_cap = scenario.take_shared<RebatesClaimerCap>();
+
+        claim_user_unsettled_fee_storage_rebate_claimer<SUI, USDC, SUI>(
+            &treasury,
+            &mut fee_manager,
+            &pool,
+            &balance_manager,
+            &rebates_claimer_cap,
+            order_id,
+            scenario.ctx(),
+        );
+
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(pool);
+        return_shared(balance_manager);
+        return_shared(rebates_claimer_cap);
+    };
+
+    end(scenario);
+}
+
+#[test]
+/// Test that a claimer claiming a rebate for an order with no unsettled fee does nothing.
+fun claimer_claim_for_non_existent_fee_is_noop() {
+    let (mut scenario, pool_id, balance_manager_id, fee_manager_id) = setup_test_environment();
+    let order_id = 12345;
+
+    create_rebates_claimer_cap_as_admin(&mut scenario, CLAIMER);
+
+    scenario.next_tx(CLAIMER);
+    {
+        let treasury = scenario.take_shared<Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let pool = scenario.take_shared_by_id(pool_id);
+        let balance_manager = scenario.take_shared_by_id(balance_manager_id);
+        let rebates_claimer_cap = scenario.take_shared<RebatesClaimerCap>();
+
+        claim_user_unsettled_fee_storage_rebate_claimer<SUI, USDC, SUI>(
+            &treasury,
+            &mut fee_manager,
+            &pool,
+            &balance_manager,
+            &rebates_claimer_cap,
+            order_id,
+            scenario.ctx(),
+        );
+
+        assert_eq!(
+            fee_manager.has_user_unsettled_fee(pool_id, balance_manager_id, order_id),
+            false,
+        );
+
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(pool);
+        return_shared(balance_manager);
+        return_shared(rebates_claimer_cap);
     };
 
     end(scenario);

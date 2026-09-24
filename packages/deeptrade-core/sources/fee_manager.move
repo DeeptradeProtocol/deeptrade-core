@@ -30,6 +30,7 @@ const EFilledQuantityGreaterThanOrderQuantity: u64 = 7;
 const EUserUnsettledFeeNotEmpty: u64 = 8;
 const EProtocolUnsettledFeeNotEmpty: u64 = 9;
 const EInvalidFeeManagerShareTicket: u64 = 10;
+const ESenderIsNotRebatesClaimer: u64 = 11;
 
 // === Structs ===
 /// A shared object that manages a user's fee-related operations. Required for trading
@@ -78,6 +79,13 @@ public struct FeeSettlementReceipt<phantom FeeCoinType> {
 /// and must be consumed by the corresponding share function
 public struct FeeManagerShareTicket { fee_manager_id: ID }
 
+/// A capability to claim storage rebates for empty `FeeManager` bag fields
+/// without protocol admin or `FeeManager` owner participation.
+public struct RebatesClaimerCap has key {
+    id: UID,
+    owner: address,
+}
+
 // === Events ===
 public struct UserUnsettledFeeAdded<phantom CoinType> has copy, drop {
     key: UserUnsettledFeeKey,
@@ -104,6 +112,17 @@ public struct FeeManagerCreated has copy, drop {
     fee_manager_id: ID,
     fee_manager_owner_cap_id: ID,
     owner: address,
+}
+
+public struct RebatesClaimerCapCreated has copy, drop {
+    rebates_claimer_cap_id: ID,
+    owner: address,
+}
+
+public struct RebatesClaimerCapOwnerUpdated has copy, drop {
+    rebates_claimer_cap_id: ID,
+    old_owner: address,
+    new_owner: address,
 }
 
 // === Public-Mutative Functions ===
@@ -149,6 +168,47 @@ public fun share_fee_manager(fee_manager: FeeManager, ticket: FeeManagerShareTic
 
     let FeeManagerShareTicket { .. } = ticket;
     transfer::share_object(fee_manager);
+}
+
+/// Create and share a `RebatesClaimerCap` assigned to `owner`.
+/// A protocol admin operation. Can be called more than once.
+public fun create_rebates_claimer_cap(
+    multisig_config: &MultisigConfig,
+    _admin_cap: &AdminCap,
+    owner: address,
+    ctx: &mut TxContext,
+) {
+    multisig_config.validate_sender_is_admin_multisig(ctx);
+
+    let rebates_claimer_cap = RebatesClaimerCap { id: object::new(ctx), owner };
+
+    event::emit(RebatesClaimerCapCreated {
+        rebates_claimer_cap_id: rebates_claimer_cap.id.to_inner(),
+        owner,
+    });
+
+    transfer::share_object(rebates_claimer_cap);
+}
+
+/// Assign a new rebates claimer by updating the owner of the rebates claimer cap.
+/// A protocol admin operation.
+public fun update_rebates_claimer_cap_owner(
+    rebates_claimer_cap: &mut RebatesClaimerCap,
+    multisig_config: &MultisigConfig,
+    _admin_cap: &AdminCap,
+    new_owner: address,
+    ctx: &mut TxContext,
+) {
+    multisig_config.validate_sender_is_admin_multisig(ctx);
+
+    let old_owner = rebates_claimer_cap.owner;
+    rebates_claimer_cap.owner = new_owner;
+
+    event::emit(RebatesClaimerCapOwnerUpdated {
+        rebates_claimer_cap_id: rebates_claimer_cap.id.to_inner(),
+        old_owner,
+        new_owner,
+    });
 }
 
 /// Creates a `FeeSettlementReceipt` to begin a batch fee settlement process
@@ -297,6 +357,30 @@ public fun claim_user_unsettled_fee_storage_rebate_admin<BaseToken, QuoteToken, 
     );
 }
 
+/// Allows the `RebatesClaimerCap` owner to claim a user's unsettled fee storage rebate.
+///
+/// This is a delegated maintenance function to clean up empty fee objects that users have
+/// not claimed. Aborts if the fee object is not empty.
+public fun claim_user_unsettled_fee_storage_rebate_claimer<BaseToken, QuoteToken, FeeCoinType>(
+    treasury: &Treasury,
+    fee_manager: &mut FeeManager,
+    pool: &Pool<BaseToken, QuoteToken>,
+    balance_manager: &BalanceManager,
+    rebates_claimer_cap: &RebatesClaimerCap,
+    order_id: u128,
+    ctx: &mut TxContext,
+) {
+    validate_rebates_claimer_cap(rebates_claimer_cap, ctx);
+    treasury.verify_version();
+
+    claim_user_unsettled_fee_rebate_core<BaseToken, QuoteToken, FeeCoinType>(
+        fee_manager,
+        pool,
+        balance_manager,
+        order_id,
+    );
+}
+
 /// Claims the storage rebate for a settled protocol fee by destroying the empty balance.
 ///
 /// Can only be called by the `FeeManager` owner after a fee has been collected via
@@ -324,6 +408,22 @@ public fun claim_protocol_unsettled_fee_storage_rebate_admin<FeeCoinType>(
     ctx: &mut TxContext,
 ) {
     multisig_config.validate_sender_is_admin_multisig(ctx);
+    treasury.verify_version();
+
+    claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
+}
+
+/// Allows the `RebatesClaimerCap` owner to claim a protocol unsettled fee storage rebate.
+///
+/// This is a delegated maintenance function to clean up empty fee balances that have not
+/// been claimed. Aborts if the balance is not empty.
+public fun claim_protocol_unsettled_fee_storage_rebate_claimer<FeeCoinType>(
+    treasury: &Treasury,
+    fee_manager: &mut FeeManager,
+    rebates_claimer_cap: &RebatesClaimerCap,
+    ctx: &mut TxContext,
+) {
+    validate_rebates_claimer_cap(rebates_claimer_cap, ctx);
     treasury.verify_version();
 
     claim_protocol_unsettled_fee_rebate_core<FeeCoinType>(fee_manager);
@@ -551,6 +651,11 @@ fun validate_owner(fee_manager: &FeeManager, ctx: &TxContext) {
     assert!(ctx.sender() == fee_manager.owner, EInvalidOwner);
 }
 
+/// Validate that the sender is the owner of the rebates claimer cap
+fun validate_rebates_claimer_cap(rebates_claimer_cap: &RebatesClaimerCap, ctx: &TxContext) {
+    assert!(rebates_claimer_cap.owner == ctx.sender(), ESenderIsNotRebatesClaimer);
+}
+
 // === Test Functions ===
 /// Check if an unsettled fee exists for a specific order
 #[test_only]
@@ -620,4 +725,16 @@ public fun finish_protocol_fee_settlement_for_testing<FeeCoinType>(
     let total = receipt.total_fees_settled;
     finish_protocol_fee_settlement(receipt);
     (count, total)
+}
+
+/// Get the owner of the `RebatesClaimerCap` for testing purposes.
+#[test_only]
+public fun owner_for_testing(rebates_claimer_cap: &RebatesClaimerCap): address {
+    rebates_claimer_cap.owner
+}
+
+/// Share a `RebatesClaimerCap` without admin authorization, for testing.
+#[test_only]
+public fun share_rebates_claimer_cap_for_testing(owner: address, ctx: &mut TxContext) {
+    transfer::share_object(RebatesClaimerCap { id: object::new(ctx), owner });
 }
