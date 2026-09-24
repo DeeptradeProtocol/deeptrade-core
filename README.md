@@ -56,6 +56,7 @@ For detailed technical specifications and implementation details, please refer t
 - [Versioning](docs/versioning.md)
 - [Multisig](docs/multisig.md)
 - [Admin Capabilities](docs/admin.md)
+- [Upgrade Provenance](docs/upgrade-provenance.md)
 - [Development Notes](docs/dev-notes.md)
 
 ## Fee overview
