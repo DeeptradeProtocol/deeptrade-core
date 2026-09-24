@@ -8,6 +8,7 @@ use deeptrade_core::helper::{
     calculate_order_amount,
     calculate_deep_fee_coverage_discount_rate,
     get_sui_per_deep,
+    get_sui_per_deep_v2,
     calculate_market_order_params,
     hundred_percent,
     apply_discount,
@@ -21,6 +22,7 @@ use deeptrade_core::ticket::{
     update_pool_specific_fees_ticket_type,
 };
 use pyth::price_info::PriceInfoObject;
+use pyth_upgraded::price_info::PriceInfoObject as PriceInfoObjectUpgraded;
 use std::u64;
 use sui::clock::Clock;
 use sui::event;
@@ -282,6 +284,82 @@ public fun estimate_full_fee_limit<BaseToken, QuoteToken, ReferenceBaseAsset, Re
     (deep_reserves_coverage_fee, protocol_fee, deep_required, discount_rate)
 }
 
+/// Estimate the total fee for a limit order using DEEP fee type
+///
+/// This function uses oracle price feeds and reference pool to get the best DEEP/SUI price,
+/// then calculates fees including coverage fees and protocol fees with discount applied.
+///
+/// Parameters:
+/// - pool: The trading pool where the order will be placed
+/// - reference_pool: Reference pool for DEEP/SUI price calculation
+/// - deep_usd_price_info: upgraded Pyth price info object for DEEP/USD price
+/// - sui_usd_price_info: upgraded Pyth price info object for SUI/USD price
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - deep_in_balance_manager: Amount of DEEP available in user's balance manager
+/// - deep_in_wallet: Amount of DEEP in user's wallet
+/// - quantity: Order quantity in base tokens
+/// - price: Order price in quote tokens per base token
+/// - is_bid: True for buy orders, false for sell orders
+/// - clock: System clock for timestamp verification
+/// - ctx: Transaction context
+///
+/// Returns:
+/// - deep_reserves_coverage_fee: SUI cost of borrowed DEEP from reserves
+/// - protocol_fee: Protocol fee after discount applied
+/// - deep_required: Total amount of DEEP required for the order
+/// - discount_rate: Actual discount rate applied to protocol fee
+public fun estimate_full_fee_limit_v2<
+    BaseToken,
+    QuoteToken,
+    ReferenceBaseAsset,
+    ReferenceQuoteAsset,
+>(
+    pool: &Pool<BaseToken, QuoteToken>,
+    reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
+    deep_usd_price_info: &PriceInfoObjectUpgraded,
+    sui_usd_price_info: &PriceInfoObjectUpgraded,
+    trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
+    deep_in_balance_manager: u64,
+    deep_in_wallet: u64,
+    quantity: u64,
+    price: u64,
+    is_bid: bool,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (u64, u64, u64, u64) {
+    // Get the best DEEP/SUI price
+    let sui_per_deep = get_sui_per_deep_v2(
+        deep_usd_price_info,
+        sui_usd_price_info,
+        reference_pool,
+        clock,
+    );
+
+    // Get the protocol fee rates for the pool and max deep fee coverage discount rate
+    let pool_fee_config = trading_fee_config.get_pool_fee_config(pool);
+    let (protocol_taker_fee_rate, _) = pool_fee_config.deep_fee_type_rates();
+    let max_deep_fee_coverage_discount_rate = pool_fee_config.max_deep_fee_coverage_discount_rate();
+
+    let deep_required = calculate_deep_required(pool, quantity, price);
+    let order_amount = calculate_order_amount(quantity, price, is_bid);
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+
+    let (deep_reserves_coverage_fee, protocol_fee, discount_rate) = estimate_full_order_fee_core(
+        deep_in_balance_manager,
+        deep_in_wallet,
+        deep_required,
+        sui_per_deep,
+        protocol_taker_fee_rate,
+        order_amount,
+        max_deep_fee_coverage_discount_rate,
+        loyalty_discount_rate,
+    );
+
+    (deep_reserves_coverage_fee, protocol_fee, deep_required, discount_rate)
+}
+
 /// Estimate the total fee for a market order using DEEP fee type
 ///
 /// This function uses oracle price feeds and reference pool to get the best DEEP/SUI price,
@@ -322,6 +400,84 @@ public fun estimate_full_fee_market<BaseToken, QuoteToken, ReferenceBaseAsset, R
 ): (u64, u64, u64, u64) {
     // Get the best DEEP/SUI price
     let sui_per_deep = get_sui_per_deep(
+        deep_usd_price_info,
+        sui_usd_price_info,
+        reference_pool,
+        clock,
+    );
+
+    // Get the protocol fee rates for the pool and max deep fee coverage discount rate
+    let pool_fee_config = trading_fee_config.get_pool_fee_config(pool);
+    let (protocol_taker_fee_rate, _) = pool_fee_config.deep_fee_type_rates();
+    let max_deep_fee_coverage_discount_rate = pool_fee_config.max_deep_fee_coverage_discount_rate();
+
+    let (_, deep_required) = calculate_market_order_params<BaseToken, QuoteToken>(
+        pool,
+        order_amount,
+        is_bid,
+        clock,
+    );
+    let loyalty_discount_rate = loyalty_program.get_user_discount_rate(ctx.sender());
+
+    let (deep_reserves_coverage_fee, protocol_fee, discount_rate) = estimate_full_order_fee_core(
+        deep_in_balance_manager,
+        deep_in_wallet,
+        deep_required,
+        sui_per_deep,
+        protocol_taker_fee_rate,
+        order_amount,
+        max_deep_fee_coverage_discount_rate,
+        loyalty_discount_rate,
+    );
+
+    (deep_reserves_coverage_fee, protocol_fee, deep_required, discount_rate)
+}
+
+/// Estimate the total fee for a market order using DEEP fee type
+///
+/// This function uses oracle price feeds and reference pool to get the best DEEP/SUI price,
+/// then calculates fees including coverage fees and protocol fees with discount applied.
+///
+/// Parameters:
+/// - pool: The trading pool where the order will be placed
+/// - reference_pool: Reference pool for DEEP/SUI price calculation
+/// - deep_usd_price_info: upgraded Pyth price info object for DEEP/USD price
+/// - sui_usd_price_info: upgraded Pyth price info object for SUI/USD price
+/// - trading_fee_config: Trading fee configuration object
+/// - loyalty_program: Loyalty program instance
+/// - deep_in_balance_manager: Amount of DEEP available in user's balance manager
+/// - deep_in_wallet: Amount of DEEP in user's wallet
+/// - order_amount: Order amount in quote tokens (for bids) or base tokens (for asks)
+/// - is_bid: True for buy orders, false for sell orders
+/// - clock: System clock for timestamp verification
+/// - ctx: Transaction context
+///
+/// Returns:
+/// - deep_reserves_coverage_fee: SUI cost of borrowed DEEP from reserves
+/// - protocol_fee: Protocol fee after discount applied
+/// - deep_required: Total amount of DEEP required for the order
+/// - discount_rate: Actual discount rate applied to protocol fee
+public fun estimate_full_fee_market_v2<
+    BaseToken,
+    QuoteToken,
+    ReferenceBaseAsset,
+    ReferenceQuoteAsset,
+>(
+    pool: &Pool<BaseToken, QuoteToken>,
+    reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
+    deep_usd_price_info: &PriceInfoObjectUpgraded,
+    sui_usd_price_info: &PriceInfoObjectUpgraded,
+    trading_fee_config: &TradingFeeConfig,
+    loyalty_program: &LoyaltyProgram,
+    deep_in_balance_manager: u64,
+    deep_in_wallet: u64,
+    order_amount: u64,
+    is_bid: bool,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (u64, u64, u64, u64) {
+    // Get the best DEEP/SUI price
+    let sui_per_deep = get_sui_per_deep_v2(
         deep_usd_price_info,
         sui_usd_price_info,
         reference_pool,

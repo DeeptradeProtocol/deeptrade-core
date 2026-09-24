@@ -1,0 +1,341 @@
+# Provenance-only upgrade build (no on-chain execute).
+#
+# Builds deeptrade-core bytecode in CI, attests it with SLSA3, serializes an
+# unsigned upgrade PTB for the UpgradeCap holder (multisig), and uploads
+# artifacts — without signing or executing (CI never spends the UpgradeCap).
+#
+# Observer / operator guide: docs/upgrade-provenance.md
+
+name: Upgrade Package Provenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      UPGRADE_CAP_ADDRESS_HOLDER:
+        description: "Address that owns the UpgradeCap (tx --sender; usually the admin multisig)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Keep in sync with .github/workflows/move_test.yml (SUI_VERSION).
+      SUI_VERSION: "1.80.1"
+      PACKAGE_PATH: "packages/deeptrade-core"
+      # Gas budget for the unsigned upgrade PTB (MIST). CLI auto-selects coins from sender.
+      GAS_BUDGET: "1000000000"
+      MAINNET_RPC: "https://fullnode.mainnet.sui.io:443"
+    outputs:
+      base64_hashes: ${{ steps.hash.outputs.base64_hashes }}
+      git_commit: ${{ github.sha }}
+      sui_version: ${{ env.SUI_VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Install Sui v${{ env.SUI_VERSION }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/sui-bin"
+          SUI_URL="https://github.com/MystenLabs/sui/releases/download/mainnet-v${{ env.SUI_VERSION }}/sui-mainnet-v${{ env.SUI_VERSION }}-ubuntu-x86_64.tgz"
+          echo "Downloading Sui from $SUI_URL"
+          HTTP_STATUS=$(curl -o sui.tar.gz -w "%{http_code}" -L "$SUI_URL")
+          if [[ "$HTTP_STATUS" -ne 200 ]]; then
+            echo "Error: Failed to download Sui. HTTP Status: $HTTP_STATUS"
+            exit 1
+          fi
+          if ! file sui.tar.gz | grep -q "gzip compressed"; then
+            echo "Error: Downloaded file is not a valid tar.gz archive."
+            exit 1
+          fi
+          tar -xzf sui.tar.gz -C "$HOME/sui-bin"
+          chmod +x "$HOME/sui-bin/sui"
+          echo "$HOME/sui-bin" >> "$GITHUB_PATH"
+          sui --version
+
+      - name: Configure Sui client (mainnet)
+        run: |
+          set -euo pipefail
+          # Fresh runner: create a client env pointed at mainnet (needed for UpgradeCap + gas selection).
+          sui client -y new-env --alias mainnet --rpc "${{ env.MAINNET_RPC }}" || true
+          sui client switch --env mainnet
+          sui client envs
+
+      - name: Build bytecode dump
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: |
+          set -euo pipefail
+          # Same dump shape as sui-mvr-provenance; digest is what authorize_upgrade binds to.
+          sui move build --dump-bytecode-as-base64 | tee bytecode.dump.json
+          test -s bytecode.dump.json
+
+      - name: Read UpgradeCap from Published.toml
+        id: pub
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: |
+          set -euo pipefail
+          UPGRADE_CAP=$(grep -E '^upgrade-capability[[:space:]]*=' Published.toml | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/')
+          PUBLISHED_AT=$(grep -E '^published-at[[:space:]]*=' Published.toml | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/')
+          ORIGINAL_ID=$(grep -E '^original-id[[:space:]]*=' Published.toml | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/')
+          TOOLCHAIN=$(grep -E '^toolchain-version[[:space:]]*=' Published.toml | head -1 | sed 's/.*= *"\([^"]*\)".*/\1/')
+          if [[ -z "$UPGRADE_CAP" || "$UPGRADE_CAP" != 0x* ]]; then
+            echo "Error: could not read upgrade-capability from Published.toml"
+            exit 1
+          fi
+          echo "upgrade_cap=$UPGRADE_CAP" >> "$GITHUB_OUTPUT"
+          echo "published_at=$PUBLISHED_AT" >> "$GITHUB_OUTPUT"
+          echo "original_id=$ORIGINAL_ID" >> "$GITHUB_OUTPUT"
+          echo "toolchain=$TOOLCHAIN" >> "$GITHUB_OUTPUT"
+          echo "UpgradeCap: $UPGRADE_CAP"
+          echo "Holder (sender): ${{ inputs.UPGRADE_CAP_ADDRESS_HOLDER }}"
+
+      - name: Serialize unsigned upgrade transaction
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: |
+          set -euo pipefail
+          UPGRADE_CAP="${{ steps.pub.outputs.upgrade_cap }}"
+          SENDER="${{ inputs.UPGRADE_CAP_ADDRESS_HOLDER }}"
+          # Builds authorize_upgrade + Upgrade + commit_upgrade; does not sign or execute.
+          # Gas coins are auto-selected from SENDER — that address must hold enough SUI.
+          sui client upgrade \
+            --upgrade-capability "$UPGRADE_CAP" \
+            --sender "$SENDER" \
+            --gas-budget "${{ env.GAS_BUDGET }}" \
+            --serialize-unsigned-transaction \
+            2>unsigned-upgrade.stderr.log \
+            | tr -d '[:space:]' \
+            | tee unsigned-upgrade.b64
+          if [[ ! -s unsigned-upgrade.b64 ]]; then
+            echo "Error: empty unsigned-upgrade.b64"
+            cat unsigned-upgrade.stderr.log || true
+            exit 1
+          fi
+          # Basic sanity: base64-ish payload
+          if ! grep -qE '^[A-Za-z0-9+/=]+$' unsigned-upgrade.b64; then
+            echo "Error: unsigned-upgrade.b64 does not look like base64"
+            cat unsigned-upgrade.stderr.log || true
+            head -c 200 unsigned-upgrade.b64 || true
+            exit 1
+          fi
+          echo "Unsigned upgrade bytes written ($(wc -c < unsigned-upgrade.b64) chars)"
+
+      # Catches non-malicious drift between dump and serialize steps (not a substitute for
+      # external rebuild + SLSA). Package digest is a 32-byte value embedded in authorize_upgrade.
+      - name: Assert dump digest is bound in unsigned upgrade PTB
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import base64
+          import json
+          import sys
+
+          dump = json.load(open("bytecode.dump.json"))
+          digest = bytes(dump["digest"])
+          if len(digest) != 32:
+              sys.exit(f"expected 32-byte package digest, got {len(digest)}")
+          tx = base64.b64decode(open("unsigned-upgrade.b64").read().strip())
+          if digest not in tx:
+              sys.exit(
+                  "FAIL: bytecode.dump.json digest not found in unsigned-upgrade.b64 "
+                  "(dump and serialize steps disagree)"
+              )
+          print("OK: package digest is embedded in unsigned upgrade PTB")
+          print("digest:", list(digest))
+          PY
+
+      - name: Write upgrade manifest
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: |
+          set -euo pipefail
+          DIGEST=$(jq -c '.digest' bytecode.dump.json)
+          jq -n \
+            --arg git_repo "https://github.com/${{ github.repository }}" \
+            --arg git_commit "${{ github.sha }}" \
+            --arg git_ref "${{ github.ref }}" \
+            --arg working_directory "${{ env.PACKAGE_PATH }}" \
+            --arg sui_version "${{ env.SUI_VERSION }}" \
+            --arg toolchain_version "${{ steps.pub.outputs.toolchain }}" \
+            --arg network "mainnet" \
+            --arg chain_id "35834a8a" \
+            --arg published_at "${{ steps.pub.outputs.published_at }}" \
+            --arg original_id "${{ steps.pub.outputs.original_id }}" \
+            --arg upgrade_cap "${{ steps.pub.outputs.upgrade_cap }}" \
+            --arg upgrade_cap_address_holder "${{ inputs.UPGRADE_CAP_ADDRESS_HOLDER }}" \
+            --arg gas_budget "${{ env.GAS_BUDGET }}" \
+            --argjson package_digest "$DIGEST" \
+            '{
+              git_repo: $git_repo,
+              git_commit: $git_commit,
+              git_ref: $git_ref,
+              working_directory: $working_directory,
+              sui_version: $sui_version,
+              toolchain_version: $toolchain_version,
+              network: $network,
+              chain_id: $chain_id,
+              published_at: $published_at,
+              original_id: $original_id,
+              upgrade_cap: $upgrade_cap,
+              upgrade_cap_address_holder: $upgrade_cap_address_holder,
+              gas_budget: $gas_budget,
+              package_digest: $package_digest,
+              unsigned_upgrade_artifact: "unsigned-upgrade.b64",
+              note: "CI does not sign or execute. Compare package_digest to authorize_upgrade in the unsigned PTB, then multisig-sign unsigned-upgrade.b64. See docs/upgrade-provenance.md."
+            }' > upgrade.manifest.json
+          cat upgrade.manifest.json
+
+      - name: Upload bytecode.dump.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: bytecode.dump.json
+          path: ${{ env.PACKAGE_PATH }}/bytecode.dump.json
+          if-no-files-found: error
+
+      - name: Upload upgrade.manifest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: upgrade.manifest.json
+          path: ${{ env.PACKAGE_PATH }}/upgrade.manifest.json
+          if-no-files-found: error
+
+      - name: Upload unsigned-upgrade.b64
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-upgrade.b64
+          path: ${{ env.PACKAGE_PATH }}/unsigned-upgrade.b64
+          if-no-files-found: error
+
+      - name: Upload unsigned-upgrade.stderr.log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-upgrade.stderr.log
+          path: ${{ env.PACKAGE_PATH }}/unsigned-upgrade.stderr.log
+          if-no-files-found: ignore
+
+      - name: Upload mvr.config.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvr.config.json
+          path: ${{ env.PACKAGE_PATH }}/mvr.config.json
+          if-no-files-found: error
+
+      - name: Upload Published.toml
+        uses: actions/upload-artifact@v4
+        with:
+          name: Published.toml
+          path: ${{ env.PACKAGE_PATH }}/Published.toml
+          if-no-files-found: error
+
+      - id: hash
+        name: Hash subjects for SLSA provenance
+        working-directory: ${{ env.PACKAGE_PATH }}
+        run: |
+          set -euo pipefail
+          # Attest dump + manifest (stable build identity). Unsigned tx is uploaded
+          # separately — gas object picks can differ across runs with the same code.
+          HASHES="$(sha256sum bytecode.dump.json upgrade.manifest.json)"
+          echo "Subjects:"
+          echo "$HASHES"
+          echo "base64_hashes=$(echo -n "$HASHES" | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+  provenance:
+    needs: build
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: ${{ needs.build.outputs.base64_hashes }}
+      upload-assets: false
+      provenance-name: upgrade.intoto.jsonl
+
+  verify:
+    needs: [build, provenance]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download provenance
+        uses: actions/download-artifact@v4
+        with:
+          name: upgrade.intoto.jsonl
+          path: .
+
+      - name: Download bytecode.dump.json
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecode.dump.json
+          path: .
+
+      - name: Download upgrade.manifest.json
+        uses: actions/download-artifact@v4
+        with:
+          name: upgrade.manifest.json
+          path: .
+
+      - name: Install slsa-verifier
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/slsa-framework/slsa-verifier/releases/latest/download/slsa-verifier-linux-amd64 -o slsa-verifier
+          chmod +x slsa-verifier
+          sudo mv slsa-verifier /usr/local/bin/
+          slsa-verifier version || true
+
+      - name: Verify SLSA provenance
+        run: |
+          set -euo pipefail
+          for FILE in bytecode.dump.json upgrade.manifest.json; do
+            echo "Verifying $FILE..."
+            slsa-verifier verify-artifact "$FILE" \
+              --provenance-path upgrade.intoto.jsonl \
+              --source-uri "github.com/${{ github.repository }}"
+          done
+
+      - name: Print observer instructions
+        run: |
+          set -euo pipefail
+          DIGEST=$(jq -c '.package_digest' upgrade.manifest.json)
+          COMMIT=$(jq -r '.git_commit' upgrade.manifest.json)
+          SUI_VERSION=$(jq -r '.sui_version' upgrade.manifest.json)
+          TOOLCHAIN=$(jq -r '.toolchain_version' upgrade.manifest.json)
+          UPGRADE_CAP=$(jq -r '.upgrade_cap' upgrade.manifest.json)
+          HOLDER=$(jq -r '.upgrade_cap_address_holder' upgrade.manifest.json)
+          PUBLISHED_AT=$(jq -r '.published_at' upgrade.manifest.json)
+          {
+            echo "## Upgrade provenance ready (no on-chain execute)"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Commit | \`$COMMIT\` |"
+            echo "| Sui (CI build) | \`$SUI_VERSION\` |"
+            echo "| toolchain-version (Published.toml) | \`$TOOLCHAIN\` |"
+            echo "| Current package (\`published-at\`) | \`$PUBLISHED_AT\` |"
+            echo "| UpgradeCap (from Published.toml) | \`$UPGRADE_CAP\` |"
+            echo "| UPGRADE_CAP_ADDRESS_HOLDER (--sender) | \`$HOLDER\` |"
+            echo "| Package digest | \`$DIGEST\` |"
+            echo ""
+            echo "### Artifacts"
+            echo "- \`bytecode.dump.json\` — modules / dependencies / package digest"
+            echo "- \`upgrade.manifest.json\` — build identity"
+            echo "- \`unsigned-upgrade.b64\` — unsigned PTB (authorize + upgrade + commit) for multisig signing"
+            echo "- \`upgrade.intoto.jsonl\` — SLSA3 over dump + manifest"
+            echo ""
+            echo "### External observer checklist (before / during upgrade)"
+            echo "1. Download artifacts from this workflow run."
+            echo "2. \`slsa-verifier verify-artifact bytecode.dump.json --provenance-path upgrade.intoto.jsonl --source-uri github.com/${{ github.repository }}\`"
+            echo "3. Checkout \`$COMMIT\`, install Sui \`$SUI_VERSION\`, rebuild with \`sui move build --dump-bytecode-as-base64\` in \`packages/deeptrade-core\`, confirm \`.digest\` matches \`package_digest\`."
+            echo "4. CI already checked dump digest ⊆ unsigned PTB; still confirm locally, then multisig-sign \`unsigned-upgrade.b64\` and \`execute-signed-tx\` (package digest ≠ explorer tx digest)."
+            echo ""
+            echo "### After the upgrade lands on-chain"
+            echo "1. Update \`Published.toml\`: \`published-at\` + bump \`version\`."
+            echo "2. \`cd packages/deeptrade-core && sui client verify-source\`"
+            echo "3. Full guide: \`docs/upgrade-provenance.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"

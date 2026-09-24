@@ -5,6 +5,7 @@ use deepbook::pool::Pool;
 use deeptrade_core::dt_math as math;
 use deeptrade_core::oracle;
 use pyth::price_info::PriceInfoObject;
+use pyth_upgraded::price_info::PriceInfoObject as PriceInfoObjectUpgraded;
 use std::type_name;
 use std::u64;
 use sui::clock::Clock;
@@ -187,6 +188,53 @@ public(package) fun get_sui_per_deep<ReferenceBaseAsset, ReferenceQuoteAsset>(
     sui_per_deep
 }
 
+/// Gets the DEEP/SUI price by comparing oracle and reference pool prices and selecting the best rate for the treasury
+///
+/// This function implements a dual-price strategy to prevent arbitrage:
+/// 1. Gets price from both oracle feeds and reference pool (both must be healthy)
+/// 2. Returns the MAXIMUM price (users pay more SUI for DEEP)
+///
+/// The reference pool must be either DEEP/SUI or SUI/DEEP trading pair and must be
+/// whitelisted and registered.
+///
+/// Parameters:
+/// - deep_usd_price_info: upgraded Pyth price info object for DEEP/USD price
+/// - sui_usd_price_info: upgraded Pyth price info object for SUI/USD price
+/// - reference_pool: Pool containing DEEP/SUI or SUI/DEEP trading pair
+/// - clock: System clock for price staleness verification
+///
+/// Returns:
+/// - u64: DEEP/SUI price with 12 decimal places (maximum of oracle and reference pool)
+///
+/// Aborts if:
+/// - Oracle price feeds are invalid, stale, or unavailable
+/// - Reference pool is not whitelisted/registered
+/// - Reference pool doesn't contain DEEP and SUI tokens
+/// - Reference pool price calculation fails
+public(package) fun get_sui_per_deep_v2<ReferenceBaseAsset, ReferenceQuoteAsset>(
+    deep_usd_price_info: &PriceInfoObjectUpgraded,
+    sui_usd_price_info: &PriceInfoObjectUpgraded,
+    reference_pool: &Pool<ReferenceBaseAsset, ReferenceQuoteAsset>,
+    clock: &Clock,
+): u64 {
+    // Get prices from both sources
+    let oracle_sui_per_deep = get_sui_per_deep_from_oracle_v2(
+        deep_usd_price_info,
+        sui_usd_price_info,
+        clock,
+    );
+    let reference_sui_per_deep = get_sui_per_deep_from_reference_pool(reference_pool, clock);
+
+    // Choose maximum (best for treasury - users pay more SUI for DEEP)
+    let sui_per_deep = u64::max(oracle_sui_per_deep, reference_sui_per_deep);
+
+    // Sanity check: reference pool price must be positive here because `get_pool_first_ask_price`
+    // aborts with `ENoAskPrice` if no ask price exists, otherwise returns a positive price.
+    assert!(sui_per_deep > 0, EInvalidSuiPerDeep);
+
+    sui_per_deep
+}
+
 /// Gets the SUI per DEEP price from a reference pool, normalizing the price regardless of token order
 /// Uses the first ask price from the reference pool
 ///
@@ -271,6 +319,89 @@ public(package) fun get_sui_per_deep_from_oracle(
         clock,
     );
     let (sui_usd_price, sui_usd_price_identifier) = oracle::get_pyth_price(
+        sui_usd_price_info,
+        clock,
+    );
+
+    // Validate price feed identifiers
+    let deep_price_id = deep_usd_price_identifier.get_bytes();
+    let sui_price_id = sui_usd_price_identifier.get_bytes();
+    assert!(
+        deep_price_id == oracle::deep_price_feed_id() && sui_price_id == oracle::sui_price_feed_id(),
+        EInvalidPriceFeedIdentifier,
+    );
+
+    // Get magnitudes and exponents of the prices
+    let deep_expo_i64 = deep_usd_price.get_expo();
+    let sui_expo_i64 = sui_usd_price.get_expo();
+
+    // Explicit checks for negative exponents - fail fast if Pyth changes format
+    assert!(deep_expo_i64.get_is_negative(), EUnexpectedPositiveExponent);
+    assert!(sui_expo_i64.get_is_negative(), EUnexpectedPositiveExponent);
+
+    let deep_expo = deep_expo_i64.get_magnitude_if_negative();
+    let sui_expo = sui_expo_i64.get_magnitude_if_negative();
+
+    let deep_price_mag = deep_usd_price.get_price().get_magnitude_if_positive();
+    let sui_price_mag = sui_usd_price.get_price().get_magnitude_if_positive();
+
+    // Since Move doesn't support negative numbers, we calculate a positive adjustment
+    // that can be applied either to numerator or denominator to achieve the same result
+    let should_multiply_numerator = sui_expo + 3 >= deep_expo;
+    let decimal_adjustment = if (should_multiply_numerator) {
+        sui_expo + 3 - deep_expo
+    } else {
+        deep_expo - 3 - sui_expo
+    };
+
+    // Verify that the decimal adjustment is within the safe range
+    assert!(decimal_adjustment <= MAX_SAFE_U64_POWER_OF_TEN, EDecimalAdjustmentTooLarge);
+    let multiplier = u64::pow(10, decimal_adjustment as u8);
+
+    // Calculate SUI per DEEP price
+    // The multiplier position (numerator vs denominator) depends on the exponent delta
+    // to ensure the result has exactly 12 decimal places to match DeepBook's DEEP/SUI price format
+    let sui_per_deep = if (should_multiply_numerator) {
+        math::div(deep_price_mag * multiplier, sui_price_mag)
+    } else {
+        math::div(deep_price_mag, sui_price_mag * multiplier)
+    };
+
+    sui_per_deep
+}
+
+/// Calculates the SUI per DEEP price using oracle price feeds for DEEP/USD and SUI/USD
+/// This function performs the following steps:
+/// 1. Retrieves and validates prices for both DEEP/USD and SUI/USD
+/// 2. Verifies price feed identifiers match expected feeds
+/// 3. Calculates DEEP/SUI price by dividing DEEP/USD by SUI/USD prices
+/// 4. Adjusts decimal places to match DeepBook's DEEP/SUI price format (12 decimals)
+///
+/// Parameters:
+/// - deep_usd_price_info: upgraded Pyth price info object for DEEP/USD price
+/// - sui_usd_price_info: upgraded Pyth price info object for SUI/USD price
+/// - clock: System clock for price staleness verification
+///
+/// Returns:
+/// - u64: The calculated SUI per DEEP price with 12 decimal places
+///
+/// Aborts if:
+/// - Either price feed is unavailable
+/// - Price feed identifiers don't match expected DEEP/USD and SUI/USD feeds
+/// - Price validation fails (staleness, confidence interval)
+///
+/// Technical details of the price calculation can be found in docs/oracle-price-calculation.md
+public(package) fun get_sui_per_deep_from_oracle_v2(
+    deep_usd_price_info: &PriceInfoObjectUpgraded,
+    sui_usd_price_info: &PriceInfoObjectUpgraded,
+    clock: &Clock,
+): u64 {
+    // Get DEEP/USD and SUI/USD prices
+    let (deep_usd_price, deep_usd_price_identifier) = oracle::get_pyth_price_v2(
+        deep_usd_price_info,
+        clock,
+    );
+    let (sui_usd_price, sui_usd_price_identifier) = oracle::get_pyth_price_v2(
         sui_usd_price_info,
         clock,
     );

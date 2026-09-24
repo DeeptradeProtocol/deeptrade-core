@@ -22,28 +22,40 @@ Short operational notes for developers: deployment, upgrade, and development too
 
 ## Upgrade
 
-1. Go to `packages/deeptrade-core` directory (`cd packages/deeptrade-core/`)
-2. Set `address` to `0x0` in `Move.toml`
-3. (optionally) In case it's update, that requires force update all clients and disable previous version, bump `CURRENT_VERSION` in `packages/deeptrade-core/helper.move`.
-4. Make sure that `env` is set in `Move.lock` (or legacy `published_at` present in `Move.toml`).
-5. Verify compatibility:
-   ```bash
-   sui client upgrade --dry-run --verify-compatibility --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
-   ```
-6. Dry run upgrade (without `--verify-compatibility`):
-   ```bash
-   sui client upgrade --dry-run --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
-   ```
-7. Upgrade:
-   ```bash
-   sui client upgrade --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
-   ```
-8. Set `address` in `Move.toml` to the new package address (from contract upgrade tx effects)
-9. Build:
-   ```bash
-   sui move build
-   ```
-10. (Optional) Update `examples/constants.ts` IDs if they changed
+Mainnet upgrades are multisig-signed and attested via CI. Prefer the full flow in
+[Upgrade Provenance](./upgrade-provenance.md) (SLSA3 artifacts + offline multisig execute +
+`sui client verify-source` afterward). Summary:
+
+1. Ensure `packages/deeptrade-core/Published.toml` is present (`published-at`, `upgrade-capability`,
+   `toolchain-version`). After an upgrade, update `published-at` and bump `version`.
+2. Fund the UpgradeCap holder with SUI for gas.
+3. Run **Upgrade Package Provenance** on the target commit with input `UPGRADE_CAP_ADDRESS_HOLDER`
+   (cap owner / `--sender`). CI reads `upgrade-capability` from `Published.toml` and uploads
+   `unsigned-upgrade.b64` plus SLSA artifacts — it does **not** sign or execute.
+4. (optionally) If clients must move to a new protocol version, bump `CURRENT_VERSION` in
+   `packages/deeptrade-core/sources/helper.move`.
+5. Confirm CI `package_digest` matches the unsigned PTB, then multisig-sign `unsigned-upgrade.b64`
+   and `sui client execute-signed-tx`.
+6. Update `Published.toml` (`published-at`, `version`) and `examples/constants.ts` package ID.
+7. Observers: `sui client verify-source` from the upgrade commit (see upgrade-provenance.md).
+
+Manual serialize (if not using CI for the unsigned tx):
+
+```bash
+cd packages/deeptrade-core
+sui client upgrade \
+  --upgrade-capability "$(grep -E '^upgrade-capability' Published.toml | sed 's/.*= *"\([^"]*\)".*/\1/')" \
+  --sender <UPGRADE_CAP_ADDRESS_HOLDER> \
+  --gas-budget 1000000000 \
+  --serialize-unsigned-transaction
+```
+
+Legacy single-key dry-runs (compatibility only):
+
+```bash
+sui client upgrade --dry-run --verify-compatibility --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
+sui client upgrade --dry-run --upgrade-capability <UPGRADE_CAP_ID> --gas-budget 1000000000
+```
 
 ## Running Tests
 
