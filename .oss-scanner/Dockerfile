@@ -21,7 +21,7 @@ RUN arch="$([ "${TARGETARCH:-amd64}" = "arm64" ] && echo aarch64 || echo x86_64)
     && mkdir -p /opt/sui \
     && curl -fsSL \
          "https://github.com/MystenLabs/sui/releases/download/mainnet-v${SUI_VERSION}/sui-mainnet-v${SUI_VERSION}-ubuntu-${arch}.tgz" \
-       | tar -xz -C /opt/sui sui \
+       | tar -xz -C /opt/sui ./sui \
     && chmod +x /opt/sui/sui \
     && /opt/sui/sui --version
 
