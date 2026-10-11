@@ -16,11 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install the Sui CLI for the build architecture (scanner hosts are x86_64 Linux).
 # Download to a file first so a failed curl cannot leave tar reading an empty stream.
+# Extract only `sui` — the release tarball also ships sui-debug and is ~1.1 GB.
 RUN arch="$([ "${TARGETARCH:-amd64}" = "arm64" ] && echo aarch64 || echo x86_64)" \
     && mkdir -p /opt/sui \
     && curl -fsSL -o /tmp/sui.tgz \
          "https://github.com/MystenLabs/sui/releases/download/mainnet-v${SUI_VERSION}/sui-mainnet-v${SUI_VERSION}-ubuntu-${arch}.tgz" \
-    && tar -xzf /tmp/sui.tgz -C /opt/sui \
+    && tar -xzf /tmp/sui.tgz -C /opt/sui sui \
     && rm /tmp/sui.tgz \
     && chmod +x /opt/sui/sui \
     && /opt/sui/sui --version
