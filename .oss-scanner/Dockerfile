@@ -1,5 +1,8 @@
 # Offline-ready build for Anthropic OSS Scanner.
 # Keep SUI_VERSION in sync with .github/workflows/move_test.yml.
+#
+# Dash-compatible /bin/sh RUN lines (same style as most enrolled crypto Dockerfiles).
+# Network is available only during this build; the scan that follows runs offline.
 FROM ubuntu:24.04
 
 ARG TARGETARCH
@@ -12,11 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install the Sui CLI for the build architecture (scanner hosts are x86_64 Linux).
-RUN set -euo pipefail \
-    && arch="$([ "${TARGETARCH:-amd64}" = "arm64" ] && echo aarch64 || echo x86_64)" \
+# Download to a file first so a failed curl cannot leave tar reading an empty stream.
+RUN arch="$([ "${TARGETARCH:-amd64}" = "arm64" ] && echo aarch64 || echo x86_64)" \
     && mkdir -p /opt/sui \
-    && curl -fsSL "https://github.com/MystenLabs/sui/releases/download/mainnet-v${SUI_VERSION}/sui-mainnet-v${SUI_VERSION}-ubuntu-${arch}.tgz" \
-       | tar -xz -C /opt/sui \
+    && curl -fsSL -o /tmp/sui.tgz \
+         "https://github.com/MystenLabs/sui/releases/download/mainnet-v${SUI_VERSION}/sui-mainnet-v${SUI_VERSION}-ubuntu-${arch}.tgz" \
+    && tar -xzf /tmp/sui.tgz -C /opt/sui \
+    && rm /tmp/sui.tgz \
     && chmod +x /opt/sui/sui \
     && /opt/sui/sui --version
 
@@ -32,8 +37,7 @@ RUN sui move build --lint --path packages/deeptrade-core
 # Swap Move.toml to the test-fork pins (same transform as .github/workflows/move_test.yml),
 # then fetch those deps and run the suite so the offline agent can re-run tests.
 # Do not let a failing test abort the image build.
-RUN set -euo pipefail \
-    && TOML=packages/deeptrade-core/Move.toml \
+RUN TOML=packages/deeptrade-core/Move.toml \
     && perl -i -pe 's/^(deepbook = \{ git = "https:\/\/github.com\/MystenLabs\/deepbookv3.git".*\})/# $1/' "$TOML" \
     && perl -i -pe 's/^(token = \{ git = "https:\/\/github.com\/MystenLabs\/deepbookv3.git".*\})/# $1/' "$TOML" \
     && perl -i -pe 's/^(pyth = \{ git = "https:\/\/github.com\/pyth-network\/pyth-crosschain.git".*\})/# $1/' "$TOML" \
