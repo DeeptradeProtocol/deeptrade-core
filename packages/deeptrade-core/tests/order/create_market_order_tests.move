@@ -2,7 +2,7 @@
 module deeptrade_core::create_market_order_tests;
 
 use deepbook::balance_manager::BalanceManager;
-use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
+use deepbook::balance_manager_tests::{USDC, USDT, create_acct_and_share_with_funds};
 use deepbook::constants;
 use deepbook::pool::Pool;
 use deepbook::pool_tests::{
@@ -13,6 +13,7 @@ use deepbook::pool_tests::{
     add_deep_price_point,
     set_time,
 };
+use deeptrade_core::calculate_market_order_params_tests::{create_wide_min_pool, leave_dust_bid};
 use deeptrade_core::dt_math as math;
 use deeptrade_core::dt_order::{Self as order, create_market_order};
 use deeptrade_core::fee::{Self, TradingFeeConfig};
@@ -297,6 +298,114 @@ fun unsupported_self_matching_option() {
     destroy(deep_price);
     destroy(sui_price);
 
+    end(scenario);
+}
+
+/// A dust ask fill charges the real DEEP fee when the wallet covers the `min_size` stand-in.
+///
+/// The book has one bid of `500_000` under a `min_size` of `1_000_000`. DeepBook quotes 0 DEEP
+/// for a sell of `2_000_000`. The stand-in is 10 (`1_000_000 / 100_000`) and the fill itself
+/// costs 5 (`500_000 / 100_000`). The balance manager starts with no DEEP and the wallet holds
+/// exactly 10, so the order completes and 5 DEEP remains.
+#[test]
+fun ask_dust_fill_charges_less_deep_than_the_bound() {
+    let (
+        mut scenario,
+        _pool_id,
+        balance_manager_id,
+        fee_manager_id,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+    ) = setup_test_environment();
+
+    let maker_balance_manager_id = create_acct_and_share_with_funds(
+        ALICE,
+        1000 * constants::float_scaling(),
+        &mut scenario,
+    );
+    let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
+    leave_dust_bid(pool_id, maker_balance_manager_id, balance_manager_id, &mut scenario);
+
+    scenario.next_tx(ALICE);
+    {
+        let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
+        let leftover_deep = balance_manager.withdraw_all<DEEP>(scenario.ctx());
+        destroy(leftover_deep);
+        return_shared(balance_manager);
+    };
+
+    scenario.next_tx(ALICE);
+    {
+        let mut treasury = scenario.take_shared<treasury::Treasury>();
+        let mut fee_manager = scenario.take_shared_by_id<FeeManager>(fee_manager_id);
+        let trading_fee_config = scenario.take_shared<TradingFeeConfig>();
+        let loyalty_program = scenario.take_shared<LoyaltyProgram>();
+        let mut pool = scenario.take_shared_by_id<Pool<SUI, USDT>>(pool_id);
+        let reference_pool = scenario.take_shared_by_id<Pool<DEEP, SUI>>(reference_pool_id);
+        let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
+        let clock = scenario.take_shared<clock::Clock>();
+
+        let base_coin = coin::mint_for_testing<SUI>(0, scenario.ctx());
+        let quote_coin = coin::mint_for_testing<USDT>(0, scenario.ctx());
+        let deep_coin = coin::mint_for_testing<DEEP>(10, scenario.ctx());
+        let sui_coin = coin::mint_for_testing<SUI>(0, scenario.ctx());
+
+        assert_eq!(balance_manager.balance<DEEP>(), 0);
+
+        let (order_info, base_coin, quote_coin, deep_coin, sui_coin) = create_market_order<
+            SUI,
+            USDT,
+            DEEP,
+            SUI,
+        >(
+            &mut treasury,
+            &mut fee_manager,
+            &trading_fee_config,
+            &loyalty_program,
+            &mut pool,
+            &reference_pool,
+            &deep_price,
+            &sui_price,
+            &mut balance_manager,
+            base_coin,
+            quote_coin,
+            deep_coin,
+            sui_coin,
+            2_000_000,
+            false,
+            constants::self_matching_allowed(),
+            3,
+            10,
+            0,
+            0,
+            0,
+            &clock,
+            scenario.ctx(),
+        );
+
+        // The 500_000 bid fills. The wallet's 10 DEEP was deposited and 5 was charged.
+        assert_eq!(order_info.executed_quantity(), 500_000);
+        assert_eq!(deep_coin.value(), 0);
+        assert_eq!(balance_manager.balance<DEEP>(), 5);
+
+        destroy(order_info);
+        destroy(base_coin);
+        destroy(quote_coin);
+        destroy(deep_coin);
+        destroy(sui_coin);
+        return_shared(treasury);
+        return_shared(fee_manager);
+        return_shared(trading_fee_config);
+        return_shared(loyalty_program);
+        return_shared(pool);
+        return_shared(reference_pool);
+        return_shared(balance_manager);
+        return_shared(clock);
+    };
+
+    destroy(deep_price);
+    destroy(sui_price);
     end(scenario);
 }
 
