@@ -490,14 +490,42 @@ public(package) fun calculate_market_order_params<BaseToken, QuoteToken>(
     //             Since `get_quantity_out` goes through order book same way as actual order placement,
     //             we can use its `deep_req` value
     // - For asks: Use order_amount directly as base quantity. Since `get_quantity_out` goes through
-    //             order book same way as actual order placement, we can use its `deep_req` value
+    //             order book same way as actual order placement, we can use its `deep_req` value.
+    //             Exception is the dust-bid case handled below.
     if (is_bid) {
         let (base_out, _, deep_req) = pool.get_quantity_out(0, order_amount, clock);
         let (_, lot_size, _) = pool.pool_book_params();
         let floored_base_out = base_out - base_out % lot_size;
         (floored_base_out, deep_req)
     } else {
-        let (_, _, deep_req) = pool.get_quantity_out(order_amount, 0, clock);
+        let (base_left, _, mut deep_req) = pool.get_quantity_out(order_amount, 0, clock);
+        let (_, _, min_size) = pool.pool_book_params();
+
+        // DeepBook v9 `get_quantity_out` can return 0 DEEP required for ask that will require
+        // DEEP on execution. Example: min_size is 1 SUI, the sell is 10 SUI, and the only
+        // bid is 0.2 SUI. `get_quantity_out` will say nothing is filled, so no DEEP required,
+        // but the real order will fill that 0.2 SUI and take DEEP fee for that. If the balance
+        // manager has no DEEP, transaction aborts.
+        // How do we handle this?
+        // First, we check that `get_quantity_out` says nothing is filled (`base_left == order_amount`).
+        // This can be in 3 cases: empty bids, dust bids (< min_size), or order is too small (< min_size).
+        // So, at second, we check that the order is at least `min_size` (order_amount >= min_size).
+        // If both are true, we know that either bids are empty or dust.
+        // Third, we check that the best bid is live (best_bid.is_some()).
+        // If all three are true, we know that this is the dust-bid case and the order will require
+        // DEEP on execution. Since we know that sum of dust bids sizes is less than `min_size`
+        // (otherwise, `get_quantity_out` returns base_left < order_amount), we can estimate the maximum
+        // DEEP that can be required to fill these dust bids: `min_size * best_bid_price`.
+        if (base_left == order_amount && order_amount >= min_size) {
+            let best_bid = pool.best_bid_price(clock);
+            if (best_bid.is_some()) {
+                let (taker_deep, _) = pool.get_order_deep_required(
+                    min_size,
+                    best_bid.destroy_some(),
+                );
+                deep_req = taker_deep;
+            }
+        };
         (order_amount, deep_req)
     }
 }
