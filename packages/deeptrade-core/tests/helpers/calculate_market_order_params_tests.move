@@ -28,10 +28,10 @@ use deeptrade_core::treasury;
 use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use multisig::multisig_test_utils::get_test_multisig_address;
 use pyth::price_info::{Self, PriceInfoObject};
+use std::option::is_some;
 use std::unit_test::assert_eq;
 use sui::clock;
 use sui::coin;
-use std::option::is_some;
 use sui::sui::SUI;
 use sui::test_scenario::{Self, Scenario, end, return_shared};
 use sui::test_utils::destroy;
@@ -415,8 +415,16 @@ fun ask_base_quantity_direct() {
 /// `500_000`, which would cost 5, and DeepBook's own quote is 0 because `500_000 < min_size`.
 #[test]
 fun ask_dust_bid_quotes_min_size_deep_bound() {
-    let (mut scenario, _pool_id, balance_manager_id, _, reference_pool_id, deep_price, sui_price, _) =
-        setup_test_environment();
+    let (
+        mut scenario,
+        _pool_id,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
     let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
     leave_dust_bid(pool_id, balance_manager_id, balance_manager_id, &mut scenario);
 
@@ -451,8 +459,16 @@ fun ask_dust_bid_quotes_min_size_deep_bound() {
 /// An empty bid side has no live bid, so the sell still quotes 0 DEEP.
 #[test]
 fun ask_empty_book_quotes_zero_deep() {
-    let (mut scenario, _pool_id, _, _, reference_pool_id, deep_price, sui_price, _) =
-        setup_test_environment();
+    let (
+        mut scenario,
+        _pool_id,
+        _,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
     let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
 
     scenario.next_tx(ALICE);
@@ -549,8 +565,16 @@ fun ask_bid_covering_min_size_quotes_fill_fee() {
 /// fee `20_000 * 1_000_000 / 1e9 = 20`. The same bid on a base-priced pool quotes 10.
 #[test]
 fun ask_quote_priced_dust_bid_quotes_notional_bound() {
-    let (mut scenario, _, balance_manager_id, _, reference_pool_id, deep_price, sui_price, _) =
-        setup_test_environment();
+    let (
+        mut scenario,
+        _,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
     let pool_id = create_quote_priced_pool(reference_pool_id, &mut scenario);
     fund_usdt(balance_manager_id, &mut scenario);
     shave_quote_priced_bid(
@@ -603,8 +627,16 @@ fun ask_quote_priced_dust_bid_quotes_notional_bound() {
 /// fee `30_000 * 1_000_000 / 1e9 = 30`.
 #[test]
 fun ask_several_dust_bids_bound_uses_best_price() {
-    let (mut scenario, _, balance_manager_id, _, reference_pool_id, deep_price, sui_price, _) =
-        setup_test_environment();
+    let (
+        mut scenario,
+        _,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
     let pool_id = create_quote_priced_pool(reference_pool_id, &mut scenario);
     fund_usdt(balance_manager_id, &mut scenario);
 
@@ -669,8 +701,16 @@ fun ask_several_dust_bids_bound_uses_best_price() {
 /// DeepBook rejects the order itself, so the dust stand-in must not apply.
 #[test]
 fun ask_below_min_size_quotes_zero_deep() {
-    let (mut scenario, _, balance_manager_id, _, reference_pool_id, deep_price, sui_price, _) =
-        setup_test_environment();
+    let (
+        mut scenario,
+        _,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
     let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
     fund_usdt(balance_manager_id, &mut scenario);
     let bid = place_limit_order<SUI, USDT>(
