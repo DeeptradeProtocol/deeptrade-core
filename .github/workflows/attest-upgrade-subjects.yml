@@ -1,0 +1,45 @@
+# Reusable attestor for upgrade provenance subjects (SLSA Build L3 isolation).
+# Callers pass digests only — this workflow does not rebuild Move bytecode.
+#
+# Observers pin verification with:
+#   gh attestation verify <file> --repo <owner/repo> \
+#     --signer-workflow <owner/repo>/.github/workflows/attest-upgrade-subjects.yml
+
+name: Attest Upgrade Subjects
+
+on:
+  workflow_call:
+    inputs:
+      dump_sha256:
+        description: "Hex SHA-256 of bytecode.dump.json"
+        required: true
+        type: string
+      manifest_sha256:
+        description: "Hex SHA-256 of upgrade.manifest.json"
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    steps:
+      - name: Write subject checksums
+        run: |
+          set -euo pipefail
+          # sha256sum format expected by actions/attest-build-provenance subject-checksums
+          {
+            echo "${{ inputs.dump_sha256 }}  bytecode.dump.json"
+            echo "${{ inputs.manifest_sha256 }}  upgrade.manifest.json"
+          } > subjects.sha256
+          cat subjects.sha256
+
+      - name: Attest build provenance (SLSA Build L3 signer)
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-checksums: subjects.sha256

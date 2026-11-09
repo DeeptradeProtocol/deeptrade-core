@@ -1,10 +1,11 @@
 # Admin Capabilities
 
-The `deeptrade-core` package is managed by 2 administrative capabilities: `AdminCap` and `LoyaltyAdminCap`.
+The `deeptrade-core` package is managed by 3 administrative capabilities: `AdminCap`, `LoyaltyAdminCap`, and `RebatesClaimerCap`.
 To balance security with operational flexibility, these roles create a tiered system of authority:
 
 - **`AdminCap`**: The core capability for all sensitive protocol functions. It is protected by a mandatory on-chain multisig enforcement, with an additional time-lock for the most critical actions. See our [Multisig](./multisig.md) document for more details.
 - **`LoyaltyAdminCap`**: A delegated capability designed for routine, low-risk operations like managing individual user loyalty levels.
+- **`RebatesClaimerCap`**: A delegated capability designed for routine storage-rebate cleanup of empty unsettled-fee bag entries, without requiring a multisig transaction for each claim.
 
 ## 1. Direct Operations
 
@@ -19,6 +20,8 @@ For operations that are considered lower-risk or require immediate execution for
   - `add_loyalty_level` / `remove_loyalty_level`: Manages the available loyalty tiers.
   - `update_loyalty_admin_cap_owner`: Transfers ownership of the `LoyaltyAdminCap`.
 - **Fees Management** (`fee_manager.move`):
+  - `create_rebates_claimer_cap`: Creates and shares a `RebatesClaimerCap` assigned to a designated owner. May be called more than once.
+  - `update_rebates_claimer_cap_owner`: Transfers ownership of a `RebatesClaimerCap`.
   - `claim_user_unsettled_fee_storage_rebate_admin`: Claims storage rebate for a user's settled fee.
   - `claim_protocol_unsettled_fee_storage_rebate_admin`: Claims storage rebate for a settled protocol fee.
 
@@ -26,7 +29,7 @@ For operations that are considered lower-risk or require immediate execution for
 
 - **Emergency Response:** Versioning functions do not use a timelock to allow for rapid response in case of a critical bug or an issue with a dependency like the DeepBook protocol. This agility is crucial to protect the protocol and its users, as detailed in our [Versioning Strategy](./versioning.md).
 - **Operational Flexibility:** The loyalty program is designed to be managed dynamically. We consider these operations to be low-risk, as the primary impact is on user fee discounts rather than a direct risk to locked funds. This flexibility allows us to manage the program efficiently without the delay of a timelock.
-- **System Maintenance:** Administrative functions for claiming storage rebates are low-risk cleanup operations. They do not move user or protocol funds but instead recover storage costs from objects that are no longer in use. A timelock for such routine maintenance would add unnecessary overhead.
+- **System Maintenance:** Administrative functions for claiming storage rebates are low-risk cleanup operations. They do not move user or protocol funds but instead recover storage costs from objects that are no longer in use. A timelock for such routine maintenance would add unnecessary overhead. Creating and rotating a `RebatesClaimerCap` is likewise low-risk governance of that delegated role; the frequent claims themselves run through the claimer path in section 4.
 
 ---
 
@@ -65,3 +68,19 @@ Crucially, the multisig wallet retains ultimate control, as it can transfer owne
 - **User Loyalty Management** (`loyalty.move`):
   - `grant_user_level`: Assigns a loyalty tier to a specific user.
   - `revoke_user_level`: Removes a loyalty tier from a specific user.
+
+---
+
+## 4. Rebates Claimer Operations (`RebatesClaimerCap`)
+
+The `RebatesClaimerCap` is a specialized capability for cleaning up empty unsettled-fee bag entries and reclaiming their storage rebates. It allows a designated address to perform this routine maintenance without requiring a multisig transaction for each claim. Like `LoyaltyAdminCap`, it is a shared object with an `owner` field; the current owner cannot reassign it.
+
+Unlike `LoyaltyAdminCap`, it is **not** created in `init`. The admin multisig mints it later via `create_rebates_claimer_cap`, and may mint more than one. The multisig wallet retains ultimate control: it can rotate ownership of any cap via `update_rebates_claimer_cap_owner` using the core `AdminCap`.
+
+These claimer paths only destroy **empty** bag entries; non-empty entries still abort. They do not move user or protocol fee balances.
+
+### Operations
+
+- **Storage Rebate Claims** (`fee_manager.move`):
+  - `claim_user_unsettled_fee_storage_rebate_claimer`: Claims storage rebate for an empty user unsettled-fee entry.
+  - `claim_protocol_unsettled_fee_storage_rebate_claimer`: Claims storage rebate for an empty protocol unsettled-fee entry.
