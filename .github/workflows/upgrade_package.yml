@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Keep in sync with .github/workflows/move_test.yml (SUI_VERSION).
-      SUI_VERSION: "1.80.1"
+      SUI_VERSION: "1.83.1"
       PACKAGE_PATH: "packages/deeptrade-core"
       # Gas budget for the unsigned upgrade PTB (MIST). CLI auto-selects coins from sender.
       GAS_BUDGET: "1000000000"
