@@ -86,7 +86,7 @@ This rebuilds with `toolchain-version` from `Published.toml` and compares root p
 If metadata is incomplete, override explicitly:
 
 ```bash
-sui client verify-source --toolchain-version 1.80.1
+sui client verify-source --toolchain-version 1.83.1
 ```
 
 ## What each check proves

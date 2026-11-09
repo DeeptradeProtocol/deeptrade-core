@@ -2,9 +2,10 @@
 module deeptrade_core::calculate_market_order_params_tests;
 
 use deepbook::balance_manager::BalanceManager;
-use deepbook::balance_manager_tests::{USDC, create_acct_and_share_with_funds};
+use deepbook::balance_manager_tests::{USDC, USDT, create_acct_and_share_with_funds};
 use deepbook::constants;
-use deepbook::pool::Pool;
+use deepbook::deep_price::{asset_is_base, deep_per_asset};
+use deepbook::pool::{Self, Pool};
 use deepbook::pool_tests::{
     setup_test,
     setup_pool_with_default_fees,
@@ -13,6 +14,7 @@ use deepbook::pool_tests::{
     add_deep_price_point,
     set_time,
 };
+use deepbook::registry::Registry;
 use deeptrade_core::fee;
 use deeptrade_core::fee_manager::{Self, FeeManager};
 use deeptrade_core::get_sui_per_deep_from_oracle_tests::{
@@ -26,6 +28,7 @@ use deeptrade_core::treasury;
 use deeptrade_core::update_multisig_config_tests::setup_with_initialized_config;
 use multisig::multisig_test_utils::get_test_multisig_address;
 use pyth::price_info::{Self, PriceInfoObject};
+use std::option::is_some;
 use std::unit_test::assert_eq;
 use sui::clock;
 use sui::coin;
@@ -400,4 +403,500 @@ fun ask_base_quantity_direct() {
     price_info::destroy(deep_price);
     price_info::destroy(sui_price);
     end(scenario);
+}
+
+/// A sell larger than `min_size` against one bid smaller than `min_size` quotes the
+/// taker DEEP for `min_size`, not the 0 DeepBook reports.
+///
+/// The DEEP/SUI reference mid is 100 SUI per DEEP, so this SUI pool stores 0.01 DEEP
+/// per SUI (`10_000_000` scaled). The pool is volatile, so the taker fee is
+/// `1_000_000`. The fee is `base * 10_000_000 / 1e9 * 1_000_000 / 1e9 = base / 100_000`.
+/// `min_size` is `1_000_000`, so that stand-in fee is 10. The bid left on the book is
+/// `500_000`, which would cost 5, and DeepBook's own quote is 0 because `500_000 < min_size`.
+#[test]
+fun ask_dust_bid_quotes_min_size_deep_bound() {
+    let (
+        mut scenario,
+        _pool_id,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
+    let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
+    leave_dust_bid(pool_id, balance_manager_id, balance_manager_id, &mut scenario);
+
+    scenario.next_tx(ALICE);
+    {
+        let pool = scenario.take_shared_by_id<Pool<SUI, USDT>>(pool_id);
+        let clock = scenario.take_shared<clock::Clock>();
+        let sell_amount = 2_000_000;
+
+        let (_, _, quoted_by_deepbook) = pool.get_quantity_out(sell_amount, 0, &clock);
+        let (base_quantity, deep_required) = helper::calculate_market_order_params<SUI, USDT>(
+            &pool,
+            sell_amount,
+            false,
+            &clock,
+        );
+
+        assert_eq!(quoted_by_deepbook, 0);
+        assert_eq!(base_quantity, sell_amount);
+        // 1_000_000 / 100_000 = 10
+        assert_eq!(deep_required, 10);
+
+        return_shared(pool);
+        return_shared(clock);
+    };
+
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+    end(scenario);
+}
+
+/// An empty bid side has no live bid, so the sell still quotes 0 DEEP.
+#[test]
+fun ask_empty_book_quotes_zero_deep() {
+    let (
+        mut scenario,
+        _pool_id,
+        _,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
+    let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
+
+    scenario.next_tx(ALICE);
+    {
+        let pool = scenario.take_shared_by_id<Pool<SUI, USDT>>(pool_id);
+        let clock = scenario.take_shared<clock::Clock>();
+        let sell_amount = 2_000_000;
+
+        let (base_quantity, deep_required) = helper::calculate_market_order_params<SUI, USDT>(
+            &pool,
+            sell_amount,
+            false,
+            &clock,
+        );
+
+        assert_eq!(base_quantity, sell_amount);
+        assert_eq!(deep_required, 0);
+
+        return_shared(pool);
+        return_shared(clock);
+    };
+
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+    end(scenario);
+}
+
+/// A bid of at least `min_size` is a real fill. The quote's own DEEP fee is kept:
+/// selling `2_000_000` costs 20, which is more than the `min_size` stand-in of 10.
+#[test]
+fun ask_bid_covering_min_size_quotes_fill_fee() {
+    let (
+        mut scenario,
+        _pool_id,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
+    let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
+    fund_usdt(balance_manager_id, &mut scenario);
+    let bid = place_limit_order<SUI, USDT>(
+        ALICE,
+        pool_id,
+        balance_manager_id,
+        1,
+        constants::no_restriction(),
+        constants::self_matching_allowed(),
+        2 * constants::float_scaling(),
+        2_000_000,
+        true,
+        true,
+        constants::max_u64(),
+        &mut scenario,
+    );
+
+    scenario.next_tx(ALICE);
+    {
+        let pool = scenario.take_shared_by_id<Pool<SUI, USDT>>(pool_id);
+        let clock = scenario.take_shared<clock::Clock>();
+        let sell_amount = 2_000_000;
+
+        let (base_quantity, deep_required) = helper::calculate_market_order_params<SUI, USDT>(
+            &pool,
+            sell_amount,
+            false,
+            &clock,
+        );
+
+        assert_eq!(base_quantity, sell_amount);
+        // 2_000_000 / 100_000 = 20
+        assert_eq!(deep_required, 20);
+
+        return_shared(pool);
+        return_shared(clock);
+    };
+
+    destroy(bid);
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+    end(scenario);
+}
+
+/// DEEP priced per quote. The fee is `taker_fee * quote_notional * deep_per_sui`, so the
+/// `min_size` stand-in depends on the best bid's price.
+///
+/// USDT/SUI puts SUI on the quote side of the DEEP/SUI reference, so the stored rate is
+/// DEEP per SUI. The reference mid is 100 SUI per DEEP, which is `10_000_000` DEEP per SUI.
+/// The pool is volatile, so the taker fee is `1_000_000`. One bid of `500_000` at 2 SUI sits
+/// under `min_size` of `1_000_000`, and DeepBook quotes 0. The stand-in sells `min_size` at
+/// that price: quote `1_000_000 * 2 = 2_000_000`, DEEP `2_000_000 * 10_000_000 / 1e9 = 20_000`,
+/// fee `20_000 * 1_000_000 / 1e9 = 20`. The same bid on a base-priced pool quotes 10.
+#[test]
+fun ask_quote_priced_dust_bid_quotes_notional_bound() {
+    let (
+        mut scenario,
+        _,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
+    let pool_id = create_quote_priced_pool(reference_pool_id, &mut scenario);
+    fund_usdt(balance_manager_id, &mut scenario);
+    shave_quote_priced_bid(
+        pool_id,
+        balance_manager_id,
+        1,
+        2 * constants::float_scaling(),
+        1_500_000,
+        500_000,
+        &mut scenario,
+    );
+
+    scenario.next_tx(ALICE);
+    {
+        let pool = scenario.take_shared_by_id<Pool<USDT, SUI>>(pool_id);
+        let clock = scenario.take_shared<clock::Clock>();
+        let sell_amount = 2_000_000;
+
+        let order_deep_price = pool.get_order_deep_price();
+        let (_, _, quoted_by_deepbook) = pool.get_quantity_out(sell_amount, 0, &clock);
+        let (base_quantity, deep_required) = helper::calculate_market_order_params<USDT, SUI>(
+            &pool,
+            sell_amount,
+            false,
+            &clock,
+        );
+
+        assert!(!order_deep_price.asset_is_base());
+        assert_eq!(order_deep_price.deep_per_asset(), 10_000_000);
+        assert_eq!(quoted_by_deepbook, 0);
+        assert_eq!(base_quantity, sell_amount);
+        // 20_000 * 1_000_000 / 1e9 = 20
+        assert_eq!(deep_required, 20);
+
+        return_shared(pool);
+        return_shared(clock);
+    };
+
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+    end(scenario);
+}
+
+/// Three dust bids at different prices still sum to less than `min_size`, so DeepBook quotes 0.
+/// The stand-in uses the best of those prices.
+///
+/// Each bid is shaved to `200_000`. Worst first, and each sell is priced at its own bid, so a
+/// sell never reaches the cheaper dust already on the book. `200_000 * 3 = 600_000`, under
+/// `min_size` of `1_000_000`. The best price is 3 SUI: quote `3_000_000`, DEEP `30_000`,
+/// fee `30_000 * 1_000_000 / 1e9 = 30`.
+#[test]
+fun ask_several_dust_bids_bound_uses_best_price() {
+    let (
+        mut scenario,
+        _,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
+    let pool_id = create_quote_priced_pool(reference_pool_id, &mut scenario);
+    fund_usdt(balance_manager_id, &mut scenario);
+
+    let one_sui = constants::float_scaling();
+    shave_quote_priced_bid(
+        pool_id,
+        balance_manager_id,
+        1,
+        one_sui,
+        1_200_000,
+        200_000,
+        &mut scenario,
+    );
+    shave_quote_priced_bid(
+        pool_id,
+        balance_manager_id,
+        3,
+        2 * one_sui,
+        1_200_000,
+        200_000,
+        &mut scenario,
+    );
+    shave_quote_priced_bid(
+        pool_id,
+        balance_manager_id,
+        5,
+        3 * one_sui,
+        1_200_000,
+        200_000,
+        &mut scenario,
+    );
+
+    scenario.next_tx(ALICE);
+    {
+        let pool = scenario.take_shared_by_id<Pool<USDT, SUI>>(pool_id);
+        let clock = scenario.take_shared<clock::Clock>();
+        let sell_amount = 2_000_000;
+
+        let (_, _, quoted_by_deepbook) = pool.get_quantity_out(sell_amount, 0, &clock);
+        let (base_quantity, deep_required) = helper::calculate_market_order_params<USDT, SUI>(
+            &pool,
+            sell_amount,
+            false,
+            &clock,
+        );
+
+        assert_eq!(quoted_by_deepbook, 0);
+        assert_eq!(base_quantity, sell_amount);
+        // 30_000 * 1_000_000 / 1e9 = 30
+        assert_eq!(deep_required, 30);
+
+        return_shared(pool);
+        return_shared(clock);
+    };
+
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+    end(scenario);
+}
+
+/// An order smaller than `min_size` quotes 0 even with a live bid behind it.
+/// DeepBook rejects the order itself, so the dust stand-in must not apply.
+#[test]
+fun ask_below_min_size_quotes_zero_deep() {
+    let (
+        mut scenario,
+        _,
+        balance_manager_id,
+        _,
+        reference_pool_id,
+        deep_price,
+        sui_price,
+        _,
+    ) = setup_test_environment();
+    let pool_id = create_wide_min_pool(reference_pool_id, &mut scenario);
+    fund_usdt(balance_manager_id, &mut scenario);
+    let bid = place_limit_order<SUI, USDT>(
+        ALICE,
+        pool_id,
+        balance_manager_id,
+        1,
+        constants::no_restriction(),
+        constants::self_matching_allowed(),
+        2 * constants::float_scaling(),
+        2_000_000,
+        true,
+        true,
+        constants::max_u64(),
+        &mut scenario,
+    );
+
+    scenario.next_tx(ALICE);
+    {
+        let pool = scenario.take_shared_by_id<Pool<SUI, USDT>>(pool_id);
+        let clock = scenario.take_shared<clock::Clock>();
+        let sell_amount = 500_000;
+        let (_, _, min_size) = pool.pool_book_params();
+
+        let (base_left, _, quoted_by_deepbook) = pool.get_quantity_out(sell_amount, 0, &clock);
+        let (base_quantity, deep_required) = helper::calculate_market_order_params<SUI, USDT>(
+            &pool,
+            sell_amount,
+            false,
+            &clock,
+        );
+
+        assert!(sell_amount < min_size);
+        assert!(pool.best_bid_price(&clock).is_some());
+        assert_eq!(base_left, sell_amount);
+        assert_eq!(quoted_by_deepbook, 0);
+        assert_eq!(base_quantity, sell_amount);
+        assert_eq!(deep_required, 0);
+
+        return_shared(pool);
+        return_shared(clock);
+    };
+
+    destroy(bid);
+    price_info::destroy(deep_price);
+    price_info::destroy(sui_price);
+    end(scenario);
+}
+
+/// SUI/USDT pool whose `min_size` is `1_000_000`, priced from the standard DEEP/SUI reference.
+/// USDT is a fresh pair: the setup already registered SUI/USDC.
+public(package) fun create_wide_min_pool(reference_pool_id: ID, scenario: &mut Scenario): ID {
+    scenario.next_tx(ALICE);
+    let pool_id = {
+        let mut registry = scenario.take_shared<Registry>();
+        let pool_id = pool::create_permissionless_pool<SUI, USDT>(
+            &mut registry,
+            constants::tick_size(),
+            constants::lot_size(),
+            1_000_000,
+            coin::mint_for_testing<DEEP>(constants::pool_creation_fee(), scenario.ctx()),
+            scenario.ctx(),
+        );
+        return_shared(registry);
+        pool_id
+    };
+    add_deep_price_point<SUI, USDT, DEEP, SUI>(ALICE, pool_id, reference_pool_id, scenario);
+    pool_id
+}
+
+/// Leaves a single live bid of `500_000`, which is below the wide pool's `min_size`.
+/// The maker rests `1_500_000` and the taker sells `1_000_000` of it.
+public(package) fun leave_dust_bid(
+    pool_id: ID,
+    maker_balance_manager_id: ID,
+    taker_balance_manager_id: ID,
+    scenario: &mut Scenario,
+) {
+    fund_usdt(maker_balance_manager_id, scenario);
+    let price = 2 * constants::float_scaling();
+    let bid = place_limit_order<SUI, USDT>(
+        ALICE,
+        pool_id,
+        maker_balance_manager_id,
+        1,
+        constants::no_restriction(),
+        constants::self_matching_allowed(),
+        price,
+        1_500_000,
+        true,
+        true,
+        constants::max_u64(),
+        scenario,
+    );
+    let taken = place_limit_order<SUI, USDT>(
+        ALICE,
+        pool_id,
+        taker_balance_manager_id,
+        2,
+        constants::immediate_or_cancel(),
+        constants::self_matching_allowed(),
+        price,
+        1_000_000,
+        false,
+        true,
+        constants::max_u64(),
+        scenario,
+    );
+    destroy(bid);
+    destroy(taken);
+}
+
+/// USDT/SUI pool whose `min_size` is `1_000_000`. SUI is the quote, so the DEEP/SUI reference
+/// prices DEEP per quote (`asset_is_base` is false).
+fun create_quote_priced_pool(reference_pool_id: ID, scenario: &mut Scenario): ID {
+    scenario.next_tx(ALICE);
+    let pool_id = {
+        let mut registry = scenario.take_shared<Registry>();
+        let pool_id = pool::create_permissionless_pool<USDT, SUI>(
+            &mut registry,
+            constants::tick_size(),
+            constants::lot_size(),
+            1_000_000,
+            coin::mint_for_testing<DEEP>(constants::pool_creation_fee(), scenario.ctx()),
+            scenario.ctx(),
+        );
+        return_shared(registry);
+        pool_id
+    };
+    add_deep_price_point<USDT, SUI, DEEP, SUI>(ALICE, pool_id, reference_pool_id, scenario);
+    pool_id
+}
+
+/// Rests `rest_quantity` at `price` on the USDT/SUI pool, then sells the difference at the same
+/// price so `leave_quantity` remains. The ask price stops the sell from matching a worse bid,
+/// which is what makes shaving several prices safe when done worst price first.
+fun shave_quote_priced_bid(
+    pool_id: ID,
+    balance_manager_id: ID,
+    client_order_id: u64,
+    price: u64,
+    rest_quantity: u64,
+    leave_quantity: u64,
+    scenario: &mut Scenario,
+) {
+    let bid = place_limit_order<USDT, SUI>(
+        ALICE,
+        pool_id,
+        balance_manager_id,
+        client_order_id,
+        constants::no_restriction(),
+        constants::self_matching_allowed(),
+        price,
+        rest_quantity,
+        true,
+        true,
+        constants::max_u64(),
+        scenario,
+    );
+    let taken = place_limit_order<USDT, SUI>(
+        ALICE,
+        pool_id,
+        balance_manager_id,
+        client_order_id + 1,
+        constants::immediate_or_cancel(),
+        constants::self_matching_allowed(),
+        price,
+        rest_quantity - leave_quantity,
+        false,
+        true,
+        constants::max_u64(),
+        scenario,
+    );
+    destroy(bid);
+    destroy(taken);
+}
+
+/// The shared setup funds USDC. These tests trade USDT, so the maker needs a quote balance.
+fun fund_usdt(balance_manager_id: ID, scenario: &mut Scenario) {
+    scenario.next_tx(ALICE);
+    {
+        let mut balance_manager = scenario.take_shared_by_id<BalanceManager>(balance_manager_id);
+        balance_manager.deposit(
+            coin::mint_for_testing<USDT>(1000 * constants::float_scaling(), scenario.ctx()),
+            scenario.ctx(),
+        );
+        return_shared(balance_manager);
+    };
 }
