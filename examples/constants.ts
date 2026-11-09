@@ -1,6 +1,6 @@
 // Deeptrade Core package data
 // Latest package (moveCall targets). Original stays fixed for type queries / original-id.
-export const DEEPTRADE_CORE_PACKAGE_ID = "0xda5b27f23ac02c1f9acec07a32baf6523a381d7df9b00d99c99e3f9b41b1285f";
+export const DEEPTRADE_CORE_PACKAGE_ID = "0x91959c5ec15155dab3005c66e53e92b4dd946563a06a27a2a972a174d1e0683f";
 export const DEEPTRADE_CORE_PACKAGE_ID_ORIGINAL =
   "0xc10d536b6580d809711b9bb8eee3945d5e96f92a346c84d74ff7a0697e664695";
 export const ADMIN_CAP_OBJECT_ID = "0xe92f79ac54409c9eecfd77ce1089edd9b424b87c6cba8aa99c8fedb64d0e0b8b";
